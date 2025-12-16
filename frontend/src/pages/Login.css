@@ -97,6 +97,14 @@
     box-shadow: 0 0 0 3px rgba(26, 92, 56, 0.08);
 }
 
+.input-hint {
+    display: block;
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-top: 6px;
+    padding-left: 4px;
+}
+
 .password-field {
     position: relative;
 }

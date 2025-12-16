@@ -12,7 +12,7 @@ const PengaturanPage = () => {
     const [loadingUsers, setLoadingUsers] = useState(false)
     const [showUserModal, setShowUserModal] = useState(false)
     const [editingUser, setEditingUser] = useState(null)
-    const [userForm, setUserForm] = useState({ email: '', password: '', nama: '', role: 'guru' })
+    const [userForm, setUserForm] = useState({ email: '', password: '', nama: '', role: 'guru', no_telp: '' })
     const [savingUser, setSavingUser] = useState(false)
     const [userError, setUserError] = useState('')
     const [userSuccess, setUserSuccess] = useState('')
@@ -31,6 +31,8 @@ const PengaturanPage = () => {
     const [importData, setImportData] = useState([])
     const [showPreview, setShowPreview] = useState(false)
     const [importing, setImporting] = useState(false)
+    const [uploadingFile, setUploadingFile] = useState(false)
+    const [uploadError, setUploadError] = useState('')
     const [importResult, setImportResult] = useState({ success: 0, failed: 0, message: '' })
     const fileInputRef = useRef(null)
 
@@ -67,6 +69,8 @@ const PengaturanPage = () => {
                     .update({
                         nama: userForm.nama,
                         role: userForm.role,
+                        no_telp: userForm.no_telp,
+                        email: userForm.email,
                         updated_at: new Date().toISOString()
                     })
                     .eq('id', editingUser.id)
@@ -74,9 +78,25 @@ const PengaturanPage = () => {
                 if (error) throw error
                 setUserSuccess('User berhasil diupdate!')
             } else {
+                // Validasi: minimal email ATAU no_telp harus diisi
+                if (!userForm.email && !userForm.no_telp) {
+                    throw new Error('Email atau No. Telepon harus diisi (minimal salah satu)')
+                }
+
+                // Jika tidak ada email, generate email placeholder dari no_telp
+                let authEmail = userForm.email
+                if (!authEmail && userForm.no_telp) {
+                    // Normalize phone number
+                    let phone = userForm.no_telp.replace(/[^\d]/g, '')
+                    if (phone.startsWith('0')) {
+                        phone = '62' + phone.substring(1)
+                    }
+                    authEmail = `${phone}@phone.local`
+                }
+
                 // Create new user with Supabase Auth
                 const { data: authData, error: authError } = await supabase.auth.signUp({
-                    email: userForm.email,
+                    email: authEmail,
                     password: userForm.password,
                     options: {
                         data: {
@@ -88,11 +108,12 @@ const PengaturanPage = () => {
 
                 if (authError) throw authError
 
-                // Create user profile with password reference
+                // Create user profile with password reference and no_telp
                 if (authData.user) {
                     const { error: profileError } = await supabase.from('user_profiles').insert([{
                         user_id: authData.user.id,
-                        email: userForm.email,
+                        email: userForm.email || null, // Simpan email asli (bisa null)
+                        no_telp: userForm.no_telp || null,
                         nama: userForm.nama,
                         role: userForm.role,
                         password_ref: userForm.password
@@ -107,7 +128,7 @@ const PengaturanPage = () => {
             fetchUsers()
             setTimeout(() => {
                 setShowUserModal(false)
-                setUserForm({ email: '', password: '', nama: '', role: 'guru' })
+                setUserForm({ email: '', password: '', nama: '', role: 'guru', no_telp: '' })
                 setEditingUser(null)
                 setUserSuccess('')
             }, 2000)
@@ -124,7 +145,8 @@ const PengaturanPage = () => {
             email: user.email,
             password: '',
             nama: user.nama || '',
-            role: user.role || 'guru'
+            role: user.role || 'guru',
+            no_telp: user.no_telp || ''
         })
         setShowUserModal(true)
     }
@@ -245,15 +267,17 @@ const PengaturanPage = () => {
         switch (type) {
             case 'santri':
                 return {
-                    'nis': ['nis', 'nisn', 'no_induk', 'no induk', 'student_id'],
-                    'nama': ['nama', 'name', 'nama_lengkap', 'nama lengkap', 'fullname'],
-                    'jenis_kelamin': ['jenis_kelamin', 'jenis kelamin', 'gender', 'jk', 'l/p'],
-                    'tempat_lahir': ['tempat_lahir', 'tempat lahir', 'birthplace'],
-                    'tanggal_lahir': ['tanggal_lahir', 'tanggal lahir', 'tgl lahir', 'tgl_lahir', 'birthdate', 'ttl'],
-                    'alamat': ['alamat', 'address'],
-                    'nama_wali': ['nama_wali', 'nama wali', 'wali', 'ortu', 'parent'],
-                    'no_telp_wali': ['no_telp_wali', 'no telp wali', 'telp_wali', 'telp wali', 'hp wali'],
-                    'status': ['status']
+                    'nis': ['nis', 'nisn', 'no_induk', 'no induk', 'student_id', 'no', 'nomor', 'nomor induk'],
+                    'nama': ['nama', 'name', 'nama_lengkap', 'nama lengkap', 'fullname', 'nama santri', 'nama_santri'],
+                    'jenis_kelamin': ['jenis_kelamin', 'jenis kelamin', 'gender', 'jk', 'l/p', 'kelamin', 'j.k', 'j.k.'],
+                    'tempat_lahir': ['tempat_lahir', 'tempat lahir', 'birthplace', 'tmp lahir', 'tmp_lahir', 'tempat'],
+                    'tanggal_lahir': ['tanggal_lahir', 'tanggal lahir', 'tgl lahir', 'tgl_lahir', 'birthdate', 'ttl', 'tgl', 'lahir'],
+                    'alamat': ['alamat', 'address', 'domisili', 'tempat tinggal'],
+                    'nama_wali': ['nama_wali', 'nama wali', 'namawali', 'wali', 'ortu', 'parent', 'orang tua', 'orangtua', 'ayah', 'ibu', 'wali santri', 'walisantri', 'orang_tua'],
+                    'no_telp_wali': ['no_telp_wali', 'no telp wali', 'telp_wali', 'telp wali', 'hp wali', 'no hp', 'hp', 'telp', 'telepon', 'no_hp', 'phone', 'no telp', 'no_telp'],
+                    'status': ['status', 'sts', 'aktif'],
+                    '_kelas_nama': ['kelas', 'kelas_nama', 'nama kelas', 'class', 'tingkat kelas'],
+                    '_halaqoh_nama': ['halaqoh', 'halaqah', 'kelompok', 'halaqoh_nama', 'nama halaqoh', 'group']
                 }
             case 'guru':
                 return {
@@ -292,17 +316,52 @@ const PengaturanPage = () => {
     const mapColumns = (headers, type) => {
         const mapping = getColumnMapping(type)
         const result = {}
+        const usedDbCols = new Set() // Track kolom yang sudah digunakan
 
+        // Untuk setiap header, cari match terbaik
         headers.forEach((header, idx) => {
-            const headerLower = header.toLowerCase().trim()
+            if (header === undefined || header === null) return
+
+            const headerLower = String(header).toLowerCase().trim()
+            if (!headerLower) return
+
+            let bestMatch = null
+            let bestMatchLength = 0
+
+            // Cari exact match atau alias yang paling cocok
             for (const [dbCol, aliases] of Object.entries(mapping)) {
-                if (aliases.some(alias => headerLower.includes(alias))) {
-                    result[idx] = dbCol
-                    break
+                // Skip jika kolom ini sudah digunakan
+                if (usedDbCols.has(dbCol)) continue
+
+                for (const alias of aliases) {
+                    // EXACT MATCH - prioritas tertinggi
+                    if (headerLower === alias) {
+                        bestMatch = dbCol
+                        bestMatchLength = Infinity // Exact match selalu menang
+                        break
+                    }
+
+                    // Cek apakah header SAMA PERSIS dengan alias (setelah normalisasi)
+                    const normalizedHeader = headerLower.replace(/[_\s-]/g, '')
+                    const normalizedAlias = alias.replace(/[_\s-]/g, '')
+                    if (normalizedHeader === normalizedAlias && alias.length > bestMatchLength) {
+                        bestMatch = dbCol
+                        bestMatchLength = alias.length
+                    }
                 }
+
+                if (bestMatchLength === Infinity) break // Sudah dapat exact match
+            }
+
+            if (bestMatch) {
+                result[idx] = bestMatch
+                usedDbCols.add(bestMatch)
             }
         })
 
+        console.log('Headers:', headers)
+        console.log('Map columns result:', result)
+        console.log('Mapped DB columns:', Object.values(result))
         return result
     }
 
@@ -310,58 +369,184 @@ const PengaturanPage = () => {
         const file = e.target.files[0]
         if (!file) return
 
+        setUploadingFile(true)
+        setUploadError('')
+        setImportResult({ success: 0, failed: 0, message: '' })
+
         try {
             const reader = new FileReader()
-            reader.onload = (event) => {
-                const data = new Uint8Array(event.target.result)
-                const workbook = XLSX.read(data, { type: 'array' })
-                const sheetName = workbook.SheetNames[0]
-                const sheet = workbook.Sheets[sheetName]
-                const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 })
 
-                if (jsonData.length < 2) {
-                    alert('File kosong atau tidak valid')
-                    return
-                }
-
-                const headers = jsonData[0]
-                const columnMap = mapColumns(headers, selectedDataType)
-
-                const mappedData = jsonData.slice(1).filter(row => row.length > 0).map(row => {
-                    const obj = {}
-                    Object.entries(columnMap).forEach(([colIdx, dbCol]) => {
-                        let value = row[parseInt(colIdx)]
-
-                        if (dbCol === 'jenis_kelamin' && value) {
-                            value = String(value).toLowerCase()
-                            if (value === 'l' || value.includes('laki')) {
-                                value = 'Laki-laki'
-                            } else if (value === 'p' || value.includes('perempuan')) {
-                                value = 'Perempuan'
-                            }
-                        }
-
-                        if (dbCol === 'status' && !value) {
-                            value = 'Aktif'
-                        }
-
-                        if (dbCol === 'kategori' && !value) {
-                            value = 'Madrosiyah'
-                        }
-
-                        if (value !== undefined && value !== '') {
-                            obj[dbCol] = value
-                        }
-                    })
-                    return obj
-                }).filter(obj => Object.keys(obj).length > 0)
-
-                setImportData(mappedData)
-                setShowPreview(true)
+            reader.onerror = () => {
+                setUploadError('Gagal membaca file. Pastikan file tidak corrupt.')
+                setUploadingFile(false)
             }
+
+            reader.onload = (event) => {
+                try {
+                    const data = new Uint8Array(event.target.result)
+                    const workbook = XLSX.read(data, { type: 'array' })
+
+                    console.log('Sheets found:', workbook.SheetNames)
+
+                    const sheetName = workbook.SheetNames[0]
+                    const sheet = workbook.Sheets[sheetName]
+                    const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' })
+
+                    console.log('Total rows in file:', jsonData.length)
+                    console.log('First 5 rows:', jsonData.slice(0, 5))
+
+                    // Filter out empty rows
+                    const nonEmptyRows = jsonData.filter(row =>
+                        row && row.length > 0 && row.some(cell => cell !== '' && cell !== null && cell !== undefined)
+                    )
+
+                    console.log('Non-empty rows:', nonEmptyRows.length)
+
+                    if (nonEmptyRows.length === 0) {
+                        setUploadError('File kosong. Tidak ada data yang ditemukan.')
+                        setUploadingFile(false)
+                        return
+                    }
+
+                    if (nonEmptyRows.length < 2) {
+                        setUploadError('File hanya memiliki header tanpa data. Minimal harus ada 1 baris data.')
+                        setUploadingFile(false)
+                        return
+                    }
+
+                    // Baris pertama yang tidak kosong adalah header
+                    const headers = nonEmptyRows[0]
+                    const dataRows = nonEmptyRows.slice(1)
+
+                    console.log('Headers:', headers)
+
+                    const columnMap = mapColumns(headers, selectedDataType)
+                    console.log('Column mapping:', columnMap)
+
+                    const mappedColumns = Object.values(columnMap)
+                    console.log('Mapped to DB columns:', mappedColumns)
+
+                    if (Object.keys(columnMap).length === 0) {
+                        const foundHeaders = headers.filter(h => h).join(', ')
+                        setUploadError(`Header kolom tidak dikenali.\n\nHeader di file: ${foundHeaders || '(kosong)'}\n\nHeader yang dikenali: nis, nama, jenis_kelamin, tempat_lahir, tanggal_lahir, alamat, nama_wali, no_telp_wali, status`)
+                        setUploadingFile(false)
+                        return
+                    }
+
+                    const mappedData = dataRows.map((row, rowIdx) => {
+                        const obj = {}
+                        Object.entries(columnMap).forEach(([colIdx, dbCol]) => {
+                            let value = row[parseInt(colIdx)]
+
+                            if (value === undefined || value === null || value === '') return
+
+                            // Konversi NIS/NISN ke string
+                            if ((dbCol === 'nis' || dbCol === 'nip') && value) {
+                                value = String(value).trim()
+                            }
+
+                            // Konversi tanggal Excel serial number ke date string
+                            if (dbCol === 'tanggal_lahir' && value) {
+                                if (typeof value === 'number') {
+                                    const excelEpoch = new Date(1899, 11, 30)
+                                    const date = new Date(excelEpoch.getTime() + value * 86400000)
+                                    value = date.toISOString().split('T')[0]
+                                } else if (typeof value === 'string' && value.includes('/')) {
+                                    const parts = value.split('/')
+                                    if (parts.length === 3) {
+                                        const day = parts[0].padStart(2, '0')
+                                        const month = parts[1].padStart(2, '0')
+                                        const year = parts[2].length === 2 ? '20' + parts[2] : parts[2]
+                                        value = `${year}-${month}-${day}`
+                                    }
+                                }
+                            }
+
+                            if (dbCol === 'jenis_kelamin' && value) {
+                                value = String(value).toLowerCase().trim()
+                                if (value === 'l' || value.includes('laki')) {
+                                    value = 'Laki-laki'
+                                } else if (value === 'p' || value.includes('perempuan')) {
+                                    value = 'Perempuan'
+                                }
+                            }
+
+                            if ((dbCol === 'no_telp_wali' || dbCol === 'no_telp') && value) {
+                                value = String(value).trim()
+                            }
+
+                            if (value !== undefined && value !== '' && value !== null) {
+                                obj[dbCol] = value
+                            }
+                        })
+
+                        // Set default values untuk field wajib
+                        if (!obj.status && Object.keys(obj).length > 0) {
+                            obj.status = 'Aktif'
+                        }
+
+                        // jenis_kelamin adalah field WAJIB - set default jika tidak ada
+                        if (!obj.jenis_kelamin && Object.keys(obj).length > 0 && selectedDataType === 'santri') {
+                            obj.jenis_kelamin = 'Laki-laki' // Default value
+                        }
+
+                        // Untuk guru juga perlu jenis_kelamin
+                        if (!obj.jenis_kelamin && Object.keys(obj).length > 0 && selectedDataType === 'guru') {
+                            obj.jenis_kelamin = 'Laki-laki' // Default value
+                        }
+
+                        return obj
+                    }).filter(obj => {
+                        // Filter: minimal harus ada nis/nip dan nama
+                        if (selectedDataType === 'santri') {
+                            return obj.nis && obj.nama
+                        } else if (selectedDataType === 'guru') {
+                            return obj.nip && obj.nama
+                        } else if (selectedDataType === 'kelas') {
+                            return obj.nama && obj.tingkat
+                        } else if (selectedDataType === 'mapel') {
+                            return obj.kode && obj.nama
+                        }
+                        return Object.keys(obj).length > 1
+                    })
+
+                    console.log('Mapped data count:', mappedData.length)
+                    console.log('Sample mapped data:', mappedData.slice(0, 3))
+
+                    if (mappedData.length === 0) {
+                        let requiredFields = ''
+                        if (selectedDataType === 'santri') {
+                            requiredFields = 'nis dan nama'
+                        } else if (selectedDataType === 'guru') {
+                            requiredFields = 'nip dan nama'
+                        } else if (selectedDataType === 'kelas') {
+                            requiredFields = 'nama dan tingkat'
+                        } else if (selectedDataType === 'mapel') {
+                            requiredFields = 'kode dan nama'
+                        }
+
+                        setUploadError(`Tidak ada data yang valid ditemukan.\n\nKolom yang ter-map: ${mappedColumns.join(', ') || '(tidak ada)'}\n\nField WAJIB untuk ${selectedDataType}: ${requiredFields}\n\nPastikan file Excel memiliki kolom tersebut dan data tidak kosong.`)
+                        setUploadingFile(false)
+                        return
+                    }
+
+                    setImportData(mappedData)
+                    setShowPreview(true)
+                    setUploadError('')
+                    setUploadingFile(false)
+
+                } catch (parseError) {
+                    console.error('Parse error:', parseError)
+                    setUploadError(`Gagal memproses file: ${parseError.message}`)
+                    setUploadingFile(false)
+                }
+            }
+
             reader.readAsArrayBuffer(file)
         } catch (err) {
-            alert('Error membaca file: ' + err.message)
+            console.error('File read error:', err)
+            setUploadError(`Error membaca file: ${err.message}`)
+            setUploadingFile(false)
         }
 
         e.target.value = ''
@@ -374,23 +559,92 @@ const PengaturanPage = () => {
         setImportResult({ success: 0, failed: 0, message: '' })
 
         try {
-            const { data, error } = await supabase.from(selectedDataType).insert(importData)
+            console.log('Importing data:', importData)
 
-            if (error) throw error
+            let dataToInsert = [...importData]
+
+            // Jika import santri, cek apakah ada _kelas_nama atau _halaqoh_nama yang perlu di-lookup
+            if (selectedDataType === 'santri') {
+                // Ambil daftar kelas dan halaqoh untuk lookup
+                const { data: kelasList } = await supabase.from('kelas').select('id, nama')
+                const { data: halaqohList } = await supabase.from('halaqoh').select('id, nama')
+
+                console.log('Lookup - Kelas:', kelasList?.length || 0, 'Halaqoh:', halaqohList?.length || 0)
+
+                // Proses setiap data untuk lookup ID
+                dataToInsert = importData.map(item => {
+                    const newItem = { ...item }
+
+                    // Lookup kelas_id dari nama kelas
+                    if (item._kelas_nama && kelasList) {
+                        const kelasNama = String(item._kelas_nama).toLowerCase().trim()
+                        const kelas = kelasList.find(k =>
+                            k.nama.toLowerCase().trim() === kelasNama ||
+                            k.nama.toLowerCase().includes(kelasNama) ||
+                            kelasNama.includes(k.nama.toLowerCase())
+                        )
+                        if (kelas) {
+                            newItem.kelas_id = kelas.id
+                            console.log(`Kelas matched: "${item._kelas_nama}" -> ${kelas.nama} (${kelas.id})`)
+                        } else {
+                            console.log(`Kelas tidak ditemukan: "${item._kelas_nama}"`)
+                        }
+                        delete newItem._kelas_nama // Hapus field sementara
+                    }
+
+                    // Lookup halaqoh_id dari nama halaqoh
+                    if (item._halaqoh_nama && halaqohList) {
+                        const halaqohNama = String(item._halaqoh_nama).toLowerCase().trim()
+                        const halaqoh = halaqohList.find(h =>
+                            h.nama.toLowerCase().trim() === halaqohNama ||
+                            h.nama.toLowerCase().includes(halaqohNama) ||
+                            halaqohNama.includes(h.nama.toLowerCase())
+                        )
+                        if (halaqoh) {
+                            newItem.halaqoh_id = halaqoh.id
+                            console.log(`Halaqoh matched: "${item._halaqoh_nama}" -> ${halaqoh.nama} (${halaqoh.id})`)
+                        } else {
+                            console.log(`Halaqoh tidak ditemukan: "${item._halaqoh_nama}"`)
+                        }
+                        delete newItem._halaqoh_nama // Hapus field sementara
+                    }
+
+                    return newItem
+                })
+
+                console.log('Data setelah lookup:', dataToInsert.slice(0, 3))
+            }
+
+            // Insert data
+            const { data, error } = await supabase.from(selectedDataType).insert(dataToInsert)
+
+            if (error) {
+                console.error('Supabase error:', error)
+                let errorMsg = error.message
+                if (error.message.includes('violates not-null constraint')) {
+                    errorMsg = 'Ada kolom wajib yang kosong. Pastikan kolom NIS dan Nama terisi.'
+                } else if (error.message.includes('duplicate key')) {
+                    errorMsg = 'Ada data duplikat dengan NIS yang sudah ada di database.'
+                } else if (error.message.includes('foreign key')) {
+                    errorMsg = 'Ada referensi kelas/halaqoh yang tidak ditemukan.'
+                }
+                throw new Error(errorMsg)
+            }
 
             setImportResult({
                 success: importData.length,
                 failed: 0,
-                message: `Berhasil mengimport ${importData.length} data ${selectedDataType}!`
+                message: `✅ Berhasil mengimport ${importData.length} data ${selectedDataType}!`
             })
 
             setImportData([])
             setShowPreview(false)
         } catch (err) {
+            console.error('Import error:', err)
             setImportResult({
                 success: 0,
                 failed: importData.length,
-                message: 'Gagal import: ' + err.message
+                message: '❌ Gagal import: ' + err.message
             })
         } finally {
             setImporting(false)
@@ -438,7 +692,7 @@ const PengaturanPage = () => {
                 <div className="settings-section">
                     <div className="section-header">
                         <h3>Daftar Pengguna</h3>
-                        <button className="btn btn-primary" onClick={() => { setEditingUser(null); setUserForm({ email: '', password: '', nama: '', role: 'guru' }); setShowUserModal(true) }}>
+                        <button className="btn btn-primary" onClick={() => { setEditingUser(null); setUserForm({ email: '', password: '', nama: '', role: 'guru', no_telp: '' }); setShowUserModal(true) }}>
                             <UserPlus size={16} /> Tambah Pengguna
                         </button>
                     </div>
@@ -474,6 +728,7 @@ const PengaturanPage = () => {
                                 <tr>
                                     <th>No</th>
                                     <th>Email</th>
+                                    <th>No. Telepon</th>
                                     <th>Nama</th>
                                     <th>Role</th>
                                     <th>Aksi</th>
@@ -481,9 +736,9 @@ const PengaturanPage = () => {
                             </thead>
                             <tbody>
                                 {loadingUsers ? (
-                                    <tr><td colSpan="5" className="text-center"><RefreshCw size={20} className="spin" /> Loading...</td></tr>
+                                    <tr><td colSpan="6" className="text-center"><RefreshCw size={20} className="spin" /> Loading...</td></tr>
                                 ) : users.length === 0 ? (
-                                    <tr><td colSpan="5" className="text-center">Belum ada data pengguna</td></tr>
+                                    <tr><td colSpan="6" className="text-center">Belum ada data pengguna</td></tr>
                                 ) : (
                                     users.map((user, idx) => {
                                         const roleInfo = getRoleBadge(user.role)
@@ -491,6 +746,7 @@ const PengaturanPage = () => {
                                             <tr key={user.id}>
                                                 <td>{idx + 1}</td>
                                                 <td>{user.email}</td>
+                                                <td>{user.no_telp || '-'}</td>
                                                 <td>{user.nama || '-'}</td>
                                                 <td>
                                                     <span className={`badge ${roleInfo.class}`}>
@@ -554,9 +810,26 @@ const PengaturanPage = () => {
                         <div className="step-number">2</div>
                         <div className="step-content">
                             <h4>Upload File Excel/CSV</h4>
-                            <div className="upload-area" onClick={() => fileInputRef.current?.click()}>
-                                <Upload size={40} />
-                                <p>Klik atau drag file Excel/CSV ke sini</p>
+
+                            {/* Loading Indicator */}
+                            {uploadingFile && (
+                                <div className="alert alert-info mb-3" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <RefreshCw size={18} className="spin" />
+                                    <span>Memproses file... Mohon tunggu</span>
+                                </div>
+                            )}
+
+                            {/* Error Display */}
+                            {uploadError && (
+                                <div className="alert alert-error mb-3" style={{ whiteSpace: 'pre-line' }}>
+                                    <AlertCircle size={18} style={{ marginRight: '8px', flexShrink: 0 }} />
+                                    <span>{uploadError}</span>
+                                </div>
+                            )}
+
+                            <div className="upload-area" onClick={() => !uploadingFile && fileInputRef.current?.click()} style={{ opacity: uploadingFile ? 0.6 : 1, cursor: uploadingFile ? 'wait' : 'pointer' }}>
+                                {uploadingFile ? <RefreshCw size={40} className="spin" /> : <Upload size={40} />}
+                                <p>{uploadingFile ? 'Memproses file...' : 'Klik atau drag file Excel/CSV ke sini'}</p>
                                 <span className="text-muted">Format: .xlsx, .xls, .csv</span>
                             </div>
                             <input
@@ -564,6 +837,7 @@ const PengaturanPage = () => {
                                 type="file"
                                 accept=".xlsx,.xls,.csv"
                                 onChange={handleFileUpload}
+                                disabled={uploadingFile}
                                 style={{ display: 'none' }}
                             />
 
@@ -633,16 +907,19 @@ const PengaturanPage = () => {
                                 {userError && <div className="alert alert-error mb-3">{userError}</div>}
                                 {userSuccess && <div className="alert alert-success mb-3">{userSuccess}</div>}
 
+                                <div className="info-box mb-3" style={{ background: '#f0f9ff', padding: '10px 12px', borderRadius: '6px', fontSize: '0.85rem', color: '#1e40af' }}>
+                                    💡 Isi <strong>Email</strong> atau <strong>No. Telepon</strong> (salah satu wajib). User akan login sesuai data yang diisi.
+                                </div>
+
                                 <div className="form-group">
-                                    <label className="form-label">Email *</label>
+                                    <label className="form-label">Email</label>
                                     <input
-                                        type="email"
+                                        type="text"
                                         className="form-control"
                                         value={userForm.email}
                                         onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
-                                        required
                                         disabled={editingUser}
-                                        placeholder="contoh@email.com"
+                                        placeholder="contoh@email.com (opsional jika ada no. telp)"
                                     />
                                 </div>
 
@@ -669,6 +946,17 @@ const PengaturanPage = () => {
                                         value={userForm.nama}
                                         onChange={(e) => setUserForm({ ...userForm, nama: e.target.value })}
                                         placeholder="Nama pengguna"
+                                    />
+                                </div>
+
+                                <div className="form-group">
+                                    <label className="form-label">No. Telepon</label>
+                                    <input
+                                        type="text"
+                                        className="form-control"
+                                        value={userForm.no_telp}
+                                        onChange={(e) => setUserForm({ ...userForm, no_telp: e.target.value })}
+                                        placeholder="Contoh: 081234567890 (opsional jika ada email)"
                                     />
                                 </div>
 

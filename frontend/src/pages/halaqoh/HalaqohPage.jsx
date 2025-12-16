@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Edit, Trash2, Users, Clock, RefreshCw } from 'lucide-react'
+import { Plus, Edit, Trash2, Users, Clock, RefreshCw, UserPlus, X, Check } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { logCreate, logUpdate, logDelete } from '../../lib/auditLog'
 import './Halaqoh.css'
@@ -9,6 +9,7 @@ const HalaqohPage = () => {
     const [loading, setLoading] = useState(true)
     const [showModal, setShowModal] = useState(false)
     const [showSantriModal, setShowSantriModal] = useState(false)
+    const [showAddSantriModal, setShowAddSantriModal] = useState(false)
     const [editData, setEditData] = useState(null)
     const [formData, setFormData] = useState({ nama: '', musyrif_id: '', waktu: '', keterangan: '' })
     const [guruList, setGuruList] = useState([])
@@ -17,6 +18,10 @@ const HalaqohPage = () => {
     const [santriList, setSantriList] = useState([])
     const [loadingSantri, setLoadingSantri] = useState(false)
     const [santriCounts, setSantriCounts] = useState({})
+    const [availableSantri, setAvailableSantri] = useState([])
+    const [selectedSantriIds, setSelectedSantriIds] = useState([])
+    const [savingSantri, setSavingSantri] = useState(false)
+    const [searchSantri, setSearchSantri] = useState('')
 
     useEffect(() => {
         fetchHalaqoh()
@@ -75,6 +80,85 @@ const HalaqohPage = () => {
             setLoadingSantri(false)
         }
     }
+
+    // Fetch santri untuk modal tambah
+    const fetchAvailableSantri = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('santri')
+                .select('id, nis, nama, jenis_kelamin, halaqoh_id')
+                .eq('status', 'Aktif')
+                .order('nama')
+            if (error) throw error
+            setAvailableSantri(data || [])
+        } catch (err) {
+            console.error('Error:', err.message)
+        }
+    }
+
+    // Buka modal tambah santri
+    const openAddSantriModal = async (halaqoh) => {
+        setSelectedHalaqoh(halaqoh)
+        setSelectedSantriIds([])
+        setSearchSantri('')
+        setShowAddSantriModal(true)
+        await fetchAvailableSantri()
+    }
+
+    // Toggle pilih santri
+    const toggleSantriSelection = (santriId) => {
+        setSelectedSantriIds(prev =>
+            prev.includes(santriId)
+                ? prev.filter(id => id !== santriId)
+                : [...prev, santriId]
+        )
+    }
+
+    // Simpan santri ke halaqoh
+    const handleAddSantriToHalaqoh = async () => {
+        if (selectedSantriIds.length === 0) return
+        setSavingSantri(true)
+        try {
+            const { error } = await supabase
+                .from('santri')
+                .update({ halaqoh_id: selectedHalaqoh.id })
+                .in('id', selectedSantriIds)
+
+            if (error) throw error
+
+            fetchHalaqoh()
+            fetchSantriByHalaqoh(selectedHalaqoh)
+            setShowAddSantriModal(false)
+            setSelectedSantriIds([])
+        } catch (err) {
+            alert('Error: ' + err.message)
+        } finally {
+            setSavingSantri(false)
+        }
+    }
+
+    // Hapus santri dari halaqoh
+    const handleRemoveSantriFromHalaqoh = async (santriId) => {
+        if (!confirm('Hapus santri ini dari halaqoh?')) return
+        try {
+            const { error } = await supabase
+                .from('santri')
+                .update({ halaqoh_id: null })
+                .eq('id', santriId)
+
+            if (error) throw error
+            fetchHalaqoh()
+            fetchSantriByHalaqoh(selectedHalaqoh)
+        } catch (err) {
+            alert('Error: ' + err.message)
+        }
+    }
+
+    // Filter santri berdasarkan search
+    const filteredAvailableSantri = availableSantri.filter(s =>
+        s.nama.toLowerCase().includes(searchSantri.toLowerCase()) ||
+        (s.nis && s.nis.toLowerCase().includes(searchSantri.toLowerCase()))
+    )
 
     const handleSubmit = async (e) => {
         e.preventDefault()
@@ -162,6 +246,7 @@ const HalaqohPage = () => {
                                 </div>
                             </div>
                             <div className="halaqoh-actions" onClick={e => e.stopPropagation()}>
+                                <button className="btn-icon btn-icon-success" title="Tambah Santri" onClick={() => openAddSantriModal(halaqoh)}><UserPlus size={16} /></button>
                                 <button className="btn-icon" onClick={() => handleEdit(halaqoh)}><Edit size={16} /></button>
                                 <button className="btn-icon btn-icon-danger" onClick={() => handleDelete(halaqoh.id)}><Trash2 size={16} /></button>
                             </div>
@@ -170,10 +255,10 @@ const HalaqohPage = () => {
                 </div>
             )}
 
-            {/* Santri Modal */}
+            {/* Santri Modal - Lihat Daftar Santri */}
             {showSantriModal && (
                 <div className="modal-overlay active">
-                    <div className="modal" style={{ maxWidth: '600px' }}>
+                    <div className="modal" style={{ maxWidth: '700px' }}>
                         <div className="modal-header">
                             <h3 className="modal-title"><Users size={20} /> Santri Halaqoh {selectedHalaqoh?.nama}</h3>
                             <button className="modal-close" onClick={() => setShowSantriModal(false)}>×</button>
@@ -186,7 +271,7 @@ const HalaqohPage = () => {
                             ) : (
                                 <table className="table">
                                     <thead>
-                                        <tr><th>NIS</th><th>Nama</th><th>L/P</th><th>Status</th></tr>
+                                        <tr><th>NIS</th><th>Nama</th><th>L/P</th><th>Status</th><th>Aksi</th></tr>
                                     </thead>
                                     <tbody>
                                         {santriList.map(s => (
@@ -195,6 +280,11 @@ const HalaqohPage = () => {
                                                 <td>{s.nama}</td>
                                                 <td>{s.jenis_kelamin === 'Laki-laki' ? 'L' : 'P'}</td>
                                                 <td><span className={`badge ${s.status === 'Aktif' ? 'badge-success' : 'badge-warning'}`}>{s.status}</span></td>
+                                                <td>
+                                                    <button className="btn-icon btn-icon-danger btn-sm" title="Hapus dari halaqoh" onClick={() => handleRemoveSantriFromHalaqoh(s.id)}>
+                                                        <X size={14} />
+                                                    </button>
+                                                </td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -202,7 +292,80 @@ const HalaqohPage = () => {
                             )}
                         </div>
                         <div className="modal-footer">
+                            <button className="btn btn-primary" onClick={() => openAddSantriModal(selectedHalaqoh)}><UserPlus size={16} /> Tambah Santri</button>
                             <button className="btn btn-secondary" onClick={() => setShowSantriModal(false)}>Tutup</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Add Santri Modal - Pilih Santri untuk Ditambahkan */}
+            {showAddSantriModal && (
+                <div className="modal-overlay active">
+                    <div className="modal" style={{ maxWidth: '700px' }}>
+                        <div className="modal-header">
+                            <h3 className="modal-title"><UserPlus size={20} /> Tambah Santri ke {selectedHalaqoh?.nama}</h3>
+                            <button className="modal-close" onClick={() => setShowAddSantriModal(false)}>×</button>
+                        </div>
+                        <div className="modal-body">
+                            <div className="form-group mb-3">
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    placeholder="Cari nama atau NIS santri..."
+                                    value={searchSantri}
+                                    onChange={e => setSearchSantri(e.target.value)}
+                                />
+                            </div>
+
+                            {selectedSantriIds.length > 0 && (
+                                <div className="alert alert-info mb-3">
+                                    <Check size={16} /> {selectedSantriIds.length} santri dipilih
+                                </div>
+                            )}
+
+                            <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                                <table className="table">
+                                    <thead>
+                                        <tr><th style={{ width: '40px' }}></th><th>NIS</th><th>Nama</th><th>Halaqoh Saat Ini</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        {filteredAvailableSantri.length === 0 ? (
+                                            <tr><td colSpan="4" className="text-center text-muted">Tidak ada santri ditemukan</td></tr>
+                                        ) : (
+                                            filteredAvailableSantri.map(s => {
+                                                const currentHalaqoh = halaqohList.find(h => h.id === s.halaqoh_id)
+                                                const isSelected = selectedSantriIds.includes(s.id)
+                                                return (
+                                                    <tr key={s.id} onClick={() => toggleSantriSelection(s.id)} style={{ cursor: 'pointer', backgroundColor: isSelected ? 'rgba(46, 204, 113, 0.1)' : 'transparent' }}>
+                                                        <td>
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={isSelected}
+                                                                onChange={() => { }}
+                                                                style={{ cursor: 'pointer' }}
+                                                            />
+                                                        </td>
+                                                        <td>{s.nis || '-'}</td>
+                                                        <td>{s.nama}</td>
+                                                        <td>{currentHalaqoh?.nama || <span className="text-muted">Belum ada</span>}</td>
+                                                    </tr>
+                                                )
+                                            })
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div className="modal-footer">
+                            <button className="btn btn-secondary" onClick={() => setShowAddSantriModal(false)}>Batal</button>
+                            <button
+                                className="btn btn-primary"
+                                onClick={handleAddSantriToHalaqoh}
+                                disabled={savingSantri || selectedSantriIds.length === 0}
+                            >
+                                {savingSantri ? <><RefreshCw size={16} className="spin" /> Menyimpan...</> : `Tambahkan ${selectedSantriIds.length} Santri`}
+                            </button>
                         </div>
                     </div>
                 </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Edit, Trash2, Users, RefreshCw, Eye, X } from 'lucide-react'
+import { Plus, Edit, Trash2, Users, RefreshCw, Eye, X, UserPlus, Check } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import './Kelas.css'
 
@@ -8,6 +8,7 @@ const KelasPage = () => {
     const [loading, setLoading] = useState(true)
     const [showModal, setShowModal] = useState(false)
     const [showSantriModal, setShowSantriModal] = useState(false)
+    const [showAddSantriModal, setShowAddSantriModal] = useState(false)
     const [editData, setEditData] = useState(null)
     const [formData, setFormData] = useState({ nama: '', wali_kelas_id: '' })
     const [guruList, setGuruList] = useState([])
@@ -16,6 +17,10 @@ const KelasPage = () => {
     const [santriList, setSantriList] = useState([])
     const [loadingSantri, setLoadingSantri] = useState(false)
     const [santriCounts, setSantriCounts] = useState({})
+    const [availableSantri, setAvailableSantri] = useState([])
+    const [selectedSantriIds, setSelectedSantriIds] = useState([])
+    const [savingSantri, setSavingSantri] = useState(false)
+    const [searchSantri, setSearchSantri] = useState('')
 
     useEffect(() => {
         fetchKelas()
@@ -75,6 +80,81 @@ const KelasPage = () => {
         }
     }
 
+    // Fetch santri yang belum punya kelas atau semua santri
+    const fetchAvailableSantri = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('santri')
+                .select('id, nis, nama, jenis_kelamin, kelas_id')
+                .eq('status', 'Aktif')
+                .order('nama')
+            if (error) throw error
+            // Filter santri yang belum punya kelas atau semua (bisa dipindah)
+            setAvailableSantri(data || [])
+        } catch (err) {
+            console.error('Error:', err.message)
+        }
+    }
+
+    // Buka modal tambah santri
+    const openAddSantriModal = async (kelas) => {
+        setSelectedKelas(kelas)
+        setSelectedSantriIds([])
+        setSearchSantri('')
+        setShowAddSantriModal(true)
+        await fetchAvailableSantri()
+    }
+
+    // Toggle pilih santri
+    const toggleSantriSelection = (santriId) => {
+        setSelectedSantriIds(prev =>
+            prev.includes(santriId)
+                ? prev.filter(id => id !== santriId)
+                : [...prev, santriId]
+        )
+    }
+
+    // Simpan santri ke kelas
+    const handleAddSantriToKelas = async () => {
+        if (selectedSantriIds.length === 0) return
+        setSavingSantri(true)
+        try {
+            const { error } = await supabase
+                .from('santri')
+                .update({ kelas_id: selectedKelas.id })
+                .in('id', selectedSantriIds)
+
+            if (error) throw error
+
+            // Refresh data
+            fetchKelas()
+            fetchSantriByKelas(selectedKelas)
+            setShowAddSantriModal(false)
+            setSelectedSantriIds([])
+        } catch (err) {
+            alert('Error: ' + err.message)
+        } finally {
+            setSavingSantri(false)
+        }
+    }
+
+    // Hapus santri dari kelas
+    const handleRemoveSantriFromKelas = async (santriId) => {
+        if (!confirm('Hapus santri ini dari kelas?')) return
+        try {
+            const { error } = await supabase
+                .from('santri')
+                .update({ kelas_id: null })
+                .eq('id', santriId)
+
+            if (error) throw error
+            fetchKelas()
+            fetchSantriByKelas(selectedKelas)
+        } catch (err) {
+            alert('Error: ' + err.message)
+        }
+    }
+
     const handleSubmit = async (e) => {
         e.preventDefault()
         setSaving(true)
@@ -123,6 +203,11 @@ const KelasPage = () => {
         }
     }
 
+    // Filter santri berdasarkan search
+    const filteredAvailableSantri = availableSantri.filter(s =>
+        s.nama.toLowerCase().includes(searchSantri.toLowerCase()) ||
+        (s.nis && s.nis.toLowerCase().includes(searchSantri.toLowerCase()))
+    )
     return (
         <div className="kelas-page">
             <div className="page-header">
@@ -154,6 +239,7 @@ const KelasPage = () => {
                                 <p className="wali-kelas">Wali: {kelas.wali_kelas?.nama || '-'}</p>
                             </div>
                             <div className="kelas-actions" onClick={e => e.stopPropagation()}>
+                                <button className="btn-icon btn-icon-success" title="Tambah Santri" onClick={() => openAddSantriModal(kelas)}><UserPlus size={16} /></button>
                                 <button className="btn-icon" onClick={() => handleEdit(kelas)}><Edit size={16} /></button>
                                 <button className="btn-icon btn-icon-danger" onClick={() => handleDelete(kelas.id)}><Trash2 size={16} /></button>
                             </div>
@@ -162,12 +248,12 @@ const KelasPage = () => {
                 </div>
             )}
 
-            {/* Santri Modal */}
+            {/* Santri Modal - Lihat Daftar Santri */}
             {showSantriModal && (
                 <div className="modal-overlay active">
-                    <div className="modal" style={{ maxWidth: '600px' }}>
+                    <div className="modal" style={{ maxWidth: '700px' }}>
                         <div className="modal-header">
-                            <h3 className="modal-title"><Users size={20} /> Santri {selectedKelas?.nama}</h3>
+                            <h3 className="modal-title"><Users size={20} /> Santri Kelas {selectedKelas?.nama}</h3>
                             <button className="modal-close" onClick={() => setShowSantriModal(false)}>×</button>
                         </div>
                         <div className="modal-body">
@@ -178,7 +264,7 @@ const KelasPage = () => {
                             ) : (
                                 <table className="table">
                                     <thead>
-                                        <tr><th>NIS</th><th>Nama</th><th>L/P</th><th>Status</th></tr>
+                                        <tr><th>NIS</th><th>Nama</th><th>L/P</th><th>Status</th><th>Aksi</th></tr>
                                     </thead>
                                     <tbody>
                                         {santriList.map(s => (
@@ -187,6 +273,11 @@ const KelasPage = () => {
                                                 <td>{s.nama}</td>
                                                 <td>{s.jenis_kelamin === 'Laki-laki' ? 'L' : 'P'}</td>
                                                 <td><span className={`badge ${s.status === 'Aktif' ? 'badge-success' : 'badge-warning'}`}>{s.status}</span></td>
+                                                <td>
+                                                    <button className="btn-icon btn-icon-danger btn-sm" title="Hapus dari kelas" onClick={() => handleRemoveSantriFromKelas(s.id)}>
+                                                        <X size={14} />
+                                                    </button>
+                                                </td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -194,7 +285,80 @@ const KelasPage = () => {
                             )}
                         </div>
                         <div className="modal-footer">
+                            <button className="btn btn-primary" onClick={() => openAddSantriModal(selectedKelas)}><UserPlus size={16} /> Tambah Santri</button>
                             <button className="btn btn-secondary" onClick={() => setShowSantriModal(false)}>Tutup</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Add Santri Modal - Pilih Santri untuk Ditambahkan */}
+            {showAddSantriModal && (
+                <div className="modal-overlay active">
+                    <div className="modal" style={{ maxWidth: '700px' }}>
+                        <div className="modal-header">
+                            <h3 className="modal-title"><UserPlus size={20} /> Tambah Santri ke {selectedKelas?.nama}</h3>
+                            <button className="modal-close" onClick={() => setShowAddSantriModal(false)}>×</button>
+                        </div>
+                        <div className="modal-body">
+                            <div className="form-group mb-3">
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    placeholder="Cari nama atau NIS santri..."
+                                    value={searchSantri}
+                                    onChange={e => setSearchSantri(e.target.value)}
+                                />
+                            </div>
+
+                            {selectedSantriIds.length > 0 && (
+                                <div className="alert alert-info mb-3">
+                                    <Check size={16} /> {selectedSantriIds.length} santri dipilih
+                                </div>
+                            )}
+
+                            <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                                <table className="table">
+                                    <thead>
+                                        <tr><th style={{ width: '40px' }}></th><th>NIS</th><th>Nama</th><th>Kelas Saat Ini</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        {filteredAvailableSantri.length === 0 ? (
+                                            <tr><td colSpan="4" className="text-center text-muted">Tidak ada santri ditemukan</td></tr>
+                                        ) : (
+                                            filteredAvailableSantri.map(s => {
+                                                const currentKelas = kelasList.find(k => k.id === s.kelas_id)
+                                                const isSelected = selectedSantriIds.includes(s.id)
+                                                return (
+                                                    <tr key={s.id} onClick={() => toggleSantriSelection(s.id)} style={{ cursor: 'pointer', backgroundColor: isSelected ? 'rgba(46, 204, 113, 0.1)' : 'transparent' }}>
+                                                        <td>
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={isSelected}
+                                                                onChange={() => { }}
+                                                                style={{ cursor: 'pointer' }}
+                                                            />
+                                                        </td>
+                                                        <td>{s.nis || '-'}</td>
+                                                        <td>{s.nama}</td>
+                                                        <td>{currentKelas?.nama || <span className="text-muted">Belum ada</span>}</td>
+                                                    </tr>
+                                                )
+                                            })
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div className="modal-footer">
+                            <button className="btn btn-secondary" onClick={() => setShowAddSantriModal(false)}>Batal</button>
+                            <button
+                                className="btn btn-primary"
+                                onClick={handleAddSantriToKelas}
+                                disabled={savingSantri || selectedSantriIds.length === 0}
+                            >
+                                {savingSantri ? <><RefreshCw size={16} className="spin" /> Menyimpan...</> : `Tambahkan ${selectedSantriIds.length} Santri`}
+                            </button>
                         </div>
                     </div>
                 </div>

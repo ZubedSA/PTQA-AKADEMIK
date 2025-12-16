@@ -61,6 +61,17 @@ const SemesterPage = () => {
         }
     }
 
+    const setInactive = async (id) => {
+        if (!confirm('Yakin ingin menonaktifkan semester ini? Tidak akan ada semester yang aktif setelah ini.')) return
+        try {
+            const { error } = await supabase.from('semester').update({ is_active: false }).eq('id', id)
+            if (error) throw error
+            fetchSemester()
+        } catch (err) {
+            alert('Error: ' + err.message)
+        }
+    }
+
     const formatDate = (date) => {
         if (!date) return '-'
         return new Date(date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -107,7 +118,11 @@ const SemesterPage = () => {
                                     </div>
                                 </div>
                             </div>
-                            {!sem.is_active && (
+                            {sem.is_active ? (
+                                <button className="btn btn-warning btn-sm" style={{ width: '100%', marginTop: '16px' }} onClick={() => setInactive(sem.id)}>
+                                    Nonaktifkan Semester
+                                </button>
+                            ) : (
                                 <button className="btn btn-secondary btn-sm" style={{ width: '100%', marginTop: '16px' }} onClick={() => setActive(sem.id)}>
                                     Set sebagai Aktif
                                 </button>

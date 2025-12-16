@@ -16,25 +16,27 @@ import {
     ClipboardList,
     LogOut,
     X,
-    Settings
+    Settings,
+    UserCircle
 } from 'lucide-react'
 import './Sidebar.css'
 
 // Menu items dengan role yang diizinkan
 // roles: ['admin', 'guru', 'wali'] - jika undefined/kosong = semua role
 const menuItems = [
-    { path: '/', icon: LayoutDashboard, label: 'Dashboard', roles: ['admin', 'guru', 'wali'] },
+    { path: '/', icon: LayoutDashboard, label: 'Dashboard', roles: ['admin', 'guru'] },
     { path: '/santri', icon: Users, label: 'Data Santri', roles: ['admin'] },
     { path: '/guru', icon: GraduationCap, label: 'Data Guru', roles: ['admin'] },
     { path: '/kelas', icon: Home, label: 'Kelas', roles: ['admin'] },
     { path: '/halaqoh', icon: Circle, label: 'Halaqoh', roles: ['admin', 'guru'] },
     { path: '/mapel', icon: BookOpen, label: 'Mapel', roles: ['admin'] },
     { path: '/input-nilai', icon: PenLine, label: 'Input Nilai', roles: ['admin', 'guru'] },
-    { path: '/rekap-nilai', icon: FileText, label: 'Rekap Nilai', roles: ['admin', 'guru', 'wali'] },
+    { path: '/rekap-nilai', icon: FileText, label: 'Rekap Nilai', roles: ['admin', 'guru'] },
     { path: '/hafalan', icon: BookMarked, label: 'Hafalan', roles: ['admin', 'guru'] },
     { path: '/presensi', icon: CalendarCheck, label: 'Presensi', roles: ['admin', 'guru'] },
     { path: '/semester', icon: Calendar, label: 'Semester', roles: ['admin'] },
-    { path: '/laporan', icon: Download, label: 'Laporan', roles: ['admin', 'guru', 'wali'] },
+    { path: '/laporan', icon: Download, label: 'Laporan', roles: ['admin', 'guru'] },
+    { path: '/wali-santri', icon: UserCircle, label: 'Wali Santri', roles: ['admin', 'guru', 'wali'] },
     { path: '/audit-log', icon: ClipboardList, label: 'Audit Log', roles: ['admin'] },
     { path: '/pengaturan', icon: Settings, label: 'Pengaturan', roles: ['admin'] },
 ]

@@ -9,7 +9,7 @@ const Login = () => {
     const { signIn, signUp } = useAuth()
 
     const [isRegister, setIsRegister] = useState(false)
-    const [email, setEmail] = useState('')
+    const [emailOrPhone, setEmailOrPhone] = useState('')
     const [password, setPassword] = useState('')
     const [confirmPassword, setConfirmPassword] = useState('')
     const [showPassword, setShowPassword] = useState(false)
@@ -23,13 +23,13 @@ const Login = () => {
 
         // Map error messages ke bahasa Indonesia
         if (errorMsg.includes('Invalid login credentials')) {
-            return 'Email atau password salah. Pastikan data yang Anda masukkan benar.'
+            return 'Email/No. Telepon atau password salah. Pastikan data yang Anda masukkan benar.'
         }
         if (errorMsg.includes('Email not confirmed')) {
             return 'Email belum dikonfirmasi. Silakan cek email Anda untuk verifikasi.'
         }
-        if (errorMsg.includes('User not found')) {
-            return 'Akun dengan email ini tidak ditemukan.'
+        if (errorMsg.includes('User not found') || errorMsg.includes('Akun tidak ditemukan')) {
+            return 'Akun dengan email/no. telepon ini tidak ditemukan.'
         }
         if (errorMsg.includes('Password should be at least')) {
             return 'Password minimal 6 karakter.'
@@ -50,6 +50,14 @@ const Login = () => {
         return errorMsg
     }
 
+    // Deteksi apakah input adalah nomor telepon
+    const isPhoneNumber = (input) => {
+        // Hapus spasi dan karakter non-digit kecuali +
+        const cleaned = input.replace(/[^\d+]/g, '')
+        // Cek format nomor telepon Indonesia (08xxx, +62xxx, 62xxx)
+        return /^(\+62|62|08)\d{8,12}$/.test(cleaned)
+    }
+
     const handleSubmit = async (e) => {
         e.preventDefault()
         setError('')
@@ -58,18 +66,27 @@ const Login = () => {
 
         try {
             if (isRegister) {
+                // Registrasi tetap pakai email
+                if (!emailOrPhone.includes('@')) {
+                    throw new Error('Untuk registrasi, silakan gunakan email')
+                }
                 if (password !== confirmPassword) throw new Error('Password dan konfirmasi password tidak sama')
                 if (password.length < 6) throw new Error('Password minimal 6 karakter')
-                await signUp(email, password)
+                await signUp(emailOrPhone, password)
                 setSuccess('Registrasi berhasil! Silakan login dengan akun baru Anda.')
                 setIsRegister(false)
                 setPassword('')
             } else {
-                if (!email) throw new Error('Email harus diisi')
+                if (!emailOrPhone) throw new Error('Email atau No. Telepon harus diisi')
                 if (!password) throw new Error('Password harus diisi')
 
-                await signIn(email, password)
-                navigate('/')
+                const { role } = await signIn(emailOrPhone, password)
+                // Redirect berdasarkan role
+                if (role === 'wali') {
+                    navigate('/wali-santri')
+                } else {
+                    navigate('/')
+                }
             }
         } catch (err) {
             console.error('Login error:', err)
@@ -95,14 +112,22 @@ const Login = () => {
                 {/* Form */}
                 <form onSubmit={handleSubmit}>
                     <div className="input-group">
-                        <label>Email</label>
+                        <label>{isRegister ? 'Email' : 'Email atau No. Telepon'}</label>
                         <input
-                            type="email"
-                            placeholder="Masukkan email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
+                            type="text"
+                            placeholder={isRegister ? 'Masukkan email' : 'Email atau nomor telepon'}
+                            value={emailOrPhone}
+                            onChange={(e) => setEmailOrPhone(e.target.value)}
                             required
                         />
+                        {!isRegister && emailOrPhone && (
+                            <span className="input-hint">
+                                {isPhoneNumber(emailOrPhone) ? '📱 Login dengan No. Telepon' : '✉️ Login dengan Email'}
+                            </span>
+                        )}
+                        {isRegister && (
+                            <span className="input-hint">No. Telepon untuk login bisa ditambahkan oleh Admin</span>
+                        )}
                     </div>
 
                     <div className="input-group">
@@ -158,3 +183,4 @@ const Login = () => {
 }
 
 export default Login
+

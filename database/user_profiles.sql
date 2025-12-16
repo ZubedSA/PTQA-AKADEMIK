@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS user_profiles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
     email VARCHAR(255),
+    no_telp VARCHAR(20),
     nama VARCHAR(255),
     role VARCHAR(20) DEFAULT 'admin' CHECK (role IN ('admin', 'guru', 'wali')),
     santri_id UUID REFERENCES santri(id),
@@ -15,6 +16,9 @@ CREATE TABLE IF NOT EXISTS user_profiles (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     UNIQUE(user_id)
 );
+
+-- 1b. Tambah kolom no_telp jika belum ada (untuk existing table)
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS no_telp VARCHAR(20);
 
 -- 2. Enable RLS
 ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
@@ -37,3 +41,10 @@ ON CONFLICT (user_id) DO NOTHING;
 
 -- 5. Verifikasi data
 SELECT * FROM user_profiles;
+
+-- =============================================
+-- CONTOH: Tambah user wali santri dengan no_telp
+-- =============================================
+-- INSERT INTO user_profiles (user_id, email, no_telp, nama, role, santri_id)
+-- VALUES ('uuid-dari-auth-users', 'wali@example.com', '081234567890', 'Nama Wali', 'wali', 'uuid-santri');
+
