@@ -307,3 +307,146 @@
         justify-content: center;
     }
 }
+
+/* Pembinaan Tabs - Equal width buttons */
+.pembinaan-tabs {
+    display: table;
+    table-layout: fixed;
+    width: 100%;
+    max-width: 450px;
+    border-spacing: 8px 0;
+}
+
+.pembinaan-tabs .tab-btn {
+    display: table-cell;
+    width: 33.33%;
+    padding: 12px 10px;
+    text-align: center;
+    vertical-align: middle;
+    box-sizing: border-box;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    background: var(--bg-white);
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.pembinaan-tabs .tab-btn:hover {
+    background: var(--hover-light);
+}
+
+.pembinaan-tabs .tab-btn.active {
+    background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+    color: white;
+    border-color: transparent;
+}
+
+.pembinaan-tabs .tab-btn svg {
+    vertical-align: middle;
+    margin-right: 6px;
+}
+
+@media (max-width: 576px) {
+    .pembinaan-tabs {
+        border-spacing: 4px 0;
+        max-width: 100%;
+    }
+
+    .pembinaan-tabs .tab-btn {
+        padding: 10px 6px;
+        font-size: 0.75rem;
+    }
+
+    .pembinaan-tabs .tab-btn svg {
+        display: none;
+    }
+}
+
+/* Taujihad Styles */
+.taujihad-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.taujihad-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 16px;
+    background: var(--bg-light);
+    border-radius: var(--border-radius-sm);
+    border: 1px solid var(--border-color);
+}
+
+.taujihad-santri-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.taujihad-santri-info .santri-name {
+    font-weight: 600;
+    color: var(--text-dark);
+    font-size: 0.95rem;
+}
+
+.taujihad-santri-info .santri-class {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    background: var(--bg-white);
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+}
+
+.taujihad-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    font-size: 0.9rem;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 60px;
+    background: var(--bg-white);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.taujihad-input:focus {
+    outline: none;
+    border-color: var(--primary-green);
+    box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1);
+}
+
+.taujihad-input::placeholder {
+    color: var(--text-muted);
+}
+
+/* Spinning animation for loading */
+.spinning {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@media (max-width: 576px) {
+    .taujihad-item {
+        padding: 12px;
+    }
+
+    .taujihad-input {
+        font-size: 0.85rem;
+    }
+}

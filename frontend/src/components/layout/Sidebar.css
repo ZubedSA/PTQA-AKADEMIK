@@ -98,3 +98,60 @@
         display: none !important;
     }
 }
+
+/* ========== DARK MODE - PREMIUM GOLD SIDEBAR ========== */
+[data-theme="dark"] .sidebar {
+    background: linear-gradient(180deg, #0a0f1a 0%, #111827 100%);
+    border-right: 1px solid rgba(212, 165, 56, 0.1);
+}
+
+[data-theme="dark"] .logo-section {
+    border-bottom: 1px solid rgba(212, 165, 56, 0.15);
+}
+
+[data-theme="dark"] .logo-text {
+    color: #d4a538;
+    text-shadow: 0 0 20px rgba(212, 165, 56, 0.3);
+}
+
+[data-theme="dark"] .nav-link {
+    color: #94a3b8;
+}
+
+[data-theme="dark"] .nav-link:hover {
+    background: rgba(212, 165, 56, 0.1);
+    color: #f4c430;
+}
+
+[data-theme="dark"] .nav-link:hover svg {
+    color: #d4a538;
+}
+
+[data-theme="dark"] .nav-link.active {
+    background: linear-gradient(90deg, rgba(212, 165, 56, 0.2) 0%, rgba(212, 165, 56, 0.05) 100%);
+    color: #f4c430;
+    border-left: 3px solid #d4a538;
+}
+
+[data-theme="dark"] .nav-link.active svg {
+    color: #d4a538;
+}
+
+[data-theme="dark"] .nav-link.active::before {
+    background: linear-gradient(180deg, #d4a538, #f4c430);
+}
+
+/* Sidebar Footer Dark Mode */
+[data-theme="dark"] .sidebar-footer {
+    border-top: 1px solid rgba(212, 165, 56, 0.15);
+}
+
+[data-theme="dark"] .sidebar-toggle {
+    background: rgba(212, 165, 56, 0.1);
+    color: #d4a538;
+}
+
+[data-theme="dark"] .sidebar-toggle:hover {
+    background: rgba(212, 165, 56, 0.2);
+    color: #f4c430;
+}

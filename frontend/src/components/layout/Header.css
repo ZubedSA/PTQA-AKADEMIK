@@ -322,3 +322,133 @@
     border-radius: 4px;
     letter-spacing: 0.5px;
 }
+
+/* Theme Toggle Button */
+.theme-toggle-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    border: none;
+    background: linear-gradient(135deg, var(--bg-light) 0%, var(--bg-white) 100%);
+    color: var(--text-body);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow-sm);
+    position: relative;
+    overflow: hidden;
+}
+
+.theme-toggle-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--primary-gradient);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    border-radius: 12px;
+}
+
+.theme-toggle-btn:hover {
+    transform: scale(1.05);
+    box-shadow: var(--shadow-md);
+}
+
+.theme-toggle-btn:hover::before {
+    opacity: 1;
+}
+
+.theme-toggle-btn:hover svg {
+    color: white;
+    position: relative;
+    z-index: 1;
+}
+
+.theme-toggle-btn svg {
+    transition: all 0.3s ease;
+}
+
+.theme-toggle-btn:active {
+    transform: scale(0.95);
+}
+
+/* Dark mode specific for toggle button */
+[data-theme="dark"] .theme-toggle-btn {
+    background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
+    color: #fbbf24;
+}
+
+[data-theme="dark"] .theme-toggle-btn:hover {
+    box-shadow: 0 4px 15px rgba(251, 191, 36, 0.3);
+}
+
+/* Dark mode adjustments for header elements */
+[data-theme="dark"] .user-profile {
+    background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
+    border-color: #475569;
+}
+
+[data-theme="dark"] .user-profile:hover {
+    background: linear-gradient(135deg, #475569 0%, #334155 100%);
+}
+
+[data-theme="dark"] .profile-dropdown {
+    background: #1e293b;
+    border: 1px solid #334155;
+}
+
+[data-theme="dark"] .dropdown-item {
+    color: #e2e8f0;
+}
+
+[data-theme="dark"] .dropdown-item:hover {
+    background: #334155;
+}
+
+[data-theme="dark"] .modal {
+    background: #1e293b;
+}
+
+[data-theme="dark"] .modal-header,
+[data-theme="dark"] .modal-footer {
+    border-color: #334155;
+}
+
+[data-theme="dark"] .profile-card {
+    background: #0f172a;
+}
+
+[data-theme="dark"] .profile-row label {
+    color: #94a3b8;
+}
+
+[data-theme="dark"] .profile-row span {
+    color: #e2e8f0;
+}
+
+/* Dark Mode - Premium Gold Clock */
+[data-theme="dark"] .header-clock {
+    background: linear-gradient(135deg, rgba(212, 165, 56, 0.15) 0%, rgba(212, 165, 56, 0.05) 100%);
+    border: 1px solid rgba(212, 165, 56, 0.2);
+}
+
+[data-theme="dark"] .header-clock .clock-icon {
+    color: #d4a538;
+}
+
+[data-theme="dark"] .header-clock .clock-time {
+    color: #f4c430;
+    text-shadow: 0 0 10px rgba(212, 165, 56, 0.3);
+}
+
+[data-theme="dark"] .header-clock .clock-date {
+    color: rgba(212, 165, 56, 0.8);
+}
+
+[data-theme="dark"] .header-clock .clock-wib {
+    background: linear-gradient(135deg, #b8860b 0%, #d4a538 100%);
+    color: #0f172a;
+    font-weight: 700;
+}

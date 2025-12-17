@@ -1,11 +1,13 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import { Bell, User, Menu, ChevronDown, Settings, LogOut, UserCircle, Clock } from 'lucide-react'
+import { useTheme } from '../../context/ThemeContext'
+import { Bell, User, Menu, ChevronDown, Settings, LogOut, UserCircle, Clock, Sun, Moon } from 'lucide-react'
 import './Header.css'
 
 const Header = ({ onMenuClick }) => {
     const { user, userProfile, role, signOut } = useAuth()
+    const { theme, toggleTheme, isDark } = useTheme()
     const navigate = useNavigate()
     const [showDropdown, setShowDropdown] = useState(false)
     const [showProfileModal, setShowProfileModal] = useState(false)
@@ -119,6 +121,15 @@ const Header = ({ onMenuClick }) => {
                         </div>
                         <span className="clock-wib">WIB</span>
                     </div>
+
+                    {/* Theme Toggle Button */}
+                    <button
+                        className="theme-toggle-btn"
+                        onClick={toggleTheme}
+                        title={isDark ? 'Mode Siang' : 'Mode Malam'}
+                    >
+                        {isDark ? <Sun size={20} /> : <Moon size={20} />}
+                    </button>
 
                     <button className="notification-btn">
                         <Bell size={20} />

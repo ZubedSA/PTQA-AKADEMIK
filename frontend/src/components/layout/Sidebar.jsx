@@ -33,7 +33,7 @@ const menuItems = [
     { path: '/input-nilai', icon: PenLine, label: 'Input Nilai', roles: ['admin', 'guru'] },
     { path: '/rekap-nilai', icon: FileText, label: 'Rekap Nilai', roles: ['admin', 'guru'] },
     { path: '/hafalan', icon: BookMarked, label: 'Hafalan', roles: ['admin', 'guru'] },
-    { path: '/presensi', icon: CalendarCheck, label: 'Presensi', roles: ['admin', 'guru'] },
+    { path: '/presensi', icon: CalendarCheck, label: 'Pembinaan Santri', roles: ['admin', 'guru'] },
     { path: '/semester', icon: Calendar, label: 'Semester', roles: ['admin'] },
     { path: '/laporan', icon: Download, label: 'Laporan', roles: ['admin', 'guru'] },
     { path: '/wali-santri', icon: UserCircle, label: 'Wali Santri', roles: ['admin', 'guru', 'wali'] },

@@ -200,6 +200,14 @@ const LaporanPage = () => {
                 .eq('semester_id', filters.semester)
                 .single()
 
+            // Fetch taujihad
+            const { data: taujihadData } = await supabase
+                .from('taujihad')
+                .select('catatan')
+                .eq('santri_id', filters.santri)
+                .eq('semester_id', filters.semester)
+                .single()
+
             // Calculate stats
             const nilaiList = nilaiData || []
             const totalNilai = nilaiList.reduce((sum, n) => sum + (n.nilai_akhir || 0), 0)
@@ -226,6 +234,7 @@ const LaporanPage = () => {
                     totalHafalan: pencapaianData?.total_hafalan || '-'
                 },
                 perilaku: perilakuData || { ketekunan: 'Baik', kedisiplinan: 'Baik', kebersihan: 'Baik', kerapian: 'Baik' },
+                taujihad: taujihadData?.catatan || '',
                 stats: { rataRata, grade: getGrade(rataRata), totalMapel: nilaiList.length }
             })
             setShowRaport(true)
@@ -464,7 +473,8 @@ const LaporanPage = () => {
             doc.setDrawColor(200)
             doc.rect(14, tauY + 2, pageWidth - 28, 15)
             doc.setFontSize(8)
-            doc.text('Alhamdulillah, santri menunjukkan perkembangan yang baik. Terus semangat!', 16, tauY + 10)
+            const taujihatText = raportData.taujihad || 'Alhamdulillah, santri menunjukkan perkembangan yang baik. Terus semangat!'
+            doc.text(taujihatText.substring(0, 120), 16, tauY + 10)
 
             // Tanggal
             const sigY = tauY + 25
@@ -801,7 +811,7 @@ const LaporanPage = () => {
                             {/* Taujihat Musyrif */}
                             <div className="raport-taujihat">
                                 <strong>Taujihat Musyrif</strong>
-                                <p>Alhamdulillah, santri menunjukkan perkembangan yang baik dalam proses pembelajaran. Terus semangat dan perbanyak belajar dari kesalahan.</p>
+                                <p>{raportData.taujihad || 'Alhamdulillah, santri menunjukkan perkembangan yang baik dalam proses pembelajaran. Terus semangat dan perbanyak belajar dari kesalahan.'}</p>
                             </div>
 
                             {/* Tanggal & Tanda Tangan */}

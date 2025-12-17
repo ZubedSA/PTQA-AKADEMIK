@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
+import { ThemeProvider } from './context/ThemeContext'
 import Layout from './components/layout/Layout'
 import RoleGuard from './components/auth/RoleGuard'
 import Login from './pages/Login'
@@ -26,56 +27,56 @@ import './index.css'
 
 function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <Routes>
-          {/* Login Route */}
-          <Route path="/login" element={<Login />} />
+    <ThemeProvider>
+      <BrowserRouter>
+        <AuthProvider>
+          <Routes>
+            {/* Login Route */}
+            <Route path="/login" element={<Login />} />
 
-          {/* Protected Routes */}
-          <Route element={<Layout />}>
-            {/* Dashboard - Admin + Guru saja */}
-            <Route path="/" element={<RoleGuard allowedRoles={['admin', 'guru']} redirectTo="/wali-santri"><Dashboard /></RoleGuard>} />
+            {/* Protected Routes */}
+            <Route element={<Layout />}>
+              {/* Dashboard - Admin + Guru saja */}
+              <Route path="/" element={<RoleGuard allowedRoles={['admin', 'guru']} redirectTo="/wali-santri"><Dashboard /></RoleGuard>} />
 
-            {/* Admin Only Routes */}
-            <Route path="/santri" element={<RoleGuard allowedRoles={['admin']} redirectTo="/wali-santri"><SantriList /></RoleGuard>} />
-            <Route path="/santri/create" element={<RoleGuard allowedRoles={['admin']} redirectTo="/wali-santri"><SantriForm /></RoleGuard>} />
-            <Route path="/santri/:id" element={<RoleGuard allowedRoles={['admin']} redirectTo="/wali-santri"><SantriForm /></RoleGuard>} />
-            <Route path="/santri/:id/edit" element={<RoleGuard allowedRoles={['admin']} redirectTo="/wali-santri"><SantriForm /></RoleGuard>} />
-            <Route path="/guru" element={<RoleGuard allowedRoles={['admin']} redirectTo="/wali-santri"><GuruList /></RoleGuard>} />
-            <Route path="/guru/create" element={<RoleGuard allowedRoles={['admin']} redirectTo="/wali-santri"><GuruForm /></RoleGuard>} />
-            <Route path="/guru/:id" element={<RoleGuard allowedRoles={['admin']} redirectTo="/wali-santri"><GuruForm /></RoleGuard>} />
-            <Route path="/guru/:id/edit" element={<RoleGuard allowedRoles={['admin']} redirectTo="/wali-santri"><GuruForm /></RoleGuard>} />
-            <Route path="/kelas" element={<RoleGuard allowedRoles={['admin']} redirectTo="/wali-santri"><KelasPage /></RoleGuard>} />
-            <Route path="/mapel" element={<RoleGuard allowedRoles={['admin']} redirectTo="/wali-santri"><MapelPage /></RoleGuard>} />
-            <Route path="/semester" element={<RoleGuard allowedRoles={['admin']} redirectTo="/wali-santri"><SemesterPage /></RoleGuard>} />
-            <Route path="/audit-log" element={<RoleGuard allowedRoles={['admin']} redirectTo="/wali-santri"><AuditLogPage /></RoleGuard>} />
-            <Route path="/pengaturan" element={<RoleGuard allowedRoles={['admin']} redirectTo="/wali-santri"><PengaturanPage /></RoleGuard>} />
+              {/* Admin Only Routes */}
+              <Route path="/santri" element={<RoleGuard allowedRoles={['admin']} redirectTo="/wali-santri"><SantriList /></RoleGuard>} />
+              <Route path="/santri/create" element={<RoleGuard allowedRoles={['admin']} redirectTo="/wali-santri"><SantriForm /></RoleGuard>} />
+              <Route path="/santri/:id" element={<RoleGuard allowedRoles={['admin']} redirectTo="/wali-santri"><SantriForm /></RoleGuard>} />
+              <Route path="/santri/:id/edit" element={<RoleGuard allowedRoles={['admin']} redirectTo="/wali-santri"><SantriForm /></RoleGuard>} />
+              <Route path="/guru" element={<RoleGuard allowedRoles={['admin']} redirectTo="/wali-santri"><GuruList /></RoleGuard>} />
+              <Route path="/guru/create" element={<RoleGuard allowedRoles={['admin']} redirectTo="/wali-santri"><GuruForm /></RoleGuard>} />
+              <Route path="/guru/:id" element={<RoleGuard allowedRoles={['admin']} redirectTo="/wali-santri"><GuruForm /></RoleGuard>} />
+              <Route path="/guru/:id/edit" element={<RoleGuard allowedRoles={['admin']} redirectTo="/wali-santri"><GuruForm /></RoleGuard>} />
+              <Route path="/kelas" element={<RoleGuard allowedRoles={['admin']} redirectTo="/wali-santri"><KelasPage /></RoleGuard>} />
+              <Route path="/mapel" element={<RoleGuard allowedRoles={['admin']} redirectTo="/wali-santri"><MapelPage /></RoleGuard>} />
+              <Route path="/semester" element={<RoleGuard allowedRoles={['admin']} redirectTo="/wali-santri"><SemesterPage /></RoleGuard>} />
+              <Route path="/audit-log" element={<RoleGuard allowedRoles={['admin']} redirectTo="/wali-santri"><AuditLogPage /></RoleGuard>} />
+              <Route path="/pengaturan" element={<RoleGuard allowedRoles={['admin']} redirectTo="/wali-santri"><PengaturanPage /></RoleGuard>} />
 
-            {/* Admin + Guru Routes */}
-            <Route path="/halaqoh" element={<RoleGuard allowedRoles={['admin', 'guru']} redirectTo="/wali-santri"><HalaqohPage /></RoleGuard>} />
-            <Route path="/input-nilai" element={<RoleGuard allowedRoles={['admin', 'guru']} redirectTo="/wali-santri"><InputNilaiPage /></RoleGuard>} />
-            <Route path="/hafalan" element={<RoleGuard allowedRoles={['admin', 'guru']} redirectTo="/wali-santri"><HafalanList /></RoleGuard>} />
-            <Route path="/hafalan/create" element={<RoleGuard allowedRoles={['admin', 'guru']} redirectTo="/wali-santri"><HafalanForm /></RoleGuard>} />
-            <Route path="/hafalan/:id/edit" element={<RoleGuard allowedRoles={['admin', 'guru']} redirectTo="/wali-santri"><HafalanForm /></RoleGuard>} />
-            <Route path="/presensi" element={<RoleGuard allowedRoles={['admin', 'guru']} redirectTo="/wali-santri"><PresensiPage /></RoleGuard>} />
+              {/* Admin + Guru Routes */}
+              <Route path="/halaqoh" element={<RoleGuard allowedRoles={['admin', 'guru']} redirectTo="/wali-santri"><HalaqohPage /></RoleGuard>} />
+              <Route path="/input-nilai" element={<RoleGuard allowedRoles={['admin', 'guru']} redirectTo="/wali-santri"><InputNilaiPage /></RoleGuard>} />
+              <Route path="/hafalan" element={<RoleGuard allowedRoles={['admin', 'guru']} redirectTo="/wali-santri"><HafalanList /></RoleGuard>} />
+              <Route path="/hafalan/create" element={<RoleGuard allowedRoles={['admin', 'guru']} redirectTo="/wali-santri"><HafalanForm /></RoleGuard>} />
+              <Route path="/hafalan/:id/edit" element={<RoleGuard allowedRoles={['admin', 'guru']} redirectTo="/wali-santri"><HafalanForm /></RoleGuard>} />
+              <Route path="/presensi" element={<RoleGuard allowedRoles={['admin', 'guru']} redirectTo="/wali-santri"><PresensiPage /></RoleGuard>} />
 
-            {/* Admin + Guru Routes (Laporan) */}
-            <Route path="/rekap-nilai" element={<RoleGuard allowedRoles={['admin', 'guru']} redirectTo="/wali-santri"><RekapNilaiPage /></RoleGuard>} />
-            <Route path="/laporan" element={<RoleGuard allowedRoles={['admin', 'guru']} redirectTo="/wali-santri"><LaporanPage /></RoleGuard>} />
+              {/* Admin + Guru Routes (Laporan) */}
+              <Route path="/rekap-nilai" element={<RoleGuard allowedRoles={['admin', 'guru']} redirectTo="/wali-santri"><RekapNilaiPage /></RoleGuard>} />
+              <Route path="/laporan" element={<RoleGuard allowedRoles={['admin', 'guru']} redirectTo="/wali-santri"><LaporanPage /></RoleGuard>} />
 
-            {/* Wali Santri - Semua Role bisa akses */}
-            <Route path="/wali-santri" element={<WaliSantriPage />} />
+              {/* Wali Santri - Semua Role bisa akses */}
+              <Route path="/wali-santri" element={<WaliSantriPage />} />
 
-            {/* Profil Settings - Semua Role */}
-            <Route path="/profil-settings" element={<ProfilSettingsPage />} />
-          </Route>
-        </Routes>
-      </AuthProvider>
-    </BrowserRouter>
+              {/* Profil Settings - Semua Role */}
+              <Route path="/profil-settings" element={<ProfilSettingsPage />} />
+            </Route>
+          </Routes>
+        </AuthProvider>
+      </BrowserRouter>
+    </ThemeProvider>
   )
 }
 
 export default App
-
-

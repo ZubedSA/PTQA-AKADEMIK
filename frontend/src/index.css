@@ -25,16 +25,22 @@
   --info: #3b82f6;
   --info-light: #dbeafe;
 
-  /* Neutral Colors - Refined */
+  /* Neutral Colors - Light Mode */
   --bg-body: #f1f5f9;
   --bg-light: #f8fafc;
   --bg-white: #ffffff;
+  --bg-card: #ffffff;
   --border-color: #e2e8f0;
   --border-light: #f1f5f9;
   --text-dark: #0f172a;
   --text-body: #334155;
   --text-muted: #64748b;
   --text-light: #94a3b8;
+
+  /* Sidebar Colors - Light Mode */
+  --sidebar-bg: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+  --sidebar-text: #e2e8f0;
+  --sidebar-hover: rgba(255, 255, 255, 0.08);
 
   /* Premium Shadows */
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
@@ -56,6 +62,58 @@
   --border-radius: 14px;
   --border-radius-sm: 10px;
   --border-radius-lg: 20px;
+}
+
+/* ================================
+   Dark Mode Theme - Premium Gold
+   ================================ */
+[data-theme="dark"] {
+  /* Primary Colors - Premium Gold */
+  --primary-green: #d4a538;
+  --primary-green-dark: #b8860b;
+  --primary-green-light: #f4c430;
+  --primary-gradient: linear-gradient(135deg, #b8860b 0%, #d4a538 50%, #f4c430 100%);
+
+  /* Accent Colors - Gold Palette */
+  --accent-gold: #f4c430;
+  --accent-emerald: #d4a538;
+  --accent-teal: #c9a033;
+
+  /* Neutral Colors - Dark Mode (Comfortable) */
+  --bg-body: #0f172a;
+  --bg-light: #1e293b;
+  --bg-white: #1e293b;
+  --bg-card: #1e293b;
+  --border-color: #334155;
+  --border-light: #1e293b;
+  --text-dark: #f1f5f9;
+  --text-body: #cbd5e1;
+  --text-muted: #94a3b8;
+  --text-light: #64748b;
+
+  /* Status Colors - Dark Mode */
+  --success: #d4a538;
+  --success-light: rgba(212, 165, 56, 0.15);
+  --warning-light: rgba(245, 158, 11, 0.15);
+  --error-light: rgba(239, 68, 68, 0.15);
+  --info-light: rgba(59, 130, 246, 0.15);
+
+  /* Accent adjustments for dark */
+  --accent-gold-light: rgba(212, 165, 56, 0.2);
+
+  /* Sidebar Colors - Dark Mode with Gold Accent */
+  --sidebar-bg: linear-gradient(180deg, #0a0f1a 0%, #111827 100%);
+  --sidebar-text: #e2e8f0;
+  --sidebar-hover: rgba(212, 165, 56, 0.1);
+  --sidebar-active: rgba(212, 165, 56, 0.2);
+
+  /* Premium Shadows - Dark Mode with Gold Glow */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+  --shadow-xl: 0 20px 40px -10px rgba(0, 0, 0, 0.6);
+  --shadow-glow: 0 0 20px rgba(212, 165, 56, 0.3);
 }
 
 /* ================================
@@ -1934,4 +1992,181 @@ select {
   .table {
     font-size: 10pt;
   }
+}
+
+/* =============================================
+   DARK MODE - PREMIUM GOLD THEME ELEMENTS
+   ============================================= */
+
+/* Buttons - Gold Gradient */
+[data-theme="dark"] .btn-primary {
+  background: linear-gradient(135deg, #b8860b 0%, #d4a538 50%, #f4c430 100%);
+  border-color: #d4a538;
+  color: #0f172a;
+  font-weight: 600;
+}
+
+[data-theme="dark"] .btn-primary:hover {
+  background: linear-gradient(135deg, #d4a538 0%, #f4c430 100%);
+  box-shadow: 0 4px 15px rgba(212, 165, 56, 0.4);
+  transform: translateY(-1px);
+}
+
+[data-theme="dark"] .btn-success {
+  background: linear-gradient(135deg, #b8860b 0%, #d4a538 100%);
+  border-color: #d4a538;
+  color: #0f172a;
+}
+
+[data-theme="dark"] .btn-outline-primary {
+  border-color: #d4a538;
+  color: #d4a538;
+}
+
+[data-theme="dark"] .btn-outline-primary:hover {
+  background: rgba(212, 165, 56, 0.1);
+  color: #f4c430;
+}
+
+/* Cards */
+[data-theme="dark"] .card {
+  background: #1e293b;
+  border: 1px solid #334155;
+}
+
+[data-theme="dark"] .card-header {
+  background: linear-gradient(135deg, rgba(212, 165, 56, 0.05) 0%, rgba(212, 165, 56, 0.02) 100%);
+  border-bottom: 1px solid rgba(212, 165, 56, 0.1);
+}
+
+[data-theme="dark"] .card-title {
+  color: #f1f5f9;
+}
+
+/* Stat Cards */
+[data-theme="dark"] .stat-card {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border: 1px solid #334155;
+}
+
+[data-theme="dark"] .stat-card.primary {
+  border-left: 4px solid #d4a538;
+}
+
+[data-theme="dark"] .stat-value {
+  color: #f1f5f9;
+}
+
+/* Tables */
+[data-theme="dark"] .table {
+  background: #1e293b;
+}
+
+[data-theme="dark"] .table thead th {
+  background: linear-gradient(135deg, rgba(212, 165, 56, 0.1) 0%, rgba(212, 165, 56, 0.05) 100%);
+  color: #d4a538;
+  border-bottom: 2px solid rgba(212, 165, 56, 0.2);
+}
+
+[data-theme="dark"] .table tbody tr {
+  border-bottom: 1px solid #334155;
+}
+
+[data-theme="dark"] .table tbody tr:hover {
+  background: rgba(212, 165, 56, 0.05);
+}
+
+/* Forms */
+[data-theme="dark"] .form-control,
+[data-theme="dark"] .form-select,
+[data-theme="dark"] .form-input {
+  background: #0f172a;
+  border-color: #334155;
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .form-control:focus,
+[data-theme="dark"] .form-select:focus,
+[data-theme="dark"] .form-input:focus {
+  border-color: #d4a538;
+  box-shadow: 0 0 0 3px rgba(212, 165, 56, 0.15);
+}
+
+[data-theme="dark"] .form-label {
+  color: #cbd5e1;
+}
+
+/* Tabs */
+[data-theme="dark"] .tab-btn {
+  background: #1e293b;
+  color: #94a3b8;
+  border: 1px solid #334155;
+}
+
+[data-theme="dark"] .tab-btn:hover {
+  background: rgba(212, 165, 56, 0.1);
+  color: #d4a538;
+}
+
+[data-theme="dark"] .tab-btn.active {
+  background: linear-gradient(135deg, #b8860b 0%, #d4a538 100%);
+  color: #0f172a;
+  border-color: #d4a538;
+  font-weight: 600;
+}
+
+/* Badges */
+[data-theme="dark"] .badge-success,
+[data-theme="dark"] .badge-primary {
+  background: linear-gradient(135deg, #b8860b 0%, #d4a538 100%);
+  color: #0f172a;
+}
+
+/* Header */
+[data-theme="dark"] .header {
+  background: #1e293b;
+  border-bottom: 1px solid rgba(212, 165, 56, 0.1);
+}
+
+/* Page Title */
+[data-theme="dark"] .page-title {
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .page-subtitle {
+  color: #94a3b8;
+}
+
+/* Alerts */
+[data-theme="dark"] .alert-success {
+  background: rgba(212, 165, 56, 0.1);
+  border-color: rgba(212, 165, 56, 0.3);
+  color: #f4c430;
+}
+
+/* Links */
+[data-theme="dark"] a {
+  color: #d4a538;
+}
+
+[data-theme="dark"] a:hover {
+  color: #f4c430;
+}
+
+/* Scrollbar */
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: #334155;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: #d4a538;
+}
+
+/* Text Utilities */
+[data-theme="dark"] .text-success {
+  color: #d4a538 !important;
+}
+
+[data-theme="dark"] .text-primary {
+  color: #d4a538 !important;
 }

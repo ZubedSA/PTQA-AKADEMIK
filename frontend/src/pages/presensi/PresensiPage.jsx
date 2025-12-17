@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Calendar, Check, X, Clock, ChevronLeft, ChevronRight, RefreshCw, Save, Users, Heart } from 'lucide-react'
+import { Calendar, Check, X, Clock, ChevronLeft, ChevronRight, RefreshCw, Save, Users, Heart, BookOpen } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import './Presensi.css'
 
@@ -12,6 +12,7 @@ const PresensiPage = () => {
     const [santriList, setSantriList] = useState([])
     const [presensi, setPresensi] = useState({})
     const [perilaku, setPerilaku] = useState({})
+    const [taujihad, setTaujihad] = useState({})
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
     const [success, setSuccess] = useState('')
@@ -31,6 +32,8 @@ const PresensiPage = () => {
                 fetchPresensi()
             } else if (activeTab === 'perilaku' && selectedSemester) {
                 fetchPerilaku()
+            } else if (activeTab === 'taujihad' && selectedSemester) {
+                fetchTaujihad()
             }
         }
     }, [selectedDate, santriList, activeTab, selectedSemester])
@@ -130,6 +133,31 @@ const PresensiPage = () => {
         }
     }
 
+    const fetchTaujihad = async () => {
+        setLoading(true)
+        try {
+            const { data, error } = await supabase
+                .from('taujihad')
+                .select('santri_id, catatan')
+                .eq('semester_id', selectedSemester)
+
+            if (error) throw error
+
+            const taujihadMap = {}
+            santriList.forEach(s => {
+                taujihadMap[s.id] = ''
+            })
+            data?.forEach(t => {
+                taujihadMap[t.santri_id] = t.catatan || ''
+            })
+            setTaujihad(taujihadMap)
+        } catch (err) {
+            console.error('Error:', err.message)
+        } finally {
+            setLoading(false)
+        }
+    }
+
     const handleStatusChange = (santriId, status) => {
         setPresensi(prev => ({
             ...prev,
@@ -144,6 +172,13 @@ const PresensiPage = () => {
                 ...prev[santriId],
                 [kategori.toLowerCase()]: nilai
             }
+        }))
+    }
+
+    const handleTaujihadChange = (santriId, catatan) => {
+        setTaujihad(prev => ({
+            ...prev,
+            [santriId]: catatan
         }))
     }
 
@@ -162,7 +197,7 @@ const PresensiPage = () => {
                 const { error } = await supabase.from('presensi').insert(presensiData)
                 if (error) throw error
                 setSuccess('Presensi berhasil disimpan!')
-            } else {
+            } else if (activeTab === 'perilaku') {
                 // Save perilaku
                 await supabase.from('perilaku').delete().eq('semester_id', selectedSemester)
                 const perilakuData = Object.entries(perilaku).map(([santriId, values]) => ({
@@ -176,6 +211,23 @@ const PresensiPage = () => {
                 const { error } = await supabase.from('perilaku').insert(perilakuData)
                 if (error) throw error
                 setSuccess('Perilaku santri berhasil disimpan!')
+            } else if (activeTab === 'taujihad') {
+                // Save taujihad - only save non-empty catatan
+                const taujihadData = Object.entries(taujihad)
+                    .filter(([_, catatan]) => catatan && catatan.trim() !== '')
+                    .map(([santriId, catatan]) => ({
+                        santri_id: santriId,
+                        semester_id: selectedSemester,
+                        catatan: catatan.trim()
+                    }))
+
+                // Delete existing and insert new
+                await supabase.from('taujihad').delete().eq('semester_id', selectedSemester)
+                if (taujihadData.length > 0) {
+                    const { error } = await supabase.from('taujihad').insert(taujihadData)
+                    if (error) throw error
+                }
+                setSuccess('Catatan taujihad berhasil disimpan!')
             }
             setTimeout(() => setSuccess(''), 3000)
         } catch (err) {
@@ -218,26 +270,33 @@ const PresensiPage = () => {
         <div className="presensi-page">
             <div className="page-header">
                 <div>
-                    <h1 className="page-title">Presensi & Perilaku</h1>
-                    <p className="page-subtitle">Catat kehadiran dan perilaku santri</p>
+                    <h1 className="page-title">Pembinaan Santri</h1>
+                    <p className="page-subtitle">Kelola presensi, perilaku, dan taujihad santri</p>
                 </div>
             </div>
 
             {/* Tab Navigation */}
-            <div className="tab-navigation mb-4">
+            <div className="tab-navigation pembinaan-tabs mb-4">
                 <button
                     className={`tab-btn ${activeTab === 'presensi' ? 'active' : ''}`}
                     onClick={() => setActiveTab('presensi')}
                 >
                     <Calendar size={18} />
-                    Presensi Harian
+                    <span>Presensi</span>
                 </button>
                 <button
                     className={`tab-btn ${activeTab === 'perilaku' ? 'active' : ''}`}
                     onClick={() => setActiveTab('perilaku')}
                 >
                     <Heart size={18} />
-                    Perilaku Santri
+                    <span>Perilaku</span>
+                </button>
+                <button
+                    className={`tab-btn ${activeTab === 'taujihad' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('taujihad')}
+                >
+                    <BookOpen size={18} />
+                    <span>Taujihad</span>
                 </button>
             </div>
 
@@ -424,6 +483,99 @@ const PresensiPage = () => {
                             </table>
                         </div>
                     </div>
+                </>
+            )}
+
+            {/* TAUJIHAD TAB */}
+            {activeTab === 'taujihad' && (
+                <>
+                    {/* Semester Selector */}
+                    <div className="filter-bar mb-4">
+                        <div className="filter-group">
+                            <label>Semester</label>
+                            <select
+                                className="form-select"
+                                value={selectedSemester}
+                                onChange={(e) => setSelectedSemester(e.target.value)}
+                            >
+                                <option value="">Pilih Semester</option>
+                                {semesterList.map(s => (
+                                    <option key={s.id} value={s.id}>
+                                        {s.nama} - {s.tahun_ajaran} {s.is_active ? '(Aktif)' : ''}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="filter-group">
+                            <label>Cari Santri</label>
+                            <input
+                                type="text"
+                                className="form-input"
+                                placeholder="Ketik nama santri..."
+                                value={searchSantri}
+                                onChange={(e) => setSearchSantri(e.target.value)}
+                            />
+                        </div>
+                        <div className="filter-group filter-action">
+                            <button
+                                className="btn btn-primary btn-save"
+                                onClick={handleSave}
+                                disabled={saving || !selectedSemester}
+                            >
+                                <Save size={18} />
+                                {saving ? 'Menyimpan...' : 'Simpan Taujihad'}
+                            </button>
+                        </div>
+                    </div>
+
+                    {!selectedSemester ? (
+                        <div className="card">
+                            <div className="card-body" style={{ textAlign: 'center', padding: '40px 20px' }}>
+                                <BookOpen size={48} style={{ color: 'var(--text-muted)', marginBottom: '16px' }} />
+                                <h4 style={{ marginBottom: '8px', color: 'var(--text-dark)' }}>Pilih Semester</h4>
+                                <p style={{ color: 'var(--text-muted)' }}>
+                                    Silakan pilih semester terlebih dahulu untuk melihat dan menginput catatan taujihad.
+                                </p>
+                            </div>
+                        </div>
+                    ) : loading ? (
+                        <div className="card">
+                            <div className="card-body" style={{ textAlign: 'center', padding: '40px' }}>
+                                <RefreshCw size={32} className="spinning" style={{ color: 'var(--primary-green)' }} />
+                                <p style={{ marginTop: '16px', color: 'var(--text-muted)' }}>Memuat data...</p>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="card">
+                            <div className="card-header">
+                                <h3 className="card-title">📖 Catatan Taujihad ({santriList.filter(s => s.nama.toLowerCase().includes(searchSantri.toLowerCase())).length} santri)</h3>
+                            </div>
+                            <div className="card-body">
+                                <p className="text-muted mb-3" style={{ fontSize: '0.9rem' }}>
+                                    Tulis catatan/pesan pembinaan untuk setiap santri. Catatan ini akan muncul di laporan raport.
+                                </p>
+                                <div className="taujihad-list">
+                                    {santriList
+                                        .filter(s => s.nama.toLowerCase().includes(searchSantri.toLowerCase()))
+                                        .map(santri => (
+                                            <div key={santri.id} className="taujihad-item">
+                                                <div className="taujihad-santri-info">
+                                                    <span className="santri-name">{santri.nama}</span>
+                                                    <span className="santri-class">{santri.kelas}</span>
+                                                </div>
+                                                <textarea
+                                                    className="taujihad-input"
+                                                    placeholder="Tulis catatan taujihad untuk santri ini..."
+                                                    value={taujihad[santri.id] || ''}
+                                                    onChange={(e) => handleTaujihadChange(santri.id, e.target.value)}
+                                                    rows={2}
+                                                />
+                                            </div>
+                                        ))}
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </>
             )}
         </div>
