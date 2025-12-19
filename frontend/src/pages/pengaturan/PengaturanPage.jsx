@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
-import { Users, Database, UserPlus, Edit, Trash2, RefreshCw, Upload, FileSpreadsheet, CheckCircle, AlertCircle, Save, Shield, GraduationCap, User, Key, Lock, Eye } from 'lucide-react'
+import { Users, Database, UserPlus, Edit, Trash2, RefreshCw, Upload, FileSpreadsheet, CheckCircle, AlertCircle, Save, Shield, GraduationCap, User, Key, Lock, Eye, UserCheck } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import * as XLSX from 'xlsx'
+import AkunWaliPage from '../akunwali/AkunWaliPage'
 import './Pengaturan.css'
 
 const PengaturanPage = () => {
@@ -680,12 +681,23 @@ const PengaturanPage = () => {
                     <Users size={18} /> Kelola Akun Pengguna
                 </button>
                 <button
+                    className={`pengaturan-tab ${activeTab === 'wali' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('wali')}
+                >
+                    <UserCheck size={18} /> Kelola Akun Wali
+                </button>
+                <button
                     className={`pengaturan-tab ${activeTab === 'data-input' ? 'active' : ''}`}
                     onClick={() => setActiveTab('data-input')}
                 >
                     <FileSpreadsheet size={18} /> Import Data (Excel/CSV)
                 </button>
             </div>
+
+            {/* Wali Management Tab */}
+            {activeTab === 'wali' && (
+                <AkunWaliPage />
+            )}
 
             {/* User Management Tab */}
             {activeTab === 'users' && (

@@ -36,7 +36,7 @@ const menuItems = [
     { path: '/presensi', icon: CalendarCheck, label: 'Pembinaan Santri', roles: ['admin', 'guru'] },
     { path: '/semester', icon: Calendar, label: 'Semester', roles: ['admin'] },
     { path: '/laporan', icon: Download, label: 'Laporan', roles: ['admin', 'guru'] },
-    { path: '/wali-santri', icon: UserCircle, label: 'Wali Santri', roles: ['admin', 'guru', 'wali'] },
+    { path: '/wali-santri', icon: UserCircle, label: 'Portal Wali', roles: ['admin', 'guru', 'wali'] },
     { path: '/audit-log', icon: ClipboardList, label: 'Audit Log', roles: ['admin'] },
     { path: '/pengaturan', icon: Settings, label: 'Pengaturan', roles: ['admin'] },
 ]
