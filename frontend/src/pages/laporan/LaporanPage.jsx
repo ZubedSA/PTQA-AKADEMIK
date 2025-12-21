@@ -80,7 +80,7 @@ const LaporanPage = () => {
                     status: g.status
                 })) || []
             } else if (selectedType === 'hafalan') {
-                let query = supabase.from('hafalan').select('santri:santri_id(nama), juz, surah, ayat_mulai, ayat_selesai, jenis, status, tanggal').order('tanggal', { ascending: false })
+                let query = supabase.from('hafalan').select('santri:santri_id(nama), juz, surah, juz_mulai, juz_selesai, surah_mulai, surah_selesai, ayat_mulai, ayat_selesai, jenis, status, kadar_setoran, tanggal').order('tanggal', { ascending: false })
 
                 // Filter by santri
                 if (filters.santri) {
@@ -95,17 +95,22 @@ const LaporanPage = () => {
                 }
 
                 const { data } = await query
-                columns = ['No', 'Santri', 'Juz', 'Surah', 'Ayat', 'Jenis', 'Status', 'Tanggal']
-                tableData = data?.map((h, i) => ({
-                    no: i + 1,
-                    santri: h.santri?.nama || '-',
-                    juz: h.juz,
-                    surah: h.surah,
-                    ayat: `${h.ayat_mulai}-${h.ayat_selesai}`,
-                    jenis: h.jenis || 'Setoran',
-                    status: h.status,
-                    tanggal: new Date(h.tanggal).toLocaleDateString('id-ID')
-                })) || []
+                columns = ['No', 'Santri', 'Juz', 'Surah', 'Ayat', 'Kadar', 'Jenis', 'Status', 'Tanggal']
+                tableData = data?.map((h, i) => {
+                    const juzDisplay = (h.juz_mulai || h.juz || '-') + ((h.juz_selesai && h.juz_selesai !== h.juz_mulai) ? ` - ${h.juz_selesai}` : '')
+                    const surahDisplay = (h.surah_mulai || h.surah || '-') + ((h.surah_selesai && h.surah_selesai !== h.surah_mulai) ? ` s/d ${h.surah_selesai}` : '')
+                    return {
+                        no: i + 1,
+                        santri: h.santri?.nama || '-',
+                        juz: juzDisplay,
+                        surah: surahDisplay,
+                        ayat: `${h.ayat_mulai || 1}-${h.ayat_selesai || 1}`,
+                        kadar: h.kadar_setoran || '-',
+                        jenis: h.jenis || 'Setoran',
+                        status: h.status,
+                        tanggal: new Date(h.tanggal).toLocaleDateString('id-ID')
+                    }
+                }) || []
             } else if (selectedType === 'presensi') {
                 const { data } = await supabase.from('presensi').select('santri:santri_id(nama), tanggal, status, keterangan').order('tanggal', { ascending: false }).limit(50)
                 columns = ['No', 'Santri', 'Tanggal', 'Status', 'Keterangan']

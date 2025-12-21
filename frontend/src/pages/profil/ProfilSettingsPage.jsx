@@ -71,20 +71,16 @@ const ProfilSettingsPage = () => {
                 throw new Error('Email tidak boleh kosong')
             }
 
-            // Update email via Supabase Auth
-            const { error: authError } = await supabase.auth.updateUser({
-                email: email
-            })
-
-            if (authError) throw authError
-
-            // Update email di user_profiles juga
-            await supabase
+            // Update email di user_profiles saja (untuk keperluan display/kontak)
+            // TIDAK update di Supabase Auth karena login menggunakan USERNAME
+            const { error: profileError } = await supabase
                 .from('user_profiles')
                 .update({ email: email, updated_at: new Date().toISOString() })
                 .eq('user_id', user.id)
 
-            setSuccess('Email berhasil diperbarui! Cek inbox untuk konfirmasi jika diperlukan.')
+            if (profileError) throw profileError
+
+            setSuccess('Email berhasil diperbarui!')
         } catch (err) {
             setError(err.message)
         } finally {

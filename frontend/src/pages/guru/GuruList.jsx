@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus, Search, Edit, Trash2, Eye, RefreshCw } from 'lucide-react'
+import { Plus, Search, Edit, Trash2, Eye, RefreshCw, MoreVertical } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
+import MobileActionMenu from '../../components/ui/MobileActionMenu'
 import './Guru.css'
 
 const GuruList = () => {
@@ -139,7 +140,13 @@ const GuruList = () => {
                                             </span>
                                         </td>
                                         <td>
-                                            <div className="action-buttons">
+                                            <MobileActionMenu
+                                                actions={[
+                                                    { icon: <Eye size={16} />, label: 'Detail', onClick: () => window.location.href = `/guru/${item.id}` },
+                                                    { icon: <Edit size={16} />, label: 'Edit', onClick: () => window.location.href = `/guru/${item.id}/edit` },
+                                                    { icon: <Trash2 size={16} />, label: 'Hapus', onClick: () => { setSelectedGuru(item); setShowDeleteModal(true) }, danger: true }
+                                                ]}
+                                            >
                                                 <Link to={`/guru/${item.id}`} className="btn-icon" title="Lihat Detail">
                                                     <Eye size={16} />
                                                 </Link>
@@ -156,7 +163,7 @@ const GuruList = () => {
                                                 >
                                                     <Trash2 size={16} />
                                                 </button>
-                                            </div>
+                                            </MobileActionMenu>
                                         </td>
                                     </tr>
                                 ))

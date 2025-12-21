@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus, Search, Edit, Trash2, Eye, RefreshCw, Upload, FileSpreadsheet, X } from 'lucide-react'
+import { Plus, Search, Edit, Trash2, Eye, RefreshCw, Upload, FileSpreadsheet, X, MoreVertical } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
+import MobileActionMenu from '../../components/ui/MobileActionMenu'
 import * as XLSX from 'xlsx'
 import './Santri.css'
 
@@ -213,11 +214,17 @@ const SantriList = () => {
                                         <td>{item.halaqoh}</td>
                                         <td><span className={`badge ${item.status === 'Aktif' ? 'badge-success' : 'badge-warning'}`}>{item.status}</span></td>
                                         <td>
-                                            <div className="action-buttons">
+                                            <MobileActionMenu
+                                                actions={[
+                                                    { icon: <Eye size={16} />, label: 'Detail', onClick: () => window.location.href = `/santri/${item.id}` },
+                                                    { icon: <Edit size={16} />, label: 'Edit', onClick: () => window.location.href = `/santri/${item.id}/edit` },
+                                                    { icon: <Trash2 size={16} />, label: 'Hapus', onClick: () => { setSelectedSantri(item); setShowDeleteModal(true) }, danger: true }
+                                                ]}
+                                            >
                                                 <Link to={`/santri/${item.id}`} className="btn-icon" title="Lihat Detail"><Eye size={16} /></Link>
                                                 <Link to={`/santri/${item.id}/edit`} className="btn-icon" title="Edit"><Edit size={16} /></Link>
                                                 <button className="btn-icon btn-icon-danger" title="Hapus" onClick={() => { setSelectedSantri(item); setShowDeleteModal(true) }}><Trash2 size={16} /></button>
-                                            </div>
+                                            </MobileActionMenu>
                                         </td>
                                     </tr>
                                 ))

@@ -11,7 +11,7 @@ import {
     Legend,
     Filler
 } from 'chart.js'
-import { Users, GraduationCap, Home, BookMarked } from 'lucide-react'
+import { Users, GraduationCap, Home, BookMarked, CheckCircle, Clock, AlertCircle, FileText } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import ConnectionStatus from '../components/common/ConnectionStatus'
 import './Dashboard.css'
@@ -33,13 +33,19 @@ const Dashboard = () => {
         totalSantri: 0,
         totalGuru: 0,
         totalKelas: 0,
-        totalHafalan: 0
+        totalHalaqoh: 0
+    })
+    const [hafalanStats, setHafalanStats] = useState({
+        total: 0,
+        lancar: 0,
+        sedang: 0,
+        lemah: 0,
+        bacaNazhor: 0
     })
     const [loading, setLoading] = useState(true)
-    const [hafalanProgress, setHafalanProgress] = useState([])
+    const [hafalanTrend, setHafalanTrend] = useState([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
     const [greeting, setGreeting] = useState('')
 
-    // Update greeting based on current time
     const updateGreeting = () => {
         const hour = new Date().getHours()
         if (hour >= 4 && hour < 11) {
@@ -58,8 +64,8 @@ const Dashboard = () => {
         labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'],
         datasets: [
             {
-                label: 'Rata-rata',
-                data: [65, 68, 66, 70, 72, 75, 78, 80, 77, 82, 79, 85],
+                label: 'Total Hafalan',
+                data: hafalanTrend,
                 borderColor: '#059669',
                 backgroundColor: 'rgba(26, 92, 56, 0.1)',
                 borderWidth: 3,
@@ -87,16 +93,15 @@ const Dashboard = () => {
         },
         scales: {
             x: { grid: { display: false }, ticks: { color: '#6b7280' } },
-            y: { min: 0, max: 100, grid: { color: 'rgba(0, 0, 0, 0.05)' }, ticks: { color: '#6b7280', stepSize: 25 } }
+            y: { min: 0, grid: { color: 'rgba(0, 0, 0, 0.05)' }, ticks: { color: '#6b7280' } }
         }
     }
 
     useEffect(() => {
         fetchStats()
-        fetchHafalanProgress()
+        fetchHafalanStats()
+        fetchHafalanTrend()
         updateGreeting()
-
-        // Update greeting every minute
         const interval = setInterval(updateGreeting, 60000)
         return () => clearInterval(interval)
     }, [])
@@ -104,36 +109,18 @@ const Dashboard = () => {
     const fetchStats = async () => {
         setLoading(true)
         try {
-            // Get total santri
-            const { count: santriCount, error: e1 } = await supabase
-                .from('santri')
-                .select('*', { count: 'exact', head: true })
-
-            // Get total guru
-            const { count: guruCount, error: e2 } = await supabase
-                .from('guru')
-                .select('*', { count: 'exact', head: true })
-
-            // Get total kelas
-            const { count: kelasCount, error: e3 } = await supabase
-                .from('kelas')
-                .select('*', { count: 'exact', head: true })
-
-            // Get hafalan mutqin count
-            const { count: hafalanCount, error: e4 } = await supabase
-                .from('hafalan')
-                .select('*', { count: 'exact', head: true })
-                .eq('status', 'Mutqin')
-
-            if (e1 || e2 || e3 || e4) {
-                console.log('Some queries failed, using partial data')
-            }
+            const [santriRes, guruRes, kelasRes, halaqohRes] = await Promise.all([
+                supabase.from('santri').select('*', { count: 'exact', head: true }),
+                supabase.from('guru').select('*', { count: 'exact', head: true }),
+                supabase.from('kelas').select('*', { count: 'exact', head: true }),
+                supabase.from('halaqoh').select('*', { count: 'exact', head: true })
+            ])
 
             setStats({
-                totalSantri: santriCount || 0,
-                totalGuru: guruCount || 0,
-                totalKelas: kelasCount || 0,
-                totalHafalan: hafalanCount || 0
+                totalSantri: santriRes.count || 0,
+                totalGuru: guruRes.count || 0,
+                totalKelas: kelasRes.count || 0,
+                totalHalaqoh: halaqohRes.count || 0
             })
         } catch (error) {
             console.error('Error fetching stats:', error.message)
@@ -142,137 +129,169 @@ const Dashboard = () => {
         }
     }
 
-    const fetchHafalanProgress = async () => {
+    const fetchHafalanStats = async () => {
         try {
-            const { data, error } = await supabase
-                .from('hafalan')
-                .select('juz, status')
-
+            const { data, error } = await supabase.from('hafalan').select('status')
             if (error) throw error
 
-            // Calculate progress per juz
-            const progressMap = {}
+            const total = data?.length || 0
+            const lancar = data?.filter(h => h.status === 'Lancar').length || 0
+            const sedang = data?.filter(h => h.status === 'Sedang').length || 0
+            const lemah = data?.filter(h => h.status === 'Lemah').length || 0
+            const bacaNazhor = data?.filter(h => h.status === 'Baca Nazhor').length || 0
+
+            setHafalanStats({ total, lancar, sedang, lemah, bacaNazhor })
+        } catch (error) {
+            console.log('Error fetching hafalan stats:', error.message)
+        }
+    }
+
+    const fetchHafalanTrend = async () => {
+        try {
+            const { data, error } = await supabase.from('hafalan').select('tanggal')
+            if (error) throw error
+
+            const currentYear = new Date().getFullYear()
+            const monthlyCount = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
             data?.forEach(h => {
-                if (!progressMap[h.juz]) {
-                    progressMap[h.juz] = { juz: h.juz, mutqin: 0, total: 0 }
-                }
-                progressMap[h.juz].total++
-                if (h.status === 'Mutqin') {
-                    progressMap[h.juz].mutqin++
+                if (h.tanggal) {
+                    const date = new Date(h.tanggal)
+                    if (date.getFullYear() === currentYear) {
+                        monthlyCount[date.getMonth()]++
+                    }
                 }
             })
 
-            setHafalanProgress(Object.values(progressMap).sort((a, b) => a.juz - b.juz))
+            setHafalanTrend(monthlyCount)
         } catch (error) {
-            console.log('Error fetching hafalan progress:', error.message)
+            console.log('Error fetching hafalan trend:', error.message)
         }
     }
 
     return (
         <div className="dashboard">
-            <div className="page-header">
-                <div>
-                    <h1 className="page-title">👋 {greeting}!</h1>
-                    <p className="page-subtitle">Selamat datang di Sistem Akademik PTQA Batuan</p>
-                </div>
-                <ConnectionStatus />
+            {/* Welcome Header */}
+            <div className="dashboard-welcome">
+                <h1>👋 {greeting}!</h1>
+                <p>Selamat datang di Sistem Akademik PTQA Batuan</p>
             </div>
 
-            {/* Stats Grid */}
-            <div className="stats-grid">
-                <div className="stat-card green">
-                    <div className="stat-content">
+            {/* Stats Ringkasan - 2 Kolom */}
+            <div className="dashboard-stats-grid">
+                <div className="dashboard-stat-card">
+                    <div className="stat-info">
                         <span className="stat-label">Total Santri</span>
-                        <span className="stat-value">{loading ? '...' : stats.totalSantri}</span>
-                        <span className="stat-description">Santri aktif</span>
+                        <span className="stat-value green">{loading ? '...' : stats.totalSantri}</span>
                     </div>
-                    <div className="stat-icon">
-                        <Users size={28} />
+                    <div className="stat-icon-box green">
+                        <Users size={24} />
                     </div>
                 </div>
 
-                <div className="stat-card yellow">
-                    <div className="stat-content">
+                <div className="dashboard-stat-card">
+                    <div className="stat-info">
                         <span className="stat-label">Total Guru</span>
-                        <span className="stat-value">{loading ? '...' : stats.totalGuru}</span>
-                        <span className="stat-description">Pengajar & Wali Kelas</span>
+                        <span className="stat-value blue">{loading ? '...' : stats.totalGuru}</span>
                     </div>
-                    <div className="stat-icon">
-                        <GraduationCap size={28} />
+                    <div className="stat-icon-box blue">
+                        <GraduationCap size={24} />
                     </div>
                 </div>
 
-                <div className="stat-card olive">
-                    <div className="stat-content">
+                <div className="dashboard-stat-card">
+                    <div className="stat-info">
                         <span className="stat-label">Jumlah Kelas</span>
-                        <span className="stat-value">{loading ? '...' : stats.totalKelas}</span>
-                        <span className="stat-description">Tingkat 7, 8, dan 9</span>
+                        <span className="stat-value yellow">{loading ? '...' : stats.totalKelas}</span>
                     </div>
-                    <div className="stat-icon">
-                        <Home size={28} />
+                    <div className="stat-icon-box yellow">
+                        <Home size={24} />
                     </div>
                 </div>
 
-                <div className="stat-card teal">
-                    <div className="stat-content">
-                        <span className="stat-label">Total Hafalan Mutqin</span>
-                        <span className="stat-value">{loading ? '...' : stats.totalHafalan}</span>
-                        <span className="stat-description">Hafalan sempurna</span>
+                <div className="dashboard-stat-card">
+                    <div className="stat-info">
+                        <span className="stat-label">Jumlah Halaqoh</span>
+                        <span className="stat-value teal">{loading ? '...' : stats.totalHalaqoh}</span>
                     </div>
-                    <div className="stat-icon">
-                        <BookMarked size={28} />
+                    <div className="stat-icon-box teal">
+                        <BookMarked size={24} />
                     </div>
                 </div>
             </div>
 
-            {/* Charts Grid */}
-            <div className="charts-grid">
-                <div className="chart-card">
-                    <h3 className="chart-title">Tren Nilai Rata-rata</h3>
-                    <div className="chart-container">
-                        <Line data={chartData} options={chartOptions} />
+            {/* Section Divider */}
+            <div className="dashboard-section-title">📖 Statistik Hafalan</div>
+
+            {/* Stats Hafalan - 2 Kolom */}
+            <div className="dashboard-stats-grid">
+                <div className="dashboard-stat-card">
+                    <div className="stat-info">
+                        <span className="stat-label">Total</span>
+                        <span className="stat-value purple">{hafalanStats.total}</span>
                     </div>
-                    <div className="chart-legend">
-                        <span className="legend-item">
-                            <span className="legend-dot"></span>
-                            Rata-rata
-                        </span>
+                    <div className="stat-icon-box purple">
+                        <FileText size={24} />
                     </div>
                 </div>
 
-                <div className="chart-card">
-                    <h3 className="chart-title">
-                        <span className="title-icon">📖</span>
-                        Progress Hafalan per Juz
-                    </h3>
-                    <div className="hafalan-list">
-                        {hafalanProgress.length === 0 ? (
-                            <p className="text-muted text-center">Belum ada data hafalan</p>
-                        ) : (
-                            hafalanProgress.slice(0, 5).map((item) => {
-                                const percentage = item.total > 0 ? Math.round((item.mutqin / item.total) * 100) : 0
-                                return (
-                                    <div key={item.juz} className="hafalan-item">
-                                        <div className="hafalan-header">
-                                            <span className="hafalan-name">Juz {item.juz}</span>
-                                            <span className="hafalan-count">{item.mutqin} mutqin / {item.total} total</span>
-                                        </div>
-                                        <div className="progress-bar">
-                                            <div
-                                                className={`progress-fill ${percentage === 100 ? 'full' : 'empty'}`}
-                                                style={{ width: `${percentage}%` }}
-                                            ></div>
-                                        </div>
-                                        <span className={`progress-percent ${percentage === 100 ? 'full' : 'empty'}`}>
-                                            {percentage}%
-                                        </span>
-                                    </div>
-                                )
-                            })
-                        )}
+                <div className="dashboard-stat-card">
+                    <div className="stat-info">
+                        <span className="stat-label">Lancar</span>
+                        <span className="stat-value green">{hafalanStats.lancar}</span>
+                    </div>
+                    <div className="stat-icon-box green">
+                        <CheckCircle size={24} />
+                    </div>
+                </div>
+
+                <div className="dashboard-stat-card">
+                    <div className="stat-info">
+                        <span className="stat-label">Sedang</span>
+                        <span className="stat-value blue">{hafalanStats.sedang}</span>
+                    </div>
+                    <div className="stat-icon-box blue">
+                        <Clock size={24} />
+                    </div>
+                </div>
+
+                <div className="dashboard-stat-card">
+                    <div className="stat-info">
+                        <span className="stat-label">Lemah</span>
+                        <span className="stat-value yellow">{hafalanStats.lemah}</span>
+                    </div>
+                    <div className="stat-icon-box yellow">
+                        <AlertCircle size={24} />
+                    </div>
+                </div>
+
+                <div className="dashboard-stat-card">
+                    <div className="stat-info">
+                        <span className="stat-label">Baca Nazhor</span>
+                        <span className="stat-value purple">{hafalanStats.bacaNazhor}</span>
+                    </div>
+                    <div className="stat-icon-box purple">
+                        <BookMarked size={24} />
                     </div>
                 </div>
             </div>
+
+            {/* Chart */}
+            <div className="dashboard-chart-card">
+                <h3 className="chart-title">📊 Tren Hafalan Bulanan</h3>
+                <div className="chart-container">
+                    <Line data={chartData} options={chartOptions} />
+                </div>
+                <div className="chart-legend">
+                    <span className="legend-item">
+                        <span className="legend-dot"></span>
+                        Total Setoran
+                    </span>
+                </div>
+            </div>
+
+            {/* Connection Status */}
+            <ConnectionStatus />
         </div>
     )
 }

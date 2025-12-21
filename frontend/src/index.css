@@ -1453,6 +1453,90 @@ select {
   color: white;
 }
 
+/* Mobile Action Dropdown */
+.mobile-action-wrapper {
+  position: relative;
+}
+
+.mobile-action-toggle {
+  display: none;
+  width: 32px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  color: var(--text-muted);
+  background: var(--bg-light);
+  cursor: pointer;
+  border: none;
+  transition: all var(--transition-fast);
+}
+
+.mobile-action-toggle:hover {
+  background: var(--primary-green);
+  color: white;
+}
+
+.mobile-action-menu {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: 100%;
+  min-width: 150px;
+  background: var(--bg-white);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: var(--shadow-lg);
+  z-index: 100;
+  padding: 6px 0;
+  margin-top: 4px;
+}
+
+.mobile-action-menu.show {
+  display: block;
+}
+
+.mobile-action-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  font-size: 0.875rem;
+  color: var(--text-body);
+  background: none;
+  border: none;
+  width: 100%;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-align: left;
+}
+
+.mobile-action-item:hover {
+  background: var(--bg-light);
+  color: var(--primary-green);
+}
+
+.mobile-action-item.danger:hover {
+  background: var(--error-light);
+  color: var(--error);
+}
+
+.mobile-action-item svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Mobile Responsive - Show dropdown, hide buttons */
+@media (max-width: 768px) {
+  .action-buttons>.btn-icon {
+    display: none;
+  }
+
+  .action-buttons .mobile-action-toggle {
+    display: flex;
+  }
+}
+
 /* Rank Badge */
 .rank-badge {
   width: 28px;

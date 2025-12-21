@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus, Search, Edit, Trash2, RefreshCw, FileText, BarChart3, CheckCircle, Clock, AlertCircle, Filter, Calendar, MessageCircle, Trophy, Save, Printer, Download } from 'lucide-react'
+import { Plus, Search, Edit, Trash2, RefreshCw, FileText, BarChart3, CheckCircle, Clock, AlertCircle, Filter, Calendar, MessageCircle, Trophy, Save, Printer, Download, MoreVertical } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
+import MobileActionMenu from '../../components/ui/MobileActionMenu'
 import './Hafalan.css'
 
 const HafalanList = () => {
@@ -358,6 +359,9 @@ const HafalanList = () => {
             }
         }
 
+        const juzDisplay = (item.juz_mulai || item.juz || '-') + ((item.juz_selesai && item.juz_selesai !== item.juz_mulai) ? ` - ${item.juz_selesai}` : '')
+        const surahDisplay = (item.surah_mulai || item.surah || '-') + ((item.surah_selesai && item.surah_selesai !== item.surah_mulai) ? ` s/d ${item.surah_selesai}` : '')
+
         const message = `Assalamu'alaikum Wr. Wb.
 
 *LAPORAN HAFALAN SANTRI*
@@ -370,9 +374,10 @@ Kepada Yth. Bapak/Ibu *${item.nama_wali || 'Wali Santri'}*
 📖 *Jenis:* ${item.jenis || 'Setoran'}
 
 *Detail Hafalan:*
-• Juz: ${item.juz}
-• Surah: ${item.surah}
-• Ayat: ${item.ayat_mulai} - ${item.ayat_selesai}
+• Juz: ${juzDisplay}
+• Surah: ${surahDisplay}
+• Ayat: ${item.ayat_mulai || 1} - ${item.ayat_selesai || 1}
+• Kadar: ${item.kadar_setoran || '-'}
 
 *Status:* ${item.status}
 *Penguji:* ${item.penguji_nama || '-'}
@@ -787,11 +792,17 @@ _PTQA Batuan_`
                                                 <td><span className={`badge ${getStatusBadge(item.status)}`}>{item.status}</span></td>
                                                 <td>{item.penguji_nama}</td>
                                                 <td>
-                                                    <div className="action-buttons">
+                                                    <MobileActionMenu
+                                                        actions={[
+                                                            { icon: <MessageCircle size={16} />, label: 'WhatsApp', onClick: () => sendWhatsApp(item) },
+                                                            { icon: <Edit size={16} />, label: 'Edit', onClick: () => window.location.href = `/hafalan/${item.id}/edit` },
+                                                            { icon: <Trash2 size={16} />, label: 'Hapus', onClick: () => { setSelectedHafalan(item); setShowDeleteModal(true) }, danger: true }
+                                                        ]}
+                                                    >
                                                         <button className="btn-icon btn-icon-success" title="Kirim WhatsApp" onClick={() => sendWhatsApp(item)}><MessageCircle size={16} /></button>
                                                         <Link to={`/hafalan/${item.id}/edit`} className="btn-icon" title="Edit"><Edit size={16} /></Link>
                                                         <button className="btn-icon btn-icon-danger" title="Hapus" onClick={() => { setSelectedHafalan(item); setShowDeleteModal(true) }}><Trash2 size={16} /></button>
-                                                    </div>
+                                                    </MobileActionMenu>
                                                 </td>
                                             </tr>
                                         ))

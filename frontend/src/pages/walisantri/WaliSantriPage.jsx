@@ -61,7 +61,7 @@ const WaliSantriPage = () => {
         try {
             let query = supabase
                 .from('hafalan')
-                .select('id, tanggal, juz, surah, ayat_mulai, ayat_selesai, jenis, status, catatan')
+                .select('id, tanggal, juz, surah, juz_mulai, juz_selesai, surah_mulai, surah_selesai, ayat_mulai, ayat_selesai, jenis, status, kadar_setoran, catatan')
                 .eq('santri_id', selectedSantri)
                 .order('tanggal', { ascending: false })
 
@@ -336,9 +336,9 @@ const WaliSantriPage = () => {
                                             <tr key={h.id}>
                                                 <td>{i + 1}</td>
                                                 <td>{new Date(h.tanggal).toLocaleDateString('id-ID')}</td>
-                                                <td>Juz {h.juz}</td>
-                                                <td>{h.surah}</td>
-                                                <td>{h.ayat_mulai} - {h.ayat_selesai}</td>
+                                                <td>Juz {h.juz_mulai || h.juz || '-'}{(h.juz_selesai && h.juz_selesai !== h.juz_mulai) ? ` - ${h.juz_selesai}` : ''}</td>
+                                                <td>{h.surah_mulai || h.surah || '-'}{(h.surah_selesai && h.surah_selesai !== h.surah_mulai) ? ` s/d ${h.surah_selesai}` : ''}</td>
+                                                <td>{h.ayat_mulai || 1} - {h.ayat_selesai || 1}</td>
                                                 <td>{h.jenis || 'Setoran'}</td>
                                                 <td>{getStatusBadge(h.status)}</td>
                                             </tr>
