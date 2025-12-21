@@ -549,7 +549,7 @@ _PTQA Batuan_`
                     <td>${h.santri_nama}</td>
                     <td>${h.halaqoh_nama || '-'}</td>
                     <td>${h.jenis}</td>
-                    <td>${h.surah_mulai || h.surah || '-'} (${h.ayat_mulai}-${h.ayat_selesai})</td>
+                    <td>Juz ${h.juz_mulai || h.juz || '-'}${(h.juz_selesai && h.juz_selesai !== h.juz_mulai) ? ' - ' + h.juz_selesai : ''}: ${h.surah_mulai || h.surah || '-'}${(h.surah_selesai && h.surah_selesai !== h.surah_mulai) ? ' s/d ' + h.surah_selesai : ''} (${h.ayat_mulai || 1}-${h.ayat_selesai || 1})</td>
                     <td>${h.status}</td>
                 </tr>
             `).join('')}
@@ -778,8 +778,9 @@ _PTQA Batuan_`
                                                 <td>{item.kelas_nama}</td>
                                                 <td>
                                                     <div className="hafalan-info">
-                                                        <strong>Juz {item.juz} - {item.surah}</strong>
-                                                        <span className="text-muted">Ayat {item.ayat_mulai}-{item.ayat_selesai}</span>
+                                                        <strong>Juz {item.juz_mulai || item.juz || '-'}{(item.juz_selesai && item.juz_selesai !== item.juz_mulai) ? ` - ${item.juz_selesai}` : ''}</strong>
+                                                        <span>{item.surah_mulai || item.surah || '-'}{(item.surah_selesai && item.surah_selesai !== item.surah_mulai) ? ` s/d ${item.surah_selesai}` : ''}</span>
+                                                        <span className="text-muted">Ayat {item.ayat_mulai || 1}-{item.ayat_selesai || 1}</span>
                                                     </div>
                                                 </td>
                                                 <td><span className={`badge ${getJenisBadge(item.jenis)}`}>{item.jenis || 'Setoran'}</span></td>
@@ -936,8 +937,9 @@ _PTQA Batuan_`
                                                 <td>{item.halaqoh_nama}</td>
                                                 <td>
                                                     <div className="hafalan-info">
-                                                        <strong>Juz {item.juz} - {item.surah}</strong>
-                                                        <span className="text-muted">Ayat {item.ayat_mulai}-{item.ayat_selesai}</span>
+                                                        <strong>Juz {item.juz_mulai || item.juz || '-'}{(item.juz_selesai && item.juz_selesai !== item.juz_mulai) ? ` - ${item.juz_selesai}` : ''}</strong>
+                                                        <span>{item.surah_mulai || item.surah || '-'}{(item.surah_selesai && item.surah_selesai !== item.surah_mulai) ? ` s/d ${item.surah_selesai}` : ''}</span>
+                                                        <span className="text-muted">Ayat {item.ayat_mulai || 1}-{item.ayat_selesai || 1}</span>
                                                     </div>
                                                 </td>
                                                 <td><span className={`badge ${getJenisBadge(item.jenis)}`}>{item.jenis || 'Setoran'}</span></td>

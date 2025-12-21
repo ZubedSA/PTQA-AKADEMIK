@@ -99,17 +99,16 @@ const PengaturanPage = () => {
                 if (error) throw error
                 setUserSuccess('User berhasil diupdate!')
             } else {
-                // Validasi: Username wajib
+                // Validasi: Username dan Email wajib
                 if (!userForm.username) {
                     throw new Error('Username harus diisi')
                 }
-
-                // Generate email placeholder jika kosong
-                let authEmail = userForm.email
-                if (!authEmail) {
-                    // Gunakan username sebagai basis email
-                    authEmail = `${userForm.username}@username.local`
+                if (!userForm.email) {
+                    throw new Error('Email harus diisi')
                 }
+
+                // Gunakan email untuk autentikasi Supabase
+                const authEmail = userForm.email
 
                 // Create new user with Supabase Auth
                 // Gunakan client sementara agar session Admin tidak tertimpa/logout
@@ -975,7 +974,7 @@ const PengaturanPage = () => {
                                 {userSuccess && <div className="alert alert-success mb-3">{userSuccess}</div>}
 
                                 <div className="info-box mb-3" style={{ background: '#f0f9ff', padding: '10px 12px', borderRadius: '6px', fontSize: '0.85rem', color: '#1e40af' }}>
-                                    💡 User akan login menggunakan <strong>Username</strong> dan <strong>Password</strong>.
+                                    💡 User akan login menggunakan <strong>Username</strong> dan <strong>Password</strong>. Email digunakan untuk autentikasi Supabase.
                                 </div>
 
                                 <div className="form-group">
@@ -989,6 +988,20 @@ const PengaturanPage = () => {
                                         placeholder="username"
                                         required
                                     />
+                                </div>
+
+                                <div className="form-group">
+                                    <label className="form-label">Email *</label>
+                                    <input
+                                        type="email"
+                                        className="form-control"
+                                        value={userForm.email}
+                                        onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
+                                        disabled={editingUser}
+                                        placeholder="contoh@email.com"
+                                        required
+                                    />
+                                    <small className="text-muted">Email digunakan untuk autentikasi Supabase</small>
                                 </div>
 
                                 {!editingUser && (

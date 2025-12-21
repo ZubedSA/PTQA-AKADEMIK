@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
-import { User, Mail, Lock, Save, ArrowLeft, Eye, EyeOff } from 'lucide-react'
+import { User, Mail, Lock, Save, ArrowLeft, Eye, EyeOff, AtSign } from 'lucide-react'
 import './ProfilSettings.css'
 
 const ProfilSettingsPage = () => {
@@ -10,19 +10,21 @@ const ProfilSettingsPage = () => {
     const navigate = useNavigate()
 
     const [nama, setNama] = useState('')
+    const [username, setUsername] = useState('')
     const [email, setEmail] = useState('')
-    const [currentPassword, setCurrentPassword] = useState('')
     const [newPassword, setNewPassword] = useState('')
     const [confirmPassword, setConfirmPassword] = useState('')
-    const [showCurrentPassword, setShowCurrentPassword] = useState(false)
     const [showNewPassword, setShowNewPassword] = useState(false)
 
     const [loading, setLoading] = useState(false)
+    const [loadingEmail, setLoadingEmail] = useState(false)
+    const [loadingPassword, setLoadingPassword] = useState(false)
     const [error, setError] = useState('')
     const [success, setSuccess] = useState('')
 
     useEffect(() => {
         if (userProfile?.nama) setNama(userProfile.nama)
+        if (userProfile?.username) setUsername(userProfile.username)
         if (user?.email) setEmail(user.email)
     }, [user, userProfile])
 
@@ -33,10 +35,19 @@ const ProfilSettingsPage = () => {
         setSuccess('')
 
         try {
-            // Update nama di user_profiles
+            // Validasi username tidak boleh kosong
+            if (!username.trim()) {
+                throw new Error('Username tidak boleh kosong')
+            }
+
+            // Update nama dan username di user_profiles
             const { error: profileError } = await supabase
                 .from('user_profiles')
-                .update({ nama: nama, updated_at: new Date().toISOString() })
+                .update({
+                    nama: nama,
+                    username: username.toLowerCase().replace(/\s/g, ''),
+                    updated_at: new Date().toISOString()
+                })
                 .eq('user_id', user.id)
 
             if (profileError) throw profileError
@@ -49,56 +60,77 @@ const ProfilSettingsPage = () => {
         }
     }
 
+    const handleUpdateEmail = async (e) => {
+        e.preventDefault()
+        setLoadingEmail(true)
+        setError('')
+        setSuccess('')
+
+        try {
+            if (!email.trim()) {
+                throw new Error('Email tidak boleh kosong')
+            }
+
+            // Update email via Supabase Auth
+            const { error: authError } = await supabase.auth.updateUser({
+                email: email
+            })
+
+            if (authError) throw authError
+
+            // Update email di user_profiles juga
+            await supabase
+                .from('user_profiles')
+                .update({ email: email, updated_at: new Date().toISOString() })
+                .eq('user_id', user.id)
+
+            setSuccess('Email berhasil diperbarui! Cek inbox untuk konfirmasi jika diperlukan.')
+        } catch (err) {
+            setError(err.message)
+        } finally {
+            setLoadingEmail(false)
+        }
+    }
+
     const handleUpdatePassword = async (e) => {
         e.preventDefault()
-        setLoading(true)
+        setLoadingPassword(true)
         setError('')
         setSuccess('')
 
         if (newPassword.length < 6) {
             setError('Password baru minimal 6 karakter')
-            setLoading(false)
+            setLoadingPassword(false)
             return
         }
 
         if (newPassword !== confirmPassword) {
             setError('Password baru dan konfirmasi tidak cocok')
-            setLoading(false)
+            setLoadingPassword(false)
             return
         }
 
         try {
-            // Update password via backend API
-            const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'
-            const response = await fetch(`${backendUrl}/api/users/update-password`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    userId: user.id,
-                    newPassword: newPassword
-                })
+            // Update password via Supabase Auth langsung
+            const { error: authError } = await supabase.auth.updateUser({
+                password: newPassword
             })
 
-            const result = await response.json()
+            if (authError) throw authError
 
-            if (!response.ok) {
-                throw new Error(result.error || 'Gagal mengubah password')
-            }
-
-            // Update password_ref
+            // Update password_ref di user_profiles
             await supabase
                 .from('user_profiles')
                 .update({ password_ref: newPassword, updated_at: new Date().toISOString() })
                 .eq('user_id', user.id)
 
-            setSuccess('Password berhasil diubah! Silakan login ulang dengan password baru.')
-            setCurrentPassword('')
+            setSuccess('Password berhasil diubah!')
             setNewPassword('')
             setConfirmPassword('')
         } catch (err) {
             setError(err.message)
         } finally {
-            setLoading(false)
+            setLoadingPassword(false)
         }
     }
 
@@ -124,6 +156,19 @@ const ProfilSettingsPage = () => {
                     </div>
                     <form onSubmit={handleUpdateProfile}>
                         <div className="form-group">
+                            <label>Username</label>
+                            <div className="input-with-icon">
+                                <AtSign size={18} />
+                                <input
+                                    type="text"
+                                    value={username}
+                                    onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s/g, ''))}
+                                    placeholder="Masukkan username"
+                                />
+                            </div>
+                            <small>Username digunakan untuk login</small>
+                        </div>
+                        <div className="form-group">
                             <label>Nama Lengkap</label>
                             <input
                                 type="text"
@@ -132,22 +177,33 @@ const ProfilSettingsPage = () => {
                                 placeholder="Masukkan nama lengkap"
                             />
                         </div>
-                        <div className="form-group">
-                            <label>Email</label>
-                            <div className="input-with-icon">
-                                <Mail size={18} />
-                                <input
-                                    type="email"
-                                    value={email}
-                                    disabled
-                                    className="disabled"
-                                />
-                            </div>
-                            <small>Email tidak dapat diubah</small>
-                        </div>
                         <button type="submit" className="btn btn-primary" disabled={loading}>
                             <Save size={18} />
-                            <span>{loading ? 'Menyimpan...' : 'Simpan Perubahan'}</span>
+                            <span>{loading ? 'Menyimpan...' : 'Simpan Profil'}</span>
+                        </button>
+                    </form>
+                </div>
+
+                {/* Update Email Form */}
+                <div className="settings-card">
+                    <div className="card-header">
+                        <Mail size={24} />
+                        <h3>Ubah Email</h3>
+                    </div>
+                    <form onSubmit={handleUpdateEmail}>
+                        <div className="form-group">
+                            <label>Email</label>
+                            <input
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder="Masukkan email baru"
+                            />
+                            <small>Email digunakan untuk autentikasi sistem</small>
+                        </div>
+                        <button type="submit" className="btn btn-secondary" disabled={loadingEmail}>
+                            <Mail size={18} />
+                            <span>{loadingEmail ? 'Menyimpan...' : 'Ubah Email'}</span>
                         </button>
                     </form>
                 </div>
@@ -182,9 +238,9 @@ const ProfilSettingsPage = () => {
                                 placeholder="Ulangi password baru"
                             />
                         </div>
-                        <button type="submit" className="btn btn-warning" disabled={loading}>
+                        <button type="submit" className="btn btn-warning" disabled={loadingPassword}>
                             <Lock size={18} />
-                            <span>{loading ? 'Mengubah...' : 'Ubah Password'}</span>
+                            <span>{loadingPassword ? 'Mengubah...' : 'Ubah Password'}</span>
                         </button>
                     </form>
                 </div>
