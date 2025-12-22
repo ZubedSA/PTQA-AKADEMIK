@@ -7,30 +7,48 @@ const MobileActionMenu = ({ children, actions }) => {
     const menuRef = useRef(null)
     const navigate = useNavigate()
 
-    // Close on outside click
+    // Close on outside click - but not immediately to allow button clicks to complete
     useEffect(() => {
         const handleClickOutside = (event) => {
+            // Check if click is on menu item - if so, don't close yet
+            if (event.target.closest('.mobile-action-item')) {
+                return
+            }
             if (menuRef.current && !menuRef.current.contains(event.target)) {
                 setIsOpen(false)
             }
         }
-        document.addEventListener('mousedown', handleClickOutside)
-        document.addEventListener('touchstart', handleClickOutside)
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside)
-            document.removeEventListener('touchstart', handleClickOutside)
-        }
-    }, [])
 
-    const handleActionClick = (action) => {
+        if (isOpen) {
+            // Delay adding listener to prevent immediate close
+            const timer = setTimeout(() => {
+                document.addEventListener('mousedown', handleClickOutside)
+                document.addEventListener('touchstart', handleClickOutside, { passive: true })
+            }, 100)
+
+            return () => {
+                clearTimeout(timer)
+                document.removeEventListener('mousedown', handleClickOutside)
+                document.removeEventListener('touchstart', handleClickOutside)
+            }
+        }
+    }, [isOpen])
+
+    const handleActionClick = (action, e) => {
+        e.preventDefault()
+        e.stopPropagation()
+
+        // Close menu first
         setIsOpen(false)
 
-        // If action has a path, use navigate
-        if (action.path) {
-            navigate(action.path)
-        } else if (action.onClick) {
-            action.onClick()
-        }
+        // Execute action after a small delay to ensure state update completes
+        setTimeout(() => {
+            if (action.path) {
+                navigate(action.path)
+            } else if (action.onClick) {
+                action.onClick()
+            }
+        }, 50)
     }
 
     return (
@@ -47,6 +65,11 @@ const MobileActionMenu = ({ children, actions }) => {
                         e.stopPropagation()
                         setIsOpen(!isOpen)
                     }}
+                    onTouchEnd={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        setIsOpen(!isOpen)
+                    }}
                     title="Menu"
                     type="button"
                 >
@@ -58,11 +81,8 @@ const MobileActionMenu = ({ children, actions }) => {
                             <button
                                 key={index}
                                 className={`mobile-action-item ${action.danger ? 'danger' : ''}`}
-                                onClick={(e) => {
-                                    e.preventDefault()
-                                    e.stopPropagation()
-                                    handleActionClick(action)
-                                }}
+                                onClick={(e) => handleActionClick(action, e)}
+                                onTouchEnd={(e) => handleActionClick(action, e)}
                                 type="button"
                             >
                                 {action.icon}

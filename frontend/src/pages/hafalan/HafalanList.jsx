@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Plus, Search, Edit, Trash2, RefreshCw, FileText, BarChart3, CheckCircle, Clock, AlertCircle, Filter, Calendar, MessageCircle, Trophy, Save, Printer, Download, MoreVertical } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
+import { logDelete } from '../../lib/auditLog'
 import MobileActionMenu from '../../components/ui/MobileActionMenu'
 import './Hafalan.css'
 
@@ -307,6 +308,7 @@ const HafalanList = () => {
         try {
             const { error } = await supabase.from('hafalan').delete().eq('id', selectedHafalan.id)
             if (error) throw error
+            await logDelete('hafalan', selectedHafalan.santri_nama, `Hapus hafalan: ${selectedHafalan.santri_nama} - ${selectedHafalan.surah_mulai || selectedHafalan.surah}`)
             setHafalan(hafalan.filter(h => h.id !== selectedHafalan.id))
             setShowDeleteModal(false)
             setSelectedHafalan(null)
@@ -1453,29 +1455,30 @@ _PTQA Batuan_`
                             </div>
                         </>
                     )}
-
-                    {/* Delete Modal */}
-                    {showDeleteModal && (
-                        <div className="modal-overlay active">
-                            <div className="modal">
-                                <div className="modal-header">
-                                    <h3 className="modal-title">Konfirmasi Hapus</h3>
-                                    <button className="modal-close" onClick={() => setShowDeleteModal(false)}>×</button>
-                                </div>
-                                <div className="modal-body">
-                                    <p>Apakah Anda yakin ingin menghapus data hafalan ini?</p>
-                                </div>
-                                <div className="modal-footer">
-                                    <button className="btn btn-secondary" onClick={() => setShowDeleteModal(false)}>Batal</button>
-                                    <button className="btn btn-danger" onClick={handleDelete}>Hapus</button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
                 </>
+            )}
+
+            {/* Delete Modal - Outside all tabs so it works everywhere */}
+            {showDeleteModal && (
+                <div className="modal-overlay active">
+                    <div className="modal">
+                        <div className="modal-header">
+                            <h3 className="modal-title">Konfirmasi Hapus</h3>
+                            <button className="modal-close" onClick={() => setShowDeleteModal(false)}>×</button>
+                        </div>
+                        <div className="modal-body">
+                            <p>Apakah Anda yakin ingin menghapus data hafalan ini?</p>
+                        </div>
+                        <div className="modal-footer">
+                            <button className="btn btn-secondary" onClick={() => setShowDeleteModal(false)}>Batal</button>
+                            <button className="btn btn-danger" onClick={handleDelete}>Hapus</button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     )
 }
 
 export default HafalanList
+

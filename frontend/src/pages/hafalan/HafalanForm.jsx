@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, Save, RefreshCw } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
+import { logCreate, logUpdate } from '../../lib/auditLog'
 import './Hafalan.css'
 
 const HafalanForm = () => {
@@ -175,11 +176,15 @@ const HafalanForm = () => {
             if (isEdit) {
                 const { error } = await supabase.from('hafalan').update(payload).eq('id', id)
                 if (error) throw error
+                const santri = santriList.find(s => s.id === formData.santri_id)
+                await logUpdate('hafalan', santri?.nama || 'Santri', `Edit hafalan: ${santri?.nama || 'Santri'} - ${formData.surah_mulai}`)
                 setSuccess('Data hafalan berhasil diupdate!')
                 setTimeout(() => navigate('/hafalan'), 1500)
             } else {
                 const { error } = await supabase.from('hafalan').insert([payload])
                 if (error) throw error
+                const santriForLog = santriList.find(s => s.id === formData.santri_id)
+                await logCreate('hafalan', santriForLog?.nama || 'Santri', `Tambah hafalan: ${santriForLog?.nama || 'Santri'} - ${formData.surah_mulai}`)
 
                 // Data berhasil disimpan - tampilkan sukses dulu
                 setSuccess('Data hafalan berhasil disimpan!')

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { Plus, Search, Edit, Trash2, Eye, RefreshCw, Upload, FileSpreadsheet, X, MoreVertical } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
+import { logDelete } from '../../lib/auditLog'
 import MobileActionMenu from '../../components/ui/MobileActionMenu'
 import * as XLSX from 'xlsx'
 import './Santri.css'
@@ -125,6 +126,7 @@ const SantriList = () => {
         try {
             const { error } = await supabase.from('santri').delete().eq('id', selectedSantri.id)
             if (error) throw error
+            await logDelete('santri', selectedSantri.nama, `Hapus data santri: ${selectedSantri.nama} (${selectedSantri.nis})`)
             setSantri(santri.filter(s => s.id !== selectedSantri.id))
             setShowDeleteModal(false)
             setSelectedSantri(null)

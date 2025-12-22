@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import { Users, Database, UserPlus, Edit, Trash2, RefreshCw, Upload, FileSpreadsheet, CheckCircle, AlertCircle, Save, Shield, GraduationCap, User, Key, Lock, Eye, UserCheck } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import * as XLSX from 'xlsx'
+import MobileActionMenu from '../../components/ui/MobileActionMenu'
 
 import './Pengaturan.css'
 
@@ -820,12 +821,19 @@ const PengaturanPage = () => {
                                                     </span>
                                                 </td>
                                                 <td>
-                                                    <div className="action-buttons">
+                                                    <MobileActionMenu
+                                                        actions={[
+                                                            { icon: <Eye size={16} />, label: 'Detail', onClick: () => handleViewDetail(user) },
+                                                            { icon: <Edit size={16} />, label: 'Edit', onClick: () => handleEditUser(user) },
+                                                            { icon: <Key size={16} />, label: 'Reset Password', onClick: () => handleResetPassword(user) },
+                                                            { icon: <Trash2 size={16} />, label: 'Hapus', onClick: () => handleDeleteUser(user), danger: true }
+                                                        ]}
+                                                    >
                                                         <button className="btn-icon btn-icon-info" onClick={() => handleViewDetail(user)} title="Lihat Detail"><Eye size={16} /></button>
                                                         <button className="btn-icon" onClick={() => handleEditUser(user)} title="Edit"><Edit size={16} /></button>
                                                         <button className="btn-icon btn-icon-warning" onClick={() => handleResetPassword(user)} title="Reset Password"><Key size={16} /></button>
                                                         <button className="btn-icon btn-icon-danger" onClick={() => handleDeleteUser(user)} title="Hapus"><Trash2 size={16} /></button>
-                                                    </div>
+                                                    </MobileActionMenu>
                                                 </td>
                                             </tr>
                                         )
