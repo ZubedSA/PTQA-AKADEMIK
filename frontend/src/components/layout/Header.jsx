@@ -2,7 +2,9 @@ import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useTheme } from '../../context/ThemeContext'
-import { Bell, User, Menu, ChevronDown, Settings, LogOut, UserCircle, Clock, Sun, Moon } from 'lucide-react'
+import { Bell, User, Menu, ChevronDown, Settings, LogOut, UserCircle, Clock, Sun, Moon, Search } from 'lucide-react'
+import GlobalSearch from '../common/GlobalSearch'
+import NotificationDropdown from './NotificationDropdown'
 import './Header.css'
 
 const Header = ({ onMenuClick }) => {
@@ -11,7 +13,10 @@ const Header = ({ onMenuClick }) => {
     const navigate = useNavigate()
     const [showDropdown, setShowDropdown] = useState(false)
     const [showProfileModal, setShowProfileModal] = useState(false)
+    const [showSearch, setShowSearch] = useState(false)
+    const [showNotifications, setShowNotifications] = useState(false)
     const dropdownRef = useRef(null)
+    const notificationRef = useRef(null)
     const [currentTime, setCurrentTime] = useState(new Date())
 
     // Real-time clock update
@@ -31,6 +36,29 @@ const Header = ({ onMenuClick }) => {
         }
         document.addEventListener('mousedown', handleClickOutside)
         return () => document.removeEventListener('mousedown', handleClickOutside)
+    }, [])
+
+    // Close notification dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+                setShowNotifications(false)
+            }
+        }
+        document.addEventListener('mousedown', handleClickOutside)
+        return () => document.removeEventListener('mousedown', handleClickOutside)
+    }, [])
+
+    // Global keyboard shortcut for search (Ctrl+K or Cmd+K)
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault()
+                setShowSearch(true)
+            }
+        }
+        document.addEventListener('keydown', handleKeyDown)
+        return () => document.removeEventListener('keydown', handleKeyDown)
     }, [])
 
     // Format time to WIB
@@ -112,6 +140,17 @@ const Header = ({ onMenuClick }) => {
                 </div>
 
                 <div className="header-actions">
+                    {/* Global Search Button */}
+                    <button
+                        className="search-btn"
+                        onClick={() => setShowSearch(true)}
+                        title="Pencarian Global (Ctrl+K)"
+                    >
+                        <Search size={20} />
+                        <span className="search-btn-text">Cari...</span>
+                        <kbd className="search-shortcut">Ctrl+K</kbd>
+                    </button>
+
                     {/* Real-time Clock */}
                     <div className="header-clock">
                         <Clock size={16} className="clock-icon" />
@@ -131,10 +170,19 @@ const Header = ({ onMenuClick }) => {
                         {isDark ? <Sun size={20} /> : <Moon size={20} />}
                     </button>
 
-                    <button className="notification-btn">
-                        <Bell size={20} />
-                        <span className="notification-badge">3</span>
-                    </button>
+                    {/* Notification Button with Dropdown */}
+                    <div className="notification-wrapper" ref={notificationRef}>
+                        <button
+                            className="notification-btn"
+                            onClick={() => setShowNotifications(!showNotifications)}
+                        >
+                            <Bell size={20} />
+                        </button>
+                        <NotificationDropdown
+                            isOpen={showNotifications}
+                            onClose={() => setShowNotifications(false)}
+                        />
+                    </div>
 
                     {/* Profile Dropdown */}
                     <div className="user-profile-wrapper" ref={dropdownRef}>
@@ -217,6 +265,9 @@ const Header = ({ onMenuClick }) => {
                     </div>
                 </div>
             )}
+
+            {/* Global Search Modal */}
+            <GlobalSearch isOpen={showSearch} onClose={() => setShowSearch(false)} />
         </>
     )
 }
