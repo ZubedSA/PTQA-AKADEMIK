@@ -29,6 +29,114 @@
     background: rgba(255, 255, 255, 0.1);
 }
 
+/* ========== NESTED SUBMENU STYLES ========== */
+.nav-item.has-submenu {
+    position: relative;
+}
+
+.submenu-toggle {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.85);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 500;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.submenu-toggle:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.submenu-toggle:active {
+    background: rgba(255, 255, 255, 0.15);
+    transform: scale(0.99);
+}
+
+.submenu-toggle.active,
+.submenu-toggle.open {
+    background: rgba(255, 255, 255, 0.08);
+    color: white;
+}
+
+.submenu-toggle .nav-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.submenu-toggle .nav-text {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.submenu-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto;
+    transition: transform 0.25s ease;
+    flex-shrink: 0;
+    pointer-events: none;
+}
+
+.submenu-toggle.open .submenu-arrow {
+    transform: rotate(180deg);
+}
+
+.submenu {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+}
+
+.submenu.open {
+    max-height: 1000px;
+    transition: max-height 0.5s ease-in;
+}
+
+.submenu .nav-item {
+    margin: 2px 0;
+}
+
+.submenu .nav-link {
+    padding: 10px 14px 10px 26px;
+    font-size: 0.9rem;
+    border-radius: 8px;
+}
+
+.submenu .nav-link .nav-icon {
+    width: 18px;
+    height: 18px;
+}
+
+.submenu .submenu .nav-link {
+    padding-left: 38px;
+    font-size: 0.85rem;
+}
+
+.submenu .submenu .submenu .nav-link {
+    padding-left: 50px;
+    font-size: 0.82rem;
+}
+
 /* ========== MOBILE STYLES ========== */
 @media screen and (max-width: 768px) {
 

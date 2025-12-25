@@ -26,6 +26,18 @@ import ProfilSettingsPage from './pages/profil/ProfilSettingsPage'
 import WaliSantriPage from './pages/walisantri/WaliSantriPage'
 import BackupPage from './pages/backup/BackupPage'
 import SystemStatusPage from './pages/system/SystemStatusPage'
+// Keuangan Pages
+import KasPemasukanPage from './pages/keuangan/KasPemasukanPage'
+import KasPengeluaranPage from './pages/keuangan/KasPengeluaranPage'
+import KasLaporanPage from './pages/keuangan/KasLaporanPage'
+import TagihanSantriPage from './pages/keuangan/TagihanSantriPage'
+import KategoriPembayaranPage from './pages/keuangan/KategoriPembayaranPage'
+import PembayaranSantriPage from './pages/keuangan/PembayaranSantriPage'
+import LaporanPembayaranPage from './pages/keuangan/LaporanPembayaranPage'
+import AnggaranPage from './pages/keuangan/AnggaranPage'
+import PersetujuanDanaPage from './pages/keuangan/PersetujuanDanaPage'
+import RealisasiDanaPage from './pages/keuangan/RealisasiDanaPage'
+import LaporanPenyaluranPage from './pages/keuangan/LaporanPenyaluranPage'
 import './index.css'
 import './components/common/ErrorBoundary.css'
 
@@ -200,6 +212,77 @@ function App() {
                 <Route path="/laporan" element={
                   <ProtectedRoute roles={['admin', 'guru']} fallbackRedirect="/wali-santri">
                     <LaporanPage />
+                  </ProtectedRoute>
+                } />
+
+                {/* ============ KEUANGAN ROUTES (Admin, Bendahara, Pengasuh) ============ */}
+
+                {/* Kas - Pemasukan */}
+                <Route path="/keuangan/kas/pemasukan" element={
+                  <ProtectedRoute roles={['admin', 'bendahara', 'pengasuh']} fallbackRedirect="/wali-santri">
+                    <KasPemasukanPage />
+                  </ProtectedRoute>
+                } />
+                {/* Kas - Pengeluaran */}
+                <Route path="/keuangan/kas/pengeluaran" element={
+                  <ProtectedRoute roles={['admin', 'bendahara', 'pengasuh']} fallbackRedirect="/wali-santri">
+                    <KasPengeluaranPage />
+                  </ProtectedRoute>
+                } />
+                {/* Kas - Laporan */}
+                <Route path="/keuangan/kas/laporan" element={
+                  <ProtectedRoute roles={['admin', 'bendahara', 'pengasuh']} fallbackRedirect="/wali-santri">
+                    <KasLaporanPage />
+                  </ProtectedRoute>
+                } />
+
+                {/* Pembayaran - Tagihan Santri */}
+                <Route path="/keuangan/pembayaran/tagihan" element={
+                  <ProtectedRoute roles={['admin', 'bendahara', 'pengasuh']} fallbackRedirect="/wali-santri">
+                    <TagihanSantriPage />
+                  </ProtectedRoute>
+                } />
+                {/* Pembayaran - Kategori */}
+                <Route path="/keuangan/pembayaran/kategori" element={
+                  <ProtectedRoute roles={['admin', 'bendahara', 'pengasuh']} fallbackRedirect="/wali-santri">
+                    <KategoriPembayaranPage />
+                  </ProtectedRoute>
+                } />
+                {/* Pembayaran - Pembayaran Santri */}
+                <Route path="/keuangan/pembayaran/bayar" element={
+                  <ProtectedRoute roles={['admin', 'bendahara', 'pengasuh']} fallbackRedirect="/wali-santri">
+                    <PembayaranSantriPage />
+                  </ProtectedRoute>
+                } />
+                {/* Pembayaran - Laporan */}
+                <Route path="/keuangan/pembayaran/laporan" element={
+                  <ProtectedRoute roles={['admin', 'bendahara', 'pengasuh']} fallbackRedirect="/wali-santri">
+                    <LaporanPembayaranPage />
+                  </ProtectedRoute>
+                } />
+
+                {/* Penyaluran Dana - Anggaran */}
+                <Route path="/keuangan/dana/anggaran" element={
+                  <ProtectedRoute roles={['admin', 'bendahara', 'pengasuh']} fallbackRedirect="/wali-santri">
+                    <AnggaranPage />
+                  </ProtectedRoute>
+                } />
+                {/* Penyaluran Dana - Persetujuan */}
+                <Route path="/keuangan/dana/persetujuan" element={
+                  <ProtectedRoute roles={['admin', 'bendahara', 'pengasuh']} fallbackRedirect="/wali-santri">
+                    <PersetujuanDanaPage />
+                  </ProtectedRoute>
+                } />
+                {/* Penyaluran Dana - Realisasi */}
+                <Route path="/keuangan/dana/realisasi" element={
+                  <ProtectedRoute roles={['admin', 'bendahara', 'pengasuh']} fallbackRedirect="/wali-santri">
+                    <RealisasiDanaPage />
+                  </ProtectedRoute>
+                } />
+                {/* Penyaluran Dana - Laporan */}
+                <Route path="/keuangan/dana/laporan" element={
+                  <ProtectedRoute roles={['admin', 'bendahara', 'pengasuh']} fallbackRedirect="/wali-santri">
+                    <LaporanPenyaluranPage />
                   </ProtectedRoute>
                 } />
 

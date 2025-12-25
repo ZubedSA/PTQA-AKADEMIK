@@ -14,7 +14,7 @@ import {
     Legend,
     Filler
 } from 'chart.js'
-import { Users, GraduationCap, Home, BookMarked, CheckCircle, Clock, AlertCircle, FileText, TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import { Users, GraduationCap, Home, BookMarked, CheckCircle, Clock, AlertCircle, FileText, TrendingUp, TrendingDown, Minus, ArrowUpCircle, ArrowDownCircle, CreditCard } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import ConnectionStatus from '../components/common/ConnectionStatus'
 import './Dashboard.css'
@@ -40,6 +40,11 @@ const Dashboard = () => {
         totalGuru: 0,
         totalKelas: 0,
         totalHalaqoh: 0
+    })
+    const [keuanganStats, setKeuanganStats] = useState({
+        pemasukan: 0,
+        pengeluaran: 0,
+        pembayaran: 0
     })
     const [hafalanStats, setHafalanStats] = useState({
         total: 0,
@@ -89,6 +94,7 @@ const Dashboard = () => {
     useEffect(() => {
         fetchStats()
         fetchHafalanData()
+        fetchKeuanganStats()
         updateGreeting()
         const interval = setInterval(updateGreeting, 60000)
         return () => clearInterval(interval)
@@ -114,6 +120,32 @@ const Dashboard = () => {
             console.error('Error fetching stats:', error.message)
         } finally {
             setLoading(false)
+        }
+    }
+
+    const fetchKeuanganStats = async () => {
+        try {
+            const currentYear = new Date().getFullYear()
+            const startOfYear = `${currentYear}-01-01`
+            const endOfYear = `${currentYear}-12-31`
+
+            const [pemasukanRes, pengeluaranRes, pembayaranRes] = await Promise.all([
+                supabase.from('kas_pemasukan').select('jumlah').gte('tanggal', startOfYear).lte('tanggal', endOfYear),
+                supabase.from('kas_pengeluaran').select('jumlah').gte('tanggal', startOfYear).lte('tanggal', endOfYear),
+                supabase.from('pembayaran_santri').select('jumlah').gte('tanggal', startOfYear).lte('tanggal', endOfYear)
+            ])
+
+            const totalPemasukan = pemasukanRes.data?.reduce((sum, d) => sum + Number(d.jumlah || 0), 0) || 0
+            const totalPengeluaran = pengeluaranRes.data?.reduce((sum, d) => sum + Number(d.jumlah || 0), 0) || 0
+            const totalPembayaran = pembayaranRes.data?.reduce((sum, d) => sum + Number(d.jumlah || 0), 0) || 0
+
+            setKeuanganStats({
+                pemasukan: totalPemasukan,
+                pengeluaran: totalPengeluaran,
+                pembayaran: totalPembayaran
+            })
+        } catch (error) {
+            console.log('Error fetching keuangan stats:', error.message)
         }
     }
 
@@ -410,6 +442,52 @@ const Dashboard = () => {
                     </div>
                     <div className="stat-icon-box teal">
                         <BookMarked size={24} />
+                    </div>
+                </div>
+            </div>
+
+            {/* Keuangan Summary */}
+            <div className="dashboard-section-title">💰 Ringkasan Keuangan Tahun {currentYear}</div>
+            <div className="dashboard-stats-grid">
+                <div className="dashboard-stat-card">
+                    <div className="stat-info">
+                        <span className="stat-label">Total Pemasukan</span>
+                        <span className="stat-value green">Rp {keuanganStats.pemasukan.toLocaleString('id-ID')}</span>
+                    </div>
+                    <div className="stat-icon-box green">
+                        <ArrowUpCircle size={24} />
+                    </div>
+                </div>
+
+                <div className="dashboard-stat-card">
+                    <div className="stat-info">
+                        <span className="stat-label">Total Pengeluaran</span>
+                        <span className="stat-value red">Rp {keuanganStats.pengeluaran.toLocaleString('id-ID')}</span>
+                    </div>
+                    <div className="stat-icon-box red">
+                        <ArrowDownCircle size={24} />
+                    </div>
+                </div>
+
+                <div className="dashboard-stat-card">
+                    <div className="stat-info">
+                        <span className="stat-label">Total Pembayaran Santri</span>
+                        <span className="stat-value blue">Rp {keuanganStats.pembayaran.toLocaleString('id-ID')}</span>
+                    </div>
+                    <div className="stat-icon-box blue">
+                        <CreditCard size={24} />
+                    </div>
+                </div>
+
+                <div className="dashboard-stat-card">
+                    <div className="stat-info">
+                        <span className="stat-label">Saldo Kas</span>
+                        <span className={`stat-value ${(keuanganStats.pemasukan - keuanganStats.pengeluaran) >= 0 ? 'green' : 'red'}`}>
+                            Rp {(keuanganStats.pemasukan - keuanganStats.pengeluaran).toLocaleString('id-ID')}
+                        </span>
+                    </div>
+                    <div className={`stat-icon-box ${(keuanganStats.pemasukan - keuanganStats.pengeluaran) >= 0 ? 'green' : 'red'}`}>
+                        <TrendingUp size={24} />
                     </div>
                 </div>
             </div>
