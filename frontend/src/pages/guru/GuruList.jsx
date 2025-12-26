@@ -3,10 +3,13 @@ import { Link } from 'react-router-dom'
 import { Plus, Search, Edit, Trash2, Eye, RefreshCw, MoreVertical } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { logDelete } from '../../lib/auditLog'
+import { useAuth } from '../../context/AuthContext'
 import MobileActionMenu from '../../components/ui/MobileActionMenu'
 import './Guru.css'
 
 const GuruList = () => {
+    const { activeRole } = useAuth()
+    const isAdmin = activeRole === 'admin'
     const [guru, setGuru] = useState([])
     const [searchTerm, setSearchTerm] = useState('')
     const [sortBy, setSortBy] = useState('nama-asc')
@@ -20,6 +23,7 @@ const GuruList = () => {
     }, [])
 
     const fetchGuru = async () => {
+        // ... (existing fetch logic)
         setLoading(true)
         setError(null)
         try {
@@ -39,6 +43,7 @@ const GuruList = () => {
     }
 
     const handleDelete = async () => {
+        // ... (existing delete logic)
         if (!selectedGuru) return
 
         try {
@@ -83,10 +88,12 @@ const GuruList = () => {
                     <h1 className="page-title">Data Guru</h1>
                     <p className="page-subtitle">Kelola data pengajar dan wali kelas</p>
                 </div>
-                <Link to="/guru/create" className="btn btn-primary">
-                    <Plus size={18} />
-                    Tambah Guru
-                </Link>
+                {isAdmin && (
+                    <Link to="/guru/create" className="btn btn-primary">
+                        <Plus size={18} />
+                        Tambah Guru
+                    </Link>
+                )}
             </div>
 
             {error && (
@@ -171,26 +178,32 @@ const GuruList = () => {
                                             <MobileActionMenu
                                                 actions={[
                                                     { icon: <Eye size={16} />, label: 'Detail', path: `/guru/${item.id}` },
-                                                    { icon: <Edit size={16} />, label: 'Edit', path: `/guru/${item.id}/edit` },
-                                                    { icon: <Trash2 size={16} />, label: 'Hapus', onClick: () => { setSelectedGuru(item); setShowDeleteModal(true) }, danger: true }
+                                                    ...(isAdmin ? [
+                                                        { icon: <Edit size={16} />, label: 'Edit', path: `/guru/${item.id}/edit` },
+                                                        { icon: <Trash2 size={16} />, label: 'Hapus', onClick: () => { setSelectedGuru(item); setShowDeleteModal(true) }, danger: true }
+                                                    ] : [])
                                                 ]}
                                             >
                                                 <Link to={`/guru/${item.id}`} className="btn-icon" title="Lihat Detail">
                                                     <Eye size={16} />
                                                 </Link>
-                                                <Link to={`/guru/${item.id}/edit`} className="btn-icon" title="Edit">
-                                                    <Edit size={16} />
-                                                </Link>
-                                                <button
-                                                    className="btn-icon btn-icon-danger"
-                                                    title="Hapus"
-                                                    onClick={() => {
-                                                        setSelectedGuru(item)
-                                                        setShowDeleteModal(true)
-                                                    }}
-                                                >
-                                                    <Trash2 size={16} />
-                                                </button>
+                                                {isAdmin && (
+                                                    <>
+                                                        <Link to={`/guru/${item.id}/edit`} className="btn-icon" title="Edit">
+                                                            <Edit size={16} />
+                                                        </Link>
+                                                        <button
+                                                            className="btn-icon btn-icon-danger"
+                                                            title="Hapus"
+                                                            onClick={() => {
+                                                                setSelectedGuru(item)
+                                                                setShowDeleteModal(true)
+                                                            }}
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    </>
+                                                )}
                                             </MobileActionMenu>
                                         </td>
                                     </tr>

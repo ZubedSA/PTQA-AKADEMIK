@@ -1,34 +1,34 @@
 import { useState, useEffect, useRef } from 'react'
-import { createClient } from '@supabase/supabase-js'
-import { Users, Database, UserPlus, Edit, Trash2, RefreshCw, Upload, FileSpreadsheet, CheckCircle, AlertCircle, Save, Shield, GraduationCap, User, Key, Lock, Eye, UserCheck } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import * as XLSX from 'xlsx'
-import MobileActionMenu from '../../components/ui/MobileActionMenu'
-
+import {
+    Database,
+    Upload,
+    FileSpreadsheet,
+    CheckCircle,
+    AlertCircle,
+    RefreshCw,
+    Download,
+    Settings,
+    Shield,
+    Trash2,
+    FileDown,
+    Save,
+    School,
+    Calendar,
+    Users,
+    BookOpen,
+    GraduationCap,
+    Layers,
+    FileText,
+    RotateCcw,
+    X,
+    Clock
+} from 'lucide-react'
 import './Pengaturan.css'
 
 const PengaturanPage = () => {
-    const [activeTab, setActiveTab] = useState('users')
-
-    // User management states
-    const [users, setUsers] = useState([])
-    const [loadingUsers, setLoadingUsers] = useState(false)
-    const [showUserModal, setShowUserModal] = useState(false)
-    const [editingUser, setEditingUser] = useState(null)
-    const [userForm, setUserForm] = useState({ email: '', password: '', nama: '', role: 'guru', no_telp: '', santri_ids: [], username: '' })
-    const [santriList, setSantriList] = useState([])
-    const [savingUser, setSavingUser] = useState(false)
-    const [userError, setUserError] = useState('')
-    const [userSuccess, setUserSuccess] = useState('')
-
-    // Password reset states
-    const [showPasswordModal, setShowPasswordModal] = useState(false)
-    const [passwordUser, setPasswordUser] = useState(null)
-    const [newPassword, setNewPassword] = useState('')
-    const [confirmPassword, setConfirmPassword] = useState('')
-    const [savingPassword, setSavingPassword] = useState(false)
-    const [passwordError, setPasswordError] = useState('')
-    const [passwordSuccess, setPasswordSuccess] = useState('')
+    const [activeTab, setActiveTab] = useState('import')
 
     // Data import states
     const [selectedDataType, setSelectedDataType] = useState('santri')
@@ -40,306 +40,236 @@ const PengaturanPage = () => {
     const [importResult, setImportResult] = useState({ success: 0, failed: 0, message: '' })
     const fileInputRef = useRef(null)
 
-    useEffect(() => {
-        if (activeTab === 'users') {
-            fetchUsers()
-            fetchSantriList()
-        }
-    }, [activeTab])
+    // System settings states
+    const [systemSettings, setSystemSettings] = useState({
+        school_name: 'PTQ Al-Usymuni Batuan',
+        school_year: '2024/2025',
+        school_address: 'Batuan, Sumenep, Madura',
+        school_phone: '',
+        school_email: ''
+    })
+    const [savingSettings, setSavingSettings] = useState(false)
 
-    const fetchUsers = async () => {
-        setLoadingUsers(true)
-        try {
-            const { data, error } = await supabase.from('user_profiles').select('*').order('created_at', { ascending: false })
-            if (error) throw error
-            setUsers(data || [])
-        } catch (err) {
-            console.error('Error:', err.message)
-        } finally {
-            setLoadingUsers(false)
-        }
-    }
+    // Trash states
+    const [trashItems, setTrashItems] = useState([])
+    const [loadingTrash, setLoadingTrash] = useState(false)
+    const [selectedTrashType, setSelectedTrashType] = useState('all')
+    const [restoringId, setRestoringId] = useState(null)
+    const [deletingId, setDeletingId] = useState(null)
 
-    const fetchSantriList = async () => {
-        try {
-            const { data, error } = await supabase
-                .from('santri')
-                .select('id, nama, kelas:kelas_id(nama)')
-                .eq('status', 'Aktif')
-                .order('nama')
-            if (error) throw error
-            setSantriList(data || [])
-        } catch (err) {
-            console.error('Fetch santri error:', err)
-        }
-    }
-
-    const handleAddUser = async (e) => {
-        e.preventDefault()
-        setSavingUser(true)
-        setUserError('')
-        setUserSuccess('')
-
-        try {
-            let newUserId = null
-
-            if (editingUser) {
-                // Update existing user profile
-                const { error } = await supabase
-                    .from('user_profiles')
-                    .update({
-                        nama: userForm.nama,
-                        role: userForm.role,
-                        no_telp: userForm.no_telp,
-                        email: userForm.email,
-                        username: userForm.username,
-                        updated_at: new Date().toISOString()
-                    })
-                    .eq('id', editingUser.id)
-
-                if (error) throw error
-                setUserSuccess('User berhasil diupdate!')
-            } else {
-                // Validasi: Username dan Email wajib
-                if (!userForm.username) {
-                    throw new Error('Username harus diisi')
-                }
-                if (!userForm.email) {
-                    throw new Error('Email harus diisi')
-                }
-
-                // Gunakan email untuk autentikasi Supabase
-                const authEmail = userForm.email
-
-                // Create new user with Supabase Auth
-                // Gunakan client sementara agar session Admin tidak tertimpa/logout
-                const tempSupabase = createClient(
-                    import.meta.env.VITE_SUPABASE_URL,
-                    import.meta.env.VITE_SUPABASE_ANON_KEY,
-                    { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }
-                )
-
-                const { data: authData, error: authError } = await tempSupabase.auth.signUp({
-                    email: authEmail,
-                    password: userForm.password,
-                    options: {
-                        data: {
-                            nama: userForm.nama,
-                            role: userForm.role
-                        }
-                    }
-                })
-
-                if (authError) throw authError
-
-                // Create user profile with password reference and no_telp
-                if (authData.user) {
-                    const { error: profileError } = await supabase.from('user_profiles').insert([{
-                        user_id: authData.user.id,
-                        email: userForm.email || null,
-                        username: userForm.username,
-                        no_telp: userForm.no_telp || null,
-                        nama: userForm.nama,
-                        role: userForm.role,
-                        password_ref: userForm.password
-                    }])
-
-                    if (profileError) throw profileError
-                    newUserId = authData.user.id
-                }
-
-                setUserSuccess('User berhasil ditambahkan!')
-            }
-
-            // JOIN SANTRI LOGIC
-            const targetUserId = editingUser ? editingUser.user_id : newUserId
-
-            if (targetUserId && userForm.role === 'wali') {
-                // 1. Reset: Unlink semua santri dari user ini dulu
-                await supabase.from('santri').update({ wali_id: null }).eq('wali_id', targetUserId)
-
-                // 2. Link: Hubungkan santri yang dipilih
-                if (userForm.santri_ids && userForm.santri_ids.length > 0) {
-                    const { error: linkError } = await supabase
-                        .from('santri')
-                        .update({ wali_id: targetUserId })
-                        .in('id', userForm.santri_ids)
-
-                    if (linkError) {
-                        console.error('Link santri error:', linkError)
-                        alert('User disimpan, TAPI Gagal menghubungkan santri: ' + linkError.message)
-                    }
-                }
-            }
-
-            fetchUsers()
-            setTimeout(() => {
-                setShowUserModal(false)
-                setUserForm({ email: '', password: '', nama: '', role: 'guru', no_telp: '', santri_ids: [], username: '' })
-                setEditingUser(null)
-                setUserSuccess('')
-            }, 2000)
-        } catch (err) {
-            setUserError(err.message)
-        } finally {
-            setSavingUser(false)
-        }
-    }
-
-    const handleEditUser = (user) => {
-        setEditingUser(user)
-        // Fetch linked santri if role is wali
-        let linkedSantriIds = []
-        if (user.role === 'wali') {
-            supabase
-                .from('santri')
-                .select('id')
-                .eq('wali_id', user.user_id)
-                .then(({ data }) => {
-                    if (data) {
-                        setUserForm(prev => ({ ...prev, santri_ids: data.map(s => s.id) }))
-                    }
-                })
-        }
-
-        setUserForm({
-            username: user.username || user.email.split('@')[0],
-            password: '',
-            nama: user.nama || '',
-            role: user.role || 'guru',
-            no_telp: user.no_telp || '',
-            santri_ids: [] // Akan diisi async di atas
-        })
-        setShowUserModal(true)
-    }
-
-    const handleResetPassword = (user) => {
-        setPasswordUser(user)
-        setNewPassword('')
-        setConfirmPassword('')
-        setPasswordError('')
-        setPasswordSuccess('')
-        setShowPasswordModal(true)
-    }
-
-    const handleSavePassword = async (e) => {
-        e.preventDefault()
-
-        if (newPassword.length < 6) {
-            setPasswordError('Password minimal 6 karakter')
-            return
-        }
-
-        if (newPassword !== confirmPassword) {
-            setPasswordError('Password dan konfirmasi tidak cocok')
-            return
-        }
-
-        setSavingPassword(true)
-        setPasswordError('')
-        setPasswordSuccess('')
-
-        try {
-            // 1. Update password di Supabase Auth via backend API
-            const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'
-            const response = await fetch(`${backendUrl}/api/users/update-password`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    userId: passwordUser.user_id,
-                    newPassword: newPassword
-                })
-            })
-
-            const result = await response.json()
-
-            if (!response.ok) {
-                throw new Error(result.error || 'Gagal mengubah password di Auth')
-            }
-
-            // 2. Update password_ref di user_profiles (sebagai referensi) - tidak fatal jika gagal
-            try {
-                await supabase
-                    .from('user_profiles')
-                    .update({
-                        password_ref: newPassword,
-                        updated_at: new Date().toISOString()
-                    })
-                    .eq('id', passwordUser.id)
-            } catch (refErr) {
-                console.warn('password_ref update failed:', refErr)
-            }
-
-            setPasswordSuccess('Password berhasil diubah! Silakan login dengan password baru.')
-            fetchUsers()
-
-            setTimeout(() => {
-                setShowPasswordModal(false)
-                setPasswordUser(null)
-                setNewPassword('')
-                setConfirmPassword('')
-            }, 1500)
-        } catch (err) {
-            console.error('Password update error:', err)
-            setPasswordError(err.message)
-        } finally {
-            setSavingPassword(false)
-        }
-    }
-
-    // View detail states
-    const [showDetailModal, setShowDetailModal] = useState(false)
-    const [detailUser, setDetailUser] = useState(null)
-
-    const handleViewDetail = (user) => {
-        setDetailUser(user)
-        setShowDetailModal(true)
-    }
-
-    const handleDeleteUser = async (user) => {
-        if (!confirm(`Yakin ingin menghapus user ${user.email}?`)) return
-
-        try {
-            const { error } = await supabase.from('user_profiles').delete().eq('id', user.id)
-            if (error) throw error
-            fetchUsers()
-        } catch (err) {
-            alert('Error: ' + err.message)
-        }
-    }
-
-    const getRoleBadge = (role) => {
-        switch (role) {
-            case 'admin': return { class: 'badge-success', icon: Shield, label: 'Admin' }
-            case 'guru': return { class: 'badge-info', icon: GraduationCap, label: 'Guru' }
-            case 'wali': return { class: 'badge-warning', icon: User, label: 'Wali Santri' }
-            default: return { class: 'badge-secondary', icon: User, label: role }
-        }
-    }
+    // Export states
+    const [exporting, setExporting] = useState(false)
 
     const dataTypes = [
-        { id: 'santri', label: 'Data Santri', icon: Users, table: 'santri' },
-        { id: 'guru', label: 'Data Guru', icon: Users, table: 'guru' },
-        { id: 'kelas', label: 'Data Kelas', icon: Database, table: 'kelas' },
-        { id: 'halaqoh', label: 'Data Halaqoh', icon: Database, table: 'halaqoh' },
-        { id: 'mapel', label: 'Data Mapel', icon: Database, table: 'mapel' },
+        { id: 'santri', label: 'Data Santri', icon: Users },
+        { id: 'guru', label: 'Data Guru', icon: GraduationCap },
+        { id: 'kelas', label: 'Data Kelas', icon: Layers },
+        { id: 'halaqoh', label: 'Data Halaqoh', icon: BookOpen },
+        { id: 'mapel', label: 'Mata Pelajaran', icon: FileText }
     ]
 
+    const trashTypes = [
+        { id: 'all', label: 'Semua' },
+        { id: 'santri', label: 'Santri' },
+        { id: 'guru', label: 'Guru' },
+        { id: 'hafalan', label: 'Hafalan' },
+        { id: 'nilai', label: 'Nilai' },
+        { id: 'presensi', label: 'Presensi' }
+    ]
+
+    useEffect(() => {
+        if (activeTab === 'trash') {
+            fetchTrashItems()
+        } else if (activeTab === 'system') {
+            fetchSettings()
+        }
+    }, [activeTab, selectedTrashType])
+
+    const fetchSettings = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('system_settings')
+                .select('*')
+                .single()
+
+            if (error && error.code !== 'PGRST116') throw error // Ignore no rows error
+
+            if (data) {
+                setSystemSettings({
+                    school_name: data.school_name || 'PTQ Al-Usymuni Batuan',
+                    school_year: data.school_year || '2024/2025',
+                    school_address: data.school_address || 'Batuan, Sumenep, Madura',
+                    school_phone: data.school_phone || '',
+                    school_email: data.school_email || ''
+                })
+            }
+        } catch (err) {
+            console.error('Error fetching settings:', err.message)
+        }
+    }
+
+    const handleSaveSettings = async () => {
+        setSavingSettings(true)
+        try {
+            // Check if settings exist first
+            const { data: existing } = await supabase.from('system_settings').select('id').single()
+
+            let error
+            if (existing) {
+                const { error: updateError } = await supabase
+                    .from('system_settings')
+                    .update({
+                        school_name: systemSettings.school_name,
+                        school_year: systemSettings.school_year,
+                        school_address: systemSettings.school_address,
+                        school_phone: systemSettings.school_phone,
+                        school_email: systemSettings.school_email,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', existing.id)
+                error = updateError
+            } else {
+                const { error: insertError } = await supabase
+                    .from('system_settings')
+                    .insert({
+                        school_name: systemSettings.school_name,
+                        school_year: systemSettings.school_year,
+                        school_address: systemSettings.school_address,
+                        school_phone: systemSettings.school_phone,
+                        school_email: systemSettings.school_email
+                    })
+                error = insertError
+            }
+
+            if (error) throw error
+            alert('Pengaturan berhasil disimpan!')
+        } catch (err) {
+            alert('Gagal menyimpan pengaturan: ' + err.message)
+        } finally {
+            setSavingSettings(false)
+        }
+    }
+
+    const fetchTrashItems = async () => {
+        setLoadingTrash(true)
+        try {
+            let query = supabase
+                .from('trash')
+                .select('*')
+                .order('deleted_at', { ascending: false })
+
+            if (selectedTrashType !== 'all') {
+                query = query.eq('table_name', selectedTrashType)
+            }
+
+            const { data, error } = await query.limit(100)
+
+            if (error) throw error
+            setTrashItems(data || [])
+        } catch (err) {
+            console.error('Error fetching trash:', err.message)
+            setTrashItems([])
+        } finally {
+            setLoadingTrash(false)
+        }
+    }
+
+    const handleRestoreItem = async (item) => {
+        if (!window.confirm(`Pulihkan data ${item.table_name} ini?`)) return
+
+        setRestoringId(item.id)
+        try {
+            // Parse the stored data
+            const originalData = typeof item.data === 'string' ? JSON.parse(item.data) : item.data
+
+            // Remove any trash-related fields
+            delete originalData.deleted_at
+            delete originalData.is_deleted
+
+            // Insert back to original table
+            const { error: insertError } = await supabase
+                .from(item.table_name)
+                .insert(originalData)
+
+            if (insertError) throw insertError
+
+            // Delete from trash
+            const { error: deleteError } = await supabase
+                .from('trash')
+                .delete()
+                .eq('id', item.id)
+
+            if (deleteError) throw deleteError
+
+            alert('Data berhasil dipulihkan!')
+            fetchTrashItems()
+        } catch (err) {
+            alert('Gagal memulihkan: ' + err.message)
+        } finally {
+            setRestoringId(null)
+        }
+    }
+
+    const handlePermanentDelete = async (item) => {
+        if (!window.confirm(`Hapus permanen data ${item.table_name} ini? Data tidak dapat dikembalikan!`)) return
+
+        setDeletingId(item.id)
+        try {
+            const { error } = await supabase
+                .from('trash')
+                .delete()
+                .eq('id', item.id)
+
+            if (error) throw error
+
+            alert('Data berhasil dihapus permanen!')
+            fetchTrashItems()
+        } catch (err) {
+            alert('Gagal menghapus: ' + err.message)
+        } finally {
+            setDeletingId(null)
+        }
+    }
+
+    const handleEmptyTrash = async () => {
+        if (!window.confirm('Hapus semua data di sampah? Data tidak dapat dikembalikan!')) return
+
+        setLoadingTrash(true)
+        try {
+            // Get 30-day old items for auto-delete display
+            const thirtyDaysAgo = new Date()
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+
+            const { error } = await supabase
+                .from('trash')
+                .delete()
+                .lt('deleted_at', thirtyDaysAgo.toISOString())
+
+            if (error) throw error
+
+            alert('Data lama (>30 hari) berhasil dihapus!')
+            fetchTrashItems()
+        } catch (err) {
+            alert('Gagal mengosongkan: ' + err.message)
+        } finally {
+            setLoadingTrash(false)
+        }
+    }
+
+    // Column mapping for Excel import
     const getColumnMapping = (type) => {
         switch (type) {
             case 'santri':
                 return {
-                    'nis': ['nis', 'nisn', 'no_induk', 'no induk', 'student_id', 'no', 'nomor', 'nomor induk'],
-                    'nama': ['nama', 'name', 'nama_lengkap', 'nama lengkap', 'fullname', 'nama santri', 'nama_santri'],
-                    'jenis_kelamin': ['jenis_kelamin', 'jenis kelamin', 'gender', 'jk', 'l/p', 'kelamin', 'j.k', 'j.k.'],
-                    'tempat_lahir': ['tempat_lahir', 'tempat lahir', 'birthplace', 'tmp lahir', 'tmp_lahir', 'tempat'],
-                    'tanggal_lahir': ['tanggal_lahir', 'tanggal lahir', 'tgl lahir', 'tgl_lahir', 'birthdate', 'ttl', 'tgl', 'lahir'],
-                    'alamat': ['alamat', 'address', 'domisili', 'tempat tinggal'],
-                    'nama_wali': ['nama_wali', 'nama wali', 'namawali', 'wali', 'ortu', 'parent', 'orang tua', 'orangtua', 'ayah', 'ibu', 'wali santri', 'walisantri', 'orang_tua'],
-                    'no_telp_wali': ['no_telp_wali', 'no telp wali', 'telp_wali', 'telp wali', 'hp wali', 'no hp', 'hp', 'telp', 'telepon', 'no_hp', 'phone', 'no telp', 'no_telp'],
-                    'status': ['status', 'sts', 'aktif'],
-                    '_kelas_nama': ['kelas', 'kelas_nama', 'nama kelas', 'class', 'tingkat kelas'],
-                    '_halaqoh_nama': ['halaqoh', 'halaqah', 'kelompok', 'halaqoh_nama', 'nama halaqoh', 'group']
+                    'nis': ['nis', 'nisn', 'no_induk', 'no induk', 'nomor induk'],
+                    'nama': ['nama', 'name', 'nama_lengkap', 'nama lengkap'],
+                    'jenis_kelamin': ['jenis_kelamin', 'jenis kelamin', 'gender', 'jk', 'l/p'],
+                    'tempat_lahir': ['tempat_lahir', 'tempat lahir', 'birthplace'],
+                    'tanggal_lahir': ['tanggal_lahir', 'tanggal lahir', 'tgl_lahir', 'tgl lahir', 'dob', 'birthdate'],
+                    'alamat': ['alamat', 'address'],
+                    'nama_wali': ['nama_wali', 'nama wali', 'wali', 'parent_name'],
+                    'no_telp_wali': ['no_telp_wali', 'no telp wali', 'telp_wali', 'hp_wali', 'phone'],
+                    'status': ['status']
                 }
             case 'guru':
                 return {
@@ -378,32 +308,25 @@ const PengaturanPage = () => {
     const mapColumns = (headers, type) => {
         const mapping = getColumnMapping(type)
         const result = {}
-        const usedDbCols = new Set() // Track kolom yang sudah digunakan
+        const usedDbCols = new Set()
 
-        // Untuk setiap header, cari match terbaik
         headers.forEach((header, idx) => {
             if (header === undefined || header === null) return
-
             const headerLower = String(header).toLowerCase().trim()
             if (!headerLower) return
 
             let bestMatch = null
             let bestMatchLength = 0
 
-            // Cari exact match atau alias yang paling cocok
             for (const [dbCol, aliases] of Object.entries(mapping)) {
-                // Skip jika kolom ini sudah digunakan
                 if (usedDbCols.has(dbCol)) continue
 
                 for (const alias of aliases) {
-                    // EXACT MATCH - prioritas tertinggi
                     if (headerLower === alias) {
                         bestMatch = dbCol
-                        bestMatchLength = Infinity // Exact match selalu menang
+                        bestMatchLength = Infinity
                         break
                     }
-
-                    // Cek apakah header SAMA PERSIS dengan alias (setelah normalisasi)
                     const normalizedHeader = headerLower.replace(/[_\s-]/g, '')
                     const normalizedAlias = alias.replace(/[_\s-]/g, '')
                     if (normalizedHeader === normalizedAlias && alias.length > bestMatchLength) {
@@ -411,8 +334,7 @@ const PengaturanPage = () => {
                         bestMatchLength = alias.length
                     }
                 }
-
-                if (bestMatchLength === Infinity) break // Sudah dapat exact match
+                if (bestMatchLength === Infinity) break
             }
 
             if (bestMatch) {
@@ -421,9 +343,6 @@ const PengaturanPage = () => {
             }
         })
 
-        console.log('Headers:', headers)
-        console.log('Map columns result:', result)
-        console.log('Mapped DB columns:', Object.values(result))
         return result
     }
 
@@ -447,80 +366,45 @@ const PengaturanPage = () => {
                 try {
                     const data = new Uint8Array(event.target.result)
                     const workbook = XLSX.read(data, { type: 'array' })
-
-                    console.log('Sheets found:', workbook.SheetNames)
-
                     const sheetName = workbook.SheetNames[0]
                     const sheet = workbook.Sheets[sheetName]
                     const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' })
 
-                    console.log('Total rows in file:', jsonData.length)
-                    console.log('First 5 rows:', jsonData.slice(0, 5))
-
-                    // Filter out empty rows
                     const nonEmptyRows = jsonData.filter(row =>
                         row && row.length > 0 && row.some(cell => cell !== '' && cell !== null && cell !== undefined)
                     )
 
-                    console.log('Non-empty rows:', nonEmptyRows.length)
-
-                    if (nonEmptyRows.length === 0) {
-                        setUploadError('File kosong. Tidak ada data yang ditemukan.')
-                        setUploadingFile(false)
-                        return
-                    }
-
                     if (nonEmptyRows.length < 2) {
-                        setUploadError('File hanya memiliki header tanpa data. Minimal harus ada 1 baris data.')
+                        setUploadError('File kosong atau hanya memiliki header.')
                         setUploadingFile(false)
                         return
                     }
 
-                    // Baris pertama yang tidak kosong adalah header
                     const headers = nonEmptyRows[0]
                     const dataRows = nonEmptyRows.slice(1)
-
-                    console.log('Headers:', headers)
-
                     const columnMap = mapColumns(headers, selectedDataType)
-                    console.log('Column mapping:', columnMap)
-
-                    const mappedColumns = Object.values(columnMap)
-                    console.log('Mapped to DB columns:', mappedColumns)
 
                     if (Object.keys(columnMap).length === 0) {
-                        const foundHeaders = headers.filter(h => h).join(', ')
-                        setUploadError(`Header kolom tidak dikenali.\n\nHeader di file: ${foundHeaders || '(kosong)'}\n\nHeader yang dikenali: nis, nama, jenis_kelamin, tempat_lahir, tanggal_lahir, alamat, nama_wali, no_telp_wali, status`)
+                        setUploadError(`Header kolom tidak dikenali.`)
                         setUploadingFile(false)
                         return
                     }
 
-                    const mappedData = dataRows.map((row, rowIdx) => {
+                    const mappedData = dataRows.map((row) => {
                         const obj = {}
                         Object.entries(columnMap).forEach(([colIdx, dbCol]) => {
                             let value = row[parseInt(colIdx)]
-
                             if (value === undefined || value === null || value === '') return
 
-                            // Konversi NIS/NISN ke string
                             if ((dbCol === 'nis' || dbCol === 'nip') && value) {
                                 value = String(value).trim()
                             }
 
-                            // Konversi tanggal Excel serial number ke date string
                             if (dbCol === 'tanggal_lahir' && value) {
                                 if (typeof value === 'number') {
                                     const excelEpoch = new Date(1899, 11, 30)
                                     const date = new Date(excelEpoch.getTime() + value * 86400000)
                                     value = date.toISOString().split('T')[0]
-                                } else if (typeof value === 'string' && value.includes('/')) {
-                                    const parts = value.split('/')
-                                    if (parts.length === 3) {
-                                        const day = parts[0].padStart(2, '0')
-                                        const month = parts[1].padStart(2, '0')
-                                        const year = parts[2].length === 2 ? '20' + parts[2] : parts[2]
-                                        value = `${year}-${month}-${day}`
-                                    }
                                 }
                             }
 
@@ -533,61 +417,29 @@ const PengaturanPage = () => {
                                 }
                             }
 
-                            if ((dbCol === 'no_telp_wali' || dbCol === 'no_telp') && value) {
-                                value = String(value).trim()
-                            }
-
                             if (value !== undefined && value !== '' && value !== null) {
                                 obj[dbCol] = value
                             }
                         })
 
-                        // Set default values untuk field wajib
                         if (!obj.status && Object.keys(obj).length > 0) {
                             obj.status = 'Aktif'
                         }
-
-                        // jenis_kelamin adalah field WAJIB - set default jika tidak ada
-                        if (!obj.jenis_kelamin && Object.keys(obj).length > 0 && selectedDataType === 'santri') {
-                            obj.jenis_kelamin = 'Laki-laki' // Default value
-                        }
-
-                        // Untuk guru juga perlu jenis_kelamin
-                        if (!obj.jenis_kelamin && Object.keys(obj).length > 0 && selectedDataType === 'guru') {
-                            obj.jenis_kelamin = 'Laki-laki' // Default value
+                        if (!obj.jenis_kelamin && Object.keys(obj).length > 0 && (selectedDataType === 'santri' || selectedDataType === 'guru')) {
+                            obj.jenis_kelamin = 'Laki-laki'
                         }
 
                         return obj
                     }).filter(obj => {
-                        // Filter: minimal harus ada nis/nip dan nama
-                        if (selectedDataType === 'santri') {
-                            return obj.nis && obj.nama
-                        } else if (selectedDataType === 'guru') {
-                            return obj.nip && obj.nama
-                        } else if (selectedDataType === 'kelas') {
-                            return obj.nama && obj.tingkat
-                        } else if (selectedDataType === 'mapel') {
-                            return obj.kode && obj.nama
-                        }
+                        if (selectedDataType === 'santri') return obj.nis && obj.nama
+                        if (selectedDataType === 'guru') return obj.nip && obj.nama
+                        if (selectedDataType === 'kelas') return obj.nama && obj.tingkat
+                        if (selectedDataType === 'mapel') return obj.kode && obj.nama
                         return Object.keys(obj).length > 1
                     })
 
-                    console.log('Mapped data count:', mappedData.length)
-                    console.log('Sample mapped data:', mappedData.slice(0, 3))
-
                     if (mappedData.length === 0) {
-                        let requiredFields = ''
-                        if (selectedDataType === 'santri') {
-                            requiredFields = 'nis dan nama'
-                        } else if (selectedDataType === 'guru') {
-                            requiredFields = 'nip dan nama'
-                        } else if (selectedDataType === 'kelas') {
-                            requiredFields = 'nama dan tingkat'
-                        } else if (selectedDataType === 'mapel') {
-                            requiredFields = 'kode dan nama'
-                        }
-
-                        setUploadError(`Tidak ada data yang valid ditemukan.\n\nKolom yang ter-map: ${mappedColumns.join(', ') || '(tidak ada)'}\n\nField WAJIB untuk ${selectedDataType}: ${requiredFields}\n\nPastikan file Excel memiliki kolom tersebut dan data tidak kosong.`)
+                        setUploadError('Tidak ada data valid ditemukan.')
                         setUploadingFile(false)
                         return
                     }
@@ -598,7 +450,6 @@ const PengaturanPage = () => {
                     setUploadingFile(false)
 
                 } catch (parseError) {
-                    console.error('Parse error:', parseError)
                     setUploadError(`Gagal memproses file: ${parseError.message}`)
                     setUploadingFile(false)
                 }
@@ -606,7 +457,6 @@ const PengaturanPage = () => {
 
             reader.readAsArrayBuffer(file)
         } catch (err) {
-            console.error('File read error:', err)
             setUploadError(`Error membaca file: ${err.message}`)
             setUploadingFile(false)
         }
@@ -621,74 +471,14 @@ const PengaturanPage = () => {
         setImportResult({ success: 0, failed: 0, message: '' })
 
         try {
-            console.log('Importing data:', importData)
-
-            let dataToInsert = [...importData]
-
-            // Jika import santri, cek apakah ada _kelas_nama atau _halaqoh_nama yang perlu di-lookup
-            if (selectedDataType === 'santri') {
-                // Ambil daftar kelas dan halaqoh untuk lookup
-                const { data: kelasList } = await supabase.from('kelas').select('id, nama')
-                const { data: halaqohList } = await supabase.from('halaqoh').select('id, nama')
-
-                console.log('Lookup - Kelas:', kelasList?.length || 0, 'Halaqoh:', halaqohList?.length || 0)
-
-                // Proses setiap data untuk lookup ID
-                dataToInsert = importData.map(item => {
-                    const newItem = { ...item }
-
-                    // Lookup kelas_id dari nama kelas
-                    if (item._kelas_nama && kelasList) {
-                        const kelasNama = String(item._kelas_nama).toLowerCase().trim()
-                        const kelas = kelasList.find(k =>
-                            k.nama.toLowerCase().trim() === kelasNama ||
-                            k.nama.toLowerCase().includes(kelasNama) ||
-                            kelasNama.includes(k.nama.toLowerCase())
-                        )
-                        if (kelas) {
-                            newItem.kelas_id = kelas.id
-                            console.log(`Kelas matched: "${item._kelas_nama}" -> ${kelas.nama} (${kelas.id})`)
-                        } else {
-                            console.log(`Kelas tidak ditemukan: "${item._kelas_nama}"`)
-                        }
-                        delete newItem._kelas_nama // Hapus field sementara
-                    }
-
-                    // Lookup halaqoh_id dari nama halaqoh
-                    if (item._halaqoh_nama && halaqohList) {
-                        const halaqohNama = String(item._halaqoh_nama).toLowerCase().trim()
-                        const halaqoh = halaqohList.find(h =>
-                            h.nama.toLowerCase().trim() === halaqohNama ||
-                            h.nama.toLowerCase().includes(halaqohNama) ||
-                            halaqohNama.includes(h.nama.toLowerCase())
-                        )
-                        if (halaqoh) {
-                            newItem.halaqoh_id = halaqoh.id
-                            console.log(`Halaqoh matched: "${item._halaqoh_nama}" -> ${halaqoh.nama} (${halaqoh.id})`)
-                        } else {
-                            console.log(`Halaqoh tidak ditemukan: "${item._halaqoh_nama}"`)
-                        }
-                        delete newItem._halaqoh_nama // Hapus field sementara
-                    }
-
-                    return newItem
-                })
-
-                console.log('Data setelah lookup:', dataToInsert.slice(0, 3))
-            }
-
-            // Insert data
-            const { data, error } = await supabase.from(selectedDataType).insert(dataToInsert)
+            const { error } = await supabase.from(selectedDataType).insert(importData)
 
             if (error) {
-                console.error('Supabase error:', error)
                 let errorMsg = error.message
                 if (error.message.includes('violates not-null constraint')) {
-                    errorMsg = 'Ada kolom wajib yang kosong. Pastikan kolom NIS dan Nama terisi.'
+                    errorMsg = 'Ada kolom wajib yang kosong.'
                 } else if (error.message.includes('duplicate key')) {
-                    errorMsg = 'Ada data duplikat dengan NIS yang sudah ada di database.'
-                } else if (error.message.includes('foreign key')) {
-                    errorMsg = 'Ada referensi kelas/halaqoh yang tidak ditemukan.'
+                    errorMsg = 'Ada data duplikat.'
                 }
                 throw new Error(errorMsg)
             }
@@ -702,7 +492,6 @@ const PengaturanPage = () => {
             setImportData([])
             setShowPreview(false)
         } catch (err) {
-            console.error('Import error:', err)
             setImportResult({
                 success: 0,
                 failed: importData.length,
@@ -724,132 +513,95 @@ const PengaturanPage = () => {
         }
     }
 
+    const handleExportData = async (type) => {
+        setExporting(true)
+        try {
+            const { data, error } = await supabase.from(type).select('*')
+            if (error) throw error
+
+            const worksheet = XLSX.utils.json_to_sheet(data || [])
+            const workbook = XLSX.utils.book_new()
+            XLSX.utils.book_append_sheet(workbook, worksheet, type)
+            XLSX.writeFile(workbook, `export_${type}_${new Date().toISOString().split('T')[0]}.xlsx`)
+        } catch (err) {
+            alert('Gagal export: ' + err.message)
+        } finally {
+            setExporting(false)
+        }
+    }
+
+    const formatDate = (dateStr) => {
+        if (!dateStr) return '-'
+        return new Date(dateStr).toLocaleString('id-ID', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        })
+    }
+
+    const getDaysUntilAutoDelete = (deletedAt) => {
+        if (!deletedAt) return 30
+        const deleted = new Date(deletedAt)
+        const autoDeleteDate = new Date(deleted.getTime() + 30 * 24 * 60 * 60 * 1000)
+        const now = new Date()
+        const daysLeft = Math.ceil((autoDeleteDate - now) / (24 * 60 * 60 * 1000))
+        return Math.max(0, daysLeft)
+    }
+
+    const getItemDisplayName = (item) => {
+        const data = typeof item.data === 'string' ? JSON.parse(item.data) : item.data
+        return data.nama || data.nis || data.nip || data.kode || `ID: ${item.original_id}`
+    }
+
     return (
         <div className="pengaturan-page">
             <div className="page-header">
                 <div>
-                    <h1 className="page-title">Pengaturan</h1>
-                    <p className="page-subtitle">Kelola akun pengguna dan import data</p>
+                    <h1 className="page-title">
+                        <Settings size={24} /> Pengaturan Sistem
+                    </h1>
+                    <p className="page-subtitle">Import data, export, sampah, dan konfigurasi sistem</p>
                 </div>
             </div>
 
             {/* Tabs */}
             <div className="pengaturan-tabs">
                 <button
-                    className={`pengaturan-tab ${activeTab === 'users' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('users')}
+                    className={`pengaturan-tab ${activeTab === 'import' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('import')}
                 >
-                    <Users size={18} /> Kelola Akun Pengguna
+                    <Upload size={18} /> Import Data
                 </button>
 
                 <button
-                    className={`pengaturan-tab ${activeTab === 'data-input' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('data-input')}
+                    className={`pengaturan-tab ${activeTab === 'export' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('export')}
                 >
-                    <FileSpreadsheet size={18} /> Import Data (Excel/CSV)
+                    <Download size={18} /> Export Data
+                </button>
+
+                <button
+                    className={`pengaturan-tab ${activeTab === 'trash' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('trash')}
+                >
+                    <Trash2 size={18} /> Sampah
+                </button>
+
+                <button
+                    className={`pengaturan-tab ${activeTab === 'system' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('system')}
+                >
+                    <Shield size={18} /> Pengaturan Umum
                 </button>
             </div>
 
-
-
-            {/* User Management Tab */}
-            {activeTab === 'users' && (
+            {/* Import Data Tab */}
+            {activeTab === 'import' && (
                 <div className="settings-section">
                     <div className="section-header">
-                        <h3>Daftar Pengguna</h3>
-                        <button className="btn btn-primary" onClick={() => { setEditingUser(null); setUserForm({ email: '', password: '', nama: '', role: 'guru', no_telp: '', santri_ids: [], username: '' }); setShowUserModal(true) }}>
-                            <UserPlus size={16} /> Tambah Pengguna
-                        </button>
-                    </div>
-
-                    {/* Role Info */}
-                    <div className="role-info-cards">
-                        <div className="role-info-card admin">
-                            <Shield size={24} />
-                            <div>
-                                <h4>Admin</h4>
-                                <p>Akses penuh ke semua fitur</p>
-                            </div>
-                        </div>
-                        <div className="role-info-card guru">
-                            <GraduationCap size={24} />
-                            <div>
-                                <h4>Guru</h4>
-                                <p>Input nilai dan hafalan</p>
-                            </div>
-                        </div>
-                        <div className="role-info-card wali">
-                            <User size={24} />
-                            <div>
-                                <h4>Wali Santri</h4>
-                                <p>Lihat nilai dan download</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="table-container">
-                        <table className="table">
-                            <thead>
-                                <tr>
-                                    <th>No</th>
-                                    <th>Username</th>
-                                    <th>No. Telepon</th>
-                                    <th>Nama</th>
-                                    <th>Role</th>
-                                    <th>Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {loadingUsers ? (
-                                    <tr><td colSpan="6" className="text-center"><RefreshCw size={20} className="spin" /> Loading...</td></tr>
-                                ) : users.length === 0 ? (
-                                    <tr><td colSpan="6" className="text-center">Belum ada data pengguna</td></tr>
-                                ) : (
-                                    users.map((user, idx) => {
-                                        const roleInfo = getRoleBadge(user.role)
-                                        return (
-                                            <tr key={user.id}>
-                                                <td>{idx + 1}</td>
-                                                <td>
-                                                    {user.username ? user.username : <span className="badge badge-danger">No Username</span>}
-                                                </td>
-                                                <td>{user.no_telp || '-'}</td>
-                                                <td>{user.nama || '-'}</td>
-                                                <td>
-                                                    <span className={`badge ${roleInfo.class}`}>
-                                                        <roleInfo.icon size={14} /> {roleInfo.label}
-                                                    </span>
-                                                </td>
-                                                <td>
-                                                    <MobileActionMenu
-                                                        actions={[
-                                                            { icon: <Eye size={16} />, label: 'Detail', onClick: () => handleViewDetail(user) },
-                                                            { icon: <Edit size={16} />, label: 'Edit', onClick: () => handleEditUser(user) },
-                                                            { icon: <Key size={16} />, label: 'Reset Password', onClick: () => handleResetPassword(user) },
-                                                            { icon: <Trash2 size={16} />, label: 'Hapus', onClick: () => handleDeleteUser(user), danger: true }
-                                                        ]}
-                                                    >
-                                                        <button className="btn-icon btn-icon-info" onClick={() => handleViewDetail(user)} title="Lihat Detail"><Eye size={16} /></button>
-                                                        <button className="btn-icon" onClick={() => handleEditUser(user)} title="Edit"><Edit size={16} /></button>
-                                                        <button className="btn-icon btn-icon-warning" onClick={() => handleResetPassword(user)} title="Reset Password"><Key size={16} /></button>
-                                                        <button className="btn-icon btn-icon-danger" onClick={() => handleDeleteUser(user)} title="Hapus"><Trash2 size={16} /></button>
-                                                    </MobileActionMenu>
-                                                </td>
-                                            </tr>
-                                        )
-                                    })
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            )}
-
-            {/* Data Import Tab */}
-            {activeTab === 'data-input' && (
-                <div className="settings-section">
-                    <div className="section-header">
-                        <h3>Import Data via Excel/CSV</h3>
+                        <h3><FileSpreadsheet size={20} /> Import Data via Excel/CSV</h3>
                     </div>
 
                     {importResult.message && (
@@ -859,7 +611,7 @@ const PengaturanPage = () => {
                         </div>
                     )}
 
-                    {/* Data Type Selector */}
+                    {/* Step 1: Select Data Type */}
                     <div className="import-step">
                         <div className="step-number">1</div>
                         <div className="step-content">
@@ -879,29 +631,30 @@ const PengaturanPage = () => {
                         </div>
                     </div>
 
-                    {/* Upload File */}
+                    {/* Step 2: Upload File */}
                     <div className="import-step">
                         <div className="step-number">2</div>
                         <div className="step-content">
                             <h4>Upload File Excel/CSV</h4>
 
-                            {/* Loading Indicator */}
                             {uploadingFile && (
-                                <div className="alert alert-info mb-3" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <div className="alert alert-info mb-3">
                                     <RefreshCw size={18} className="spin" />
-                                    <span>Memproses file... Mohon tunggu</span>
+                                    Memproses file... Mohon tunggu
                                 </div>
                             )}
 
-                            {/* Error Display */}
                             {uploadError && (
-                                <div className="alert alert-error mb-3" style={{ whiteSpace: 'pre-line' }}>
-                                    <AlertCircle size={18} style={{ marginRight: '8px', flexShrink: 0 }} />
-                                    <span>{uploadError}</span>
+                                <div className="alert alert-error mb-3">
+                                    <AlertCircle size={18} />
+                                    {uploadError}
                                 </div>
                             )}
 
-                            <div className="upload-area" onClick={() => !uploadingFile && fileInputRef.current?.click()} style={{ opacity: uploadingFile ? 0.6 : 1, cursor: uploadingFile ? 'wait' : 'pointer' }}>
+                            <div
+                                className="upload-area"
+                                onClick={() => !uploadingFile && fileInputRef.current?.click()}
+                            >
                                 {uploadingFile ? <RefreshCw size={40} className="spin" /> : <Upload size={40} />}
                                 <p>{uploadingFile ? 'Memproses file...' : 'Klik atau drag file Excel/CSV ke sini'}</p>
                                 <span className="text-muted">Format: .xlsx, .xls, .csv</span>
@@ -926,7 +679,7 @@ const PengaturanPage = () => {
                         </div>
                     </div>
 
-                    {/* Preview */}
+                    {/* Step 3: Preview */}
                     {showPreview && importData.length > 0 && (
                         <div className="import-step">
                             <div className="step-number">3</div>
@@ -968,269 +721,248 @@ const PengaturanPage = () => {
                 </div>
             )}
 
-            {/* Add/Edit User Modal */}
-            {showUserModal && (
-                <div className="modal-overlay active">
-                    <div className="modal">
-                        <div className="modal-header">
-                            <h3 className="modal-title">{editingUser ? 'Edit Pengguna' : 'Tambah Pengguna Baru'}</h3>
-                            <button className="modal-close" onClick={() => { setShowUserModal(false); setUserError(''); setUserSuccess('') }}>×</button>
+            {/* Export Data Tab */}
+            {activeTab === 'export' && (
+                <div className="settings-section">
+                    <div className="section-header">
+                        <h3><Download size={20} /> Export Data ke Excel</h3>
+                    </div>
+
+                    <div className="export-grid">
+                        <div className="export-card" onClick={() => handleExportData('santri')}>
+                            <Users size={32} />
+                            <h4>Export Data Santri</h4>
+                            <p>Download seluruh data santri dalam format Excel</p>
+                            <button className="btn btn-primary" disabled={exporting}>
+                                <FileDown size={16} /> Download
+                            </button>
                         </div>
-                        <form onSubmit={handleAddUser}>
-                            <div className="modal-body">
-                                {userError && <div className="alert alert-error mb-3">{userError}</div>}
-                                {userSuccess && <div className="alert alert-success mb-3">{userSuccess}</div>}
 
-                                <div className="info-box mb-3" style={{ background: '#f0f9ff', padding: '10px 12px', borderRadius: '6px', fontSize: '0.85rem', color: '#1e40af' }}>
-                                    💡 User akan login menggunakan <strong>Username</strong> dan <strong>Password</strong>. Email digunakan untuk autentikasi Supabase.
-                                </div>
+                        <div className="export-card" onClick={() => handleExportData('guru')}>
+                            <GraduationCap size={32} />
+                            <h4>Export Data Guru</h4>
+                            <p>Download seluruh data guru dalam format Excel</p>
+                            <button className="btn btn-primary" disabled={exporting}>
+                                <FileDown size={16} /> Download
+                            </button>
+                        </div>
 
-                                <div className="form-group">
-                                    <label className="form-label">Username *</label>
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        value={userForm.username}
-                                        onChange={(e) => setUserForm({ ...userForm, username: e.target.value.toLowerCase().replace(/\s/g, '') })}
-                                        disabled={editingUser}
-                                        placeholder="username"
-                                        required
-                                    />
-                                </div>
+                        <div className="export-card" onClick={() => handleExportData('hafalan')}>
+                            <BookOpen size={32} />
+                            <h4>Export Data Hafalan</h4>
+                            <p>Download seluruh data hafalan dalam format Excel</p>
+                            <button className="btn btn-primary" disabled={exporting}>
+                                <FileDown size={16} /> Download
+                            </button>
+                        </div>
 
-                                <div className="form-group">
-                                    <label className="form-label">Email *</label>
-                                    <input
-                                        type="email"
-                                        className="form-control"
-                                        value={userForm.email}
-                                        onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
-                                        disabled={editingUser}
-                                        placeholder="contoh@email.com"
-                                        required
-                                    />
-                                    <small className="text-muted">Email digunakan untuk autentikasi Supabase</small>
-                                </div>
+                        <div className="export-card" onClick={() => handleExportData('nilai')}>
+                            <FileText size={32} />
+                            <h4>Export Data Nilai</h4>
+                            <p>Download seluruh data nilai dalam format Excel</p>
+                            <button className="btn btn-primary" disabled={exporting}>
+                                <FileDown size={16} /> Download
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
-                                {!editingUser && (
-                                    <div className="form-group">
-                                        <label className="form-label">Password *</label>
-                                        <input
-                                            type="password"
-                                            className="form-control"
-                                            value={userForm.password}
-                                            onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
-                                            required
-                                            minLength={6}
-                                            placeholder="Minimal 6 karakter"
-                                        />
-                                    </div>
+            {/* Trash Tab */}
+            {activeTab === 'trash' && (
+                <div className="settings-section">
+                    <div className="section-header">
+                        <h3><Trash2 size={20} /> Sampah - Data yang Dihapus</h3>
+                        <div className="header-actions">
+                            <button className="btn btn-secondary" onClick={fetchTrashItems} disabled={loadingTrash}>
+                                <RefreshCw size={16} className={loadingTrash ? 'spin' : ''} /> Refresh
+                            </button>
+                            <button className="btn btn-danger" onClick={handleEmptyTrash} disabled={loadingTrash || trashItems.length === 0}>
+                                <X size={16} /> Hapus Data Lama
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="trash-info-box">
+                        <p>
+                            <Clock size={16} />
+                            Data yang dihapus akan tersimpan di sini selama <strong>30 hari</strong> sebelum dihapus permanen secara otomatis.
+                            Anda dapat memulihkan atau menghapus permanen data kapan saja.
+                        </p>
+                    </div>
+
+                    {/* Filter by type */}
+                    <div className="trash-filter">
+                        <span>Filter:</span>
+                        {trashTypes.map(type => (
+                            <button
+                                key={type.id}
+                                className={`filter-btn ${selectedTrashType === type.id ? 'active' : ''}`}
+                                onClick={() => setSelectedTrashType(type.id)}
+                            >
+                                {type.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="table-container">
+                        <table className="table">
+                            <thead>
+                                <tr>
+                                    <th>Nama/ID</th>
+                                    <th>Tabel</th>
+                                    <th>Dihapus</th>
+                                    <th>Sisa Waktu</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {loadingTrash ? (
+                                    <tr><td colSpan="5" className="text-center"><RefreshCw size={20} className="spin" /> Loading...</td></tr>
+                                ) : trashItems.length === 0 ? (
+                                    <tr><td colSpan="5" className="text-center">
+                                        <div className="empty-trash">
+                                            <Trash2 size={40} />
+                                            <p>Sampah kosong</p>
+                                        </div>
+                                    </td></tr>
+                                ) : (
+                                    trashItems.map((item) => {
+                                        const daysLeft = getDaysUntilAutoDelete(item.deleted_at)
+                                        return (
+                                            <tr key={item.id}>
+                                                <td><strong>{getItemDisplayName(item)}</strong></td>
+                                                <td><span className="badge badge-secondary">{item.table_name}</span></td>
+                                                <td>{formatDate(item.deleted_at)}</td>
+                                                <td>
+                                                    <span className={`badge ${daysLeft <= 7 ? 'badge-danger' : 'badge-warning'}`}>
+                                                        {daysLeft} hari
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <div className="action-buttons">
+                                                        <button
+                                                            className="btn btn-sm btn-success"
+                                                            onClick={() => handleRestoreItem(item)}
+                                                            disabled={restoringId === item.id}
+                                                            title="Pulihkan"
+                                                        >
+                                                            {restoringId === item.id ? <RefreshCw size={14} className="spin" /> : <RotateCcw size={14} />}
+                                                        </button>
+                                                        <button
+                                                            className="btn btn-sm btn-danger"
+                                                            onClick={() => handlePermanentDelete(item)}
+                                                            disabled={deletingId === item.id}
+                                                            title="Hapus Permanen"
+                                                        >
+                                                            {deletingId === item.id ? <RefreshCw size={14} className="spin" /> : <X size={14} />}
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )
+                                    })
                                 )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
 
-                                <div className="form-group">
-                                    <label className="form-label">Nama Lengkap</label>
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        value={userForm.nama}
-                                        onChange={(e) => setUserForm({ ...userForm, nama: e.target.value })}
-                                        placeholder="Nama pengguna"
-                                    />
-                                </div>
+            {/* System Settings Tab */}
+            {activeTab === 'system' && (
+                <div className="settings-section">
+                    <div className="section-header">
+                        <h3><Shield size={20} /> Pengaturan Umum Sistem</h3>
+                    </div>
 
+                    <div className="settings-form">
+                        <div className="settings-card">
+                            <h4><School size={18} /> Identitas Sekolah</h4>
+
+                            <div className="form-group">
+                                <label className="form-label">Nama Lembaga</label>
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    value={systemSettings.school_name}
+                                    onChange={(e) => setSystemSettings({ ...systemSettings, school_name: e.target.value })}
+                                    placeholder="PTQ Al-Usymuni Batuan"
+                                />
+                            </div>
+
+                            <div className="form-group">
+                                <label className="form-label">Alamat</label>
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    value={systemSettings.school_address}
+                                    onChange={(e) => setSystemSettings({ ...systemSettings, school_address: e.target.value })}
+                                    placeholder="Alamat lengkap"
+                                />
+                            </div>
+
+                            <div className="form-row">
                                 <div className="form-group">
                                     <label className="form-label">No. Telepon</label>
                                     <input
                                         type="text"
                                         className="form-control"
-                                        value={userForm.no_telp}
-                                        onChange={(e) => setUserForm({ ...userForm, no_telp: e.target.value })}
-                                        placeholder="Contoh: 081234567890 (opsional jika ada email)"
+                                        value={systemSettings.school_phone}
+                                        onChange={(e) => setSystemSettings({ ...systemSettings, school_phone: e.target.value })}
+                                        placeholder="08xxxxxxxxxx"
                                     />
                                 </div>
-
                                 <div className="form-group">
-                                    <label className="form-label">Role *</label>
-                                    <select
+                                    <label className="form-label">Email</label>
+                                    <input
+                                        type="email"
                                         className="form-control"
-                                        value={userForm.role}
-                                        onChange={(e) => setUserForm({ ...userForm, role: e.target.value })}
-                                    >
-                                        <option value="admin">Admin - Akses penuh ke semua fitur</option>
-                                        <option value="guru">Guru - Input nilai dan hafalan</option>
-                                        <option value="wali">Wali Santri - Lihat dan download nilai</option>
-                                    </select>
+                                        value={systemSettings.school_email}
+                                        onChange={(e) => setSystemSettings({ ...systemSettings, school_email: e.target.value })}
+                                        placeholder="email@sekolah.com"
+                                    />
                                 </div>
+                            </div>
+                        </div>
 
-                                {userForm.role === 'wali' && (
-                                    <div className="form-group">
-                                        <label className="form-label">Hubungkan Santri (Anak Asuh)</label>
-                                        <div className="santri-selector" style={{ maxHeight: '200px', overflowY: 'auto', border: '1px solid #ddd', padding: '10px', borderRadius: '6px' }}>
-                                            {santriList.length === 0 ? (
-                                                <p className="text-muted small">Tidak ada data santri aktif.</p>
-                                            ) : (
-                                                santriList.map(santri => (
-                                                    <div key={santri.id} className="checkbox-item" style={{ marginBottom: '8px' }}>
-                                                        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontSize: '14px' }}>
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={(userForm.santri_ids || []).includes(santri.id)}
-                                                                onChange={(e) => {
-                                                                    const checked = e.target.checked
-                                                                    setUserForm(prev => ({
-                                                                        ...prev,
-                                                                        santri_ids: checked
-                                                                            ? [...prev.santri_ids, santri.id]
-                                                                            : prev.santri_ids.filter(id => id !== santri.id)
-                                                                    }))
-                                                                }}
-                                                                style={{ width: '16px', height: '16px' }}
-                                                            />
-                                                            <span style={{ color: (userForm.santri_ids || []).includes(santri.id) ? '#2563eb' : 'inherit', fontWeight: (userForm.santri_ids || []).includes(santri.id) ? '600' : 'normal' }}>
-                                                                {santri.nama} <small className="text-muted">({santri.kelas?.nama || '-'})</small>
-                                                            </span>
-                                                        </label>
-                                                    </div>
-                                                ))
-                                            )}
-                                        </div>
-                                        <div style={{ marginTop: '5px', fontSize: '12px', color: '#666' }}>
-                                            {userForm.santri_ids.length} santri dipilih.
-                                        </div>
-                                    </div>
-                                )}
+                        <div className="settings-card">
+                            <h4><Calendar size={18} /> Tahun Ajaran</h4>
+
+                            <div className="form-group">
+                                <label className="form-label">Tahun Ajaran Aktif</label>
+                                <select
+                                    className="form-control"
+                                    value={systemSettings.school_year}
+                                    onChange={(e) => setSystemSettings({ ...systemSettings, school_year: e.target.value })}
+                                >
+                                    <option value="2023/2024">2023/2024</option>
+                                    <option value="2024/2025">2024/2025</option>
+                                    <option value="2025/2026">2025/2026</option>
+                                </select>
                             </div>
-                            <div className="modal-footer">
-                                <button type="button" className="btn btn-secondary" onClick={() => setShowUserModal(false)}>Batal</button>
-                                <button type="submit" className="btn btn-primary" disabled={savingUser}>
-                                    {savingUser ? <><RefreshCw size={16} className="spin" /> Menyimpan...</> : <><Save size={16} /> Simpan</>}
-                                </button>
-                            </div>
-                        </form>
+                        </div>
+
+                        <div className="settings-card info-card">
+                            <h4><Shield size={18} /> Keamanan</h4>
+                            <p>Untuk keamanan sistem, berikut beberapa rekomendasi:</p>
+                            <ul>
+                                <li>✅ Gunakan password yang kuat minimal 8 karakter</li>
+                                <li>✅ Batasi akses admin hanya untuk user yang diperlukan</li>
+                                <li>✅ Backup data secara rutin via Export Data</li>
+                                <li>✅ Jangan bagikan kredensial login</li>
+                                <li>✅ Data yang dihapus tersimpan 30 hari di Sampah</li>
+                            </ul>
+                        </div>
+
+                        <button className="btn btn-primary" onClick={handleSaveSettings} disabled={savingSettings}>
+                            {savingSettings ? <RefreshCw size={16} className="spin" /> : <Save size={16} />} Simpan Pengaturan
+                        </button>
                     </div>
                 </div>
             )}
-
-            {/* Reset Password Modal */}
-            {
-                showPasswordModal && (
-                    <div className="modal-overlay active">
-                        <div className="modal">
-                            <div className="modal-header">
-                                <h3 className="modal-title"><Lock size={20} /> Ubah Password</h3>
-                                <button className="modal-close" onClick={() => setShowPasswordModal(false)}>×</button>
-                            </div>
-                            <form onSubmit={handleSavePassword}>
-                                <div className="modal-body">
-                                    {passwordError && <div className="alert alert-error mb-3">{passwordError}</div>}
-                                    {passwordSuccess && <div className="alert alert-success mb-3">{passwordSuccess}</div>}
-
-                                    <div className="info-box mb-3">
-                                        <p><strong>User:</strong> {passwordUser?.email}</p>
-                                        <p><strong>Nama:</strong> {passwordUser?.nama || '-'}</p>
-                                    </div>
-
-                                    <div className="form-group">
-                                        <label className="form-label">Password Baru *</label>
-                                        <input
-                                            type="text"
-                                            className="form-control"
-                                            value={newPassword}
-                                            onChange={(e) => setNewPassword(e.target.value)}
-                                            placeholder="Minimal 6 karakter"
-                                            minLength={6}
-                                            required
-                                        />
-                                    </div>
-
-                                    <div className="form-group">
-                                        <label className="form-label">Konfirmasi Password *</label>
-                                        <input
-                                            type="text"
-                                            className="form-control"
-                                            value={confirmPassword}
-                                            onChange={(e) => setConfirmPassword(e.target.value)}
-                                            placeholder="Ulangi password baru"
-                                            required
-                                        />
-                                    </div>
-                                </div>
-                                <div className="modal-footer">
-                                    <button type="button" className="btn btn-secondary" onClick={() => setShowPasswordModal(false)}>Batal</button>
-                                    <button type="submit" className="btn btn-primary" disabled={savingPassword}>
-                                        {savingPassword ? <><RefreshCw size={16} className="spin" /> Menyimpan...</> : <><Save size={16} /> Simpan Password</>}
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                )
-            }
-
-            {/* Detail User Modal */}
-            {
-                showDetailModal && detailUser && (
-                    <div className="modal-overlay active">
-                        <div className="modal">
-                            <div className="modal-header">
-                                <h3 className="modal-title"><Eye size={20} /> Detail Pengguna</h3>
-                                <button className="modal-close" onClick={() => setShowDetailModal(false)}>×</button>
-                            </div>
-                            <div className="modal-body">
-                                <div className="user-detail-card">
-                                    <div className="detail-avatar">
-                                        <User size={48} />
-                                    </div>
-                                    <div className="detail-info">
-                                        <h3>{detailUser.nama || 'Nama tidak tersedia'}</h3>
-                                        <span className={`badge ${getRoleBadge(detailUser.role).class}`}>
-                                            {getRoleBadge(detailUser.role).label}
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <div className="detail-table">
-                                    <div className="detail-row">
-                                        <span className="detail-label">Email</span>
-                                        <span className="detail-value">{detailUser.email}</span>
-                                    </div>
-                                    <div className="detail-row">
-                                        <span className="detail-label">Nama Lengkap</span>
-                                        <span className="detail-value">{detailUser.nama || '-'}</span>
-                                    </div>
-                                    <div className="detail-row">
-                                        <span className="detail-label">Role</span>
-                                        <span className="detail-value">
-                                            <span className={`badge ${getRoleBadge(detailUser.role).class}`}>
-                                                {getRoleBadge(detailUser.role).label}
-                                            </span>
-                                        </span>
-                                    </div>
-                                    <div className="detail-row">
-                                        <span className="detail-label">Password</span>
-                                        <span className="detail-value">
-                                            <code className="password-display">{detailUser.password_ref || '(belum diset)'}</code>
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="modal-footer">
-                                <button className="btn btn-secondary" onClick={() => setShowDetailModal(false)}>Tutup</button>
-                                <button className="btn btn-warning" onClick={() => { setShowDetailModal(false); handleResetPassword(detailUser) }}>
-                                    <Key size={16} /> Ubah Password
-                                </button>
-                                <button className="btn btn-primary" onClick={() => { setShowDetailModal(false); handleEditUser(detailUser) }}>
-                                    <Edit size={16} /> Edit
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )
-            }
         </div>
     )
 }
 
 export default PengaturanPage
-
-

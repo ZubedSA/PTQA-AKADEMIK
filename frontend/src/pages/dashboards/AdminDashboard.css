@@ -1,0 +1,317 @@
+/* =====================================================
+   Admin Dashboard Styles
+   ===================================================== */
+
+.admin-dashboard {
+    padding: 0;
+}
+
+/* Welcome Section */
+.dashboard-welcome {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 24px 28px;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    border-radius: 16px;
+    color: white;
+    margin-bottom: 24px;
+}
+
+.welcome-content h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0 0 4px 0;
+    color: white;
+}
+
+.welcome-content p {
+    margin: 0;
+    opacity: 1;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.9rem;
+}
+
+.welcome-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+/* Stats Grid */
+.admin-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.admin-stat-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background: var(--bg-secondary, white);
+    border-radius: 12px;
+    border: 1px solid var(--border-color, #e5e7eb);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.stat-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.stat-label {
+    font-size: 0.8rem;
+    color: var(--text-secondary, #6b7280);
+    font-weight: 500;
+}
+
+.stat-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+}
+
+.stat-value.green {
+    color: #10b981;
+}
+
+.stat-value.blue {
+    color: #3b82f6;
+}
+
+.stat-value.yellow {
+    color: #f59e0b;
+}
+
+.stat-value.purple {
+    color: #8b5cf6;
+}
+
+.stat-icon-box {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    color: white;
+}
+
+.stat-icon-box.green {
+    background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.stat-icon-box.blue {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+}
+
+.stat-icon-box.yellow {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.stat-icon-box.purple {
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+}
+
+/* Admin Row */
+.admin-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 24px;
+    margin-bottom: 24px;
+}
+
+/* Admin Card */
+.admin-card {
+    background: var(--bg-secondary, white);
+    border-radius: 12px;
+    border: 1px solid var(--border-color, #e5e7eb);
+    padding: 20px;
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.card-header h3 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--text-primary, #1f2937);
+}
+
+.card-link {
+    font-size: 0.8rem;
+    color: #3b82f6;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.card-link:hover {
+    text-decoration: underline;
+}
+
+/* Finance Summary */
+.finance-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.finance-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: 10px;
+}
+
+.finance-item.income {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+}
+
+.finance-item.expense {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+}
+
+.finance-item.balance {
+    background: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+}
+
+.finance-item>div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.finance-label {
+    font-size: 0.75rem;
+    opacity: 0.8;
+}
+
+.finance-value {
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.finance-value.positive {
+    color: #10b981;
+}
+
+.finance-value.negative {
+    color: #ef4444;
+}
+
+/* Health List */
+.health-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.health-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: var(--bg-tertiary, #f9fafb);
+    border-radius: 8px;
+}
+
+.health-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-primary, #1f2937);
+}
+
+.text-green {
+    color: #10b981;
+}
+
+.text-yellow {
+    color: #f59e0b;
+}
+
+.text-red {
+    color: #ef4444;
+}
+
+/* Quick Actions */
+.quick-actions {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 12px;
+}
+
+.quick-action-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 16px 12px;
+    background: var(--bg-tertiary, #f9fafb);
+    border: 1px solid var(--border-color, #e5e7eb);
+    border-radius: 12px;
+    color: var(--text-primary, #1f2937);
+    text-decoration: none;
+    font-size: 0.8rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.quick-action-btn:hover {
+    background: #ef4444;
+    border-color: #ef4444;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+    .admin-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .quick-actions {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .dashboard-welcome {
+        flex-direction: column;
+        gap: 12px;
+        text-align: center;
+    }
+
+    .admin-stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-row {
+        grid-template-columns: 1fr;
+    }
+
+    .quick-actions {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}

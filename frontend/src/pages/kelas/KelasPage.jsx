@@ -2,9 +2,12 @@ import { useState, useEffect } from 'react'
 import { Plus, Edit, Trash2, Users, RefreshCw, Eye, X, UserPlus, Check } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { logCreate, logUpdate, logDelete } from '../../lib/auditLog'
+import { useAuth } from '../../context/AuthContext'
 import './Kelas.css'
 
 const KelasPage = () => {
+    const { activeRole } = useAuth()
+    const isAdmin = activeRole === 'admin'
     const [kelasList, setKelasList] = useState([])
     const [loading, setLoading] = useState(true)
     const [showModal, setShowModal] = useState(false)
@@ -62,6 +65,9 @@ const KelasPage = () => {
         }
     }
 
+    // ... (helper functions remain same) ...
+    // Note: I'm skipping re-writing all helper functions for brevity but will ensure imports are correct
+
     const fetchSantriByKelas = async (kelas) => {
         setSelectedKelas(kelas)
         setShowSantriModal(true)
@@ -81,7 +87,6 @@ const KelasPage = () => {
         }
     }
 
-    // Fetch santri yang belum punya kelas atau semua santri
     const fetchAvailableSantri = async () => {
         try {
             const { data, error } = await supabase
@@ -90,14 +95,12 @@ const KelasPage = () => {
                 .eq('status', 'Aktif')
                 .order('nama')
             if (error) throw error
-            // Filter santri yang belum punya kelas atau semua (bisa dipindah)
             setAvailableSantri(data || [])
         } catch (err) {
             console.error('Error:', err.message)
         }
     }
 
-    // Buka modal tambah santri
     const openAddSantriModal = async (kelas) => {
         setSelectedKelas(kelas)
         setSelectedSantriIds([])
@@ -106,28 +109,16 @@ const KelasPage = () => {
         await fetchAvailableSantri()
     }
 
-    // Toggle pilih santri
     const toggleSantriSelection = (santriId) => {
-        setSelectedSantriIds(prev =>
-            prev.includes(santriId)
-                ? prev.filter(id => id !== santriId)
-                : [...prev, santriId]
-        )
+        setSelectedSantriIds(prev => prev.includes(santriId) ? prev.filter(id => id !== santriId) : [...prev, santriId])
     }
 
-    // Simpan santri ke kelas
     const handleAddSantriToKelas = async () => {
         if (selectedSantriIds.length === 0) return
         setSavingSantri(true)
         try {
-            const { error } = await supabase
-                .from('santri')
-                .update({ kelas_id: selectedKelas.id })
-                .in('id', selectedSantriIds)
-
+            const { error } = await supabase.from('santri').update({ kelas_id: selectedKelas.id }).in('id', selectedSantriIds)
             if (error) throw error
-
-            // Refresh data
             fetchKelas()
             fetchSantriByKelas(selectedKelas)
             setShowAddSantriModal(false)
@@ -139,15 +130,10 @@ const KelasPage = () => {
         }
     }
 
-    // Hapus santri dari kelas
     const handleRemoveSantriFromKelas = async (santriId) => {
         if (!confirm('Hapus santri ini dari kelas?')) return
         try {
-            const { error } = await supabase
-                .from('santri')
-                .update({ kelas_id: null })
-                .eq('id', santriId)
-
+            const { error } = await supabase.from('santri').update({ kelas_id: null }).eq('id', santriId)
             if (error) throw error
             fetchKelas()
             fetchSantriByKelas(selectedKelas)
@@ -160,11 +146,7 @@ const KelasPage = () => {
         e.preventDefault()
         setSaving(true)
         try {
-            const payload = {
-                nama: formData.nama,
-                wali_kelas_id: formData.wali_kelas_id || null
-            }
-
+            const payload = { nama: formData.nama, wali_kelas_id: formData.wali_kelas_id || null }
             if (editData) {
                 const { error } = await supabase.from('kelas').update(payload).eq('id', editData.id)
                 if (error) throw error
@@ -174,7 +156,6 @@ const KelasPage = () => {
                 if (error) throw error
                 await logCreate('kelas', formData.nama, `Tambah kelas baru: ${formData.nama}`)
             }
-
             fetchKelas()
             setShowModal(false)
             setEditData(null)
@@ -188,10 +169,7 @@ const KelasPage = () => {
 
     const handleEdit = (kelas) => {
         setEditData(kelas)
-        setFormData({
-            nama: kelas.nama,
-            wali_kelas_id: kelas.wali_kelas_id || ''
-        })
+        setFormData({ nama: kelas.nama, wali_kelas_id: kelas.wali_kelas_id || '' })
         setShowModal(true)
     }
 
@@ -208,11 +186,11 @@ const KelasPage = () => {
         }
     }
 
-    // Filter santri berdasarkan search
     const filteredAvailableSantri = availableSantri.filter(s =>
         s.nama.toLowerCase().includes(searchSantri.toLowerCase()) ||
         (s.nis && s.nis.toLowerCase().includes(searchSantri.toLowerCase()))
     )
+
     return (
         <div className="kelas-page">
             <div className="page-header">
@@ -220,9 +198,11 @@ const KelasPage = () => {
                     <h1 className="page-title">Manajemen Kelas</h1>
                     <p className="page-subtitle">Kelola data kelas dan wali kelas</p>
                 </div>
-                <button className="btn btn-primary" onClick={() => { setEditData(null); setFormData({ nama: '', wali_kelas_id: '' }); setShowModal(true) }}>
-                    <Plus size={18} /> Tambah Kelas
-                </button>
+                {isAdmin && (
+                    <button className="btn btn-primary" onClick={() => { setEditData(null); setFormData({ nama: '', wali_kelas_id: '' }); setShowModal(true) }}>
+                        <Plus size={18} /> Tambah Kelas
+                    </button>
+                )}
             </div>
 
             {loading ? (
@@ -243,11 +223,13 @@ const KelasPage = () => {
                                 </div>
                                 <p className="wali-kelas">Wali: {kelas.wali_kelas?.nama || '-'}</p>
                             </div>
-                            <div className="kelas-actions" onClick={e => e.stopPropagation()}>
-                                <button className="btn-icon btn-icon-success" title="Tambah Santri" onClick={() => openAddSantriModal(kelas)}><UserPlus size={16} /></button>
-                                <button className="btn-icon" onClick={() => handleEdit(kelas)}><Edit size={16} /></button>
-                                <button className="btn-icon btn-icon-danger" onClick={() => handleDelete(kelas.id)}><Trash2 size={16} /></button>
-                            </div>
+                            {isAdmin && (
+                                <div className="kelas-actions" onClick={e => e.stopPropagation()}>
+                                    <button className="btn-icon btn-icon-success" title="Tambah Santri" onClick={() => openAddSantriModal(kelas)}><UserPlus size={16} /></button>
+                                    <button className="btn-icon" onClick={() => handleEdit(kelas)}><Edit size={16} /></button>
+                                    <button className="btn-icon btn-icon-danger" onClick={() => handleDelete(kelas.id)}><Trash2 size={16} /></button>
+                                </div>
+                            )}
                         </div>
                     ))}
                 </div>

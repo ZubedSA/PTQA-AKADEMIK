@@ -1,7 +1,7 @@
 import { useState, useEffect, useLayoutEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Eye, EyeOff, LogIn, UserPlus, RefreshCw } from 'lucide-react'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../../context/AuthContext'
 import './Login.css'
 
 // Force light mode immediately on module load
@@ -24,14 +24,11 @@ const Login = () => {
         }
     }, [])
 
-    const [isRegister, setIsRegister] = useState(false)
     const [emailOrPhone, setEmailOrPhone] = useState('')
     const [password, setPassword] = useState('')
-    const [confirmPassword, setConfirmPassword] = useState('')
     const [showPassword, setShowPassword] = useState(false)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState('')
-    const [success, setSuccess] = useState('')
 
     // Fungsi untuk menerjemahkan error Supabase ke bahasa Indonesia
     const translateError = (error) => {
@@ -47,15 +44,6 @@ const Login = () => {
         if (errorMsg.includes('User not found') || errorMsg.includes('Akun tidak ditemukan')) {
             return 'Akun dengan email/no. telepon ini tidak ditemukan.'
         }
-        if (errorMsg.includes('Password should be at least')) {
-            return 'Password minimal 6 karakter.'
-        }
-        if (errorMsg.includes('User already registered')) {
-            return 'Email ini sudah terdaftar. Silakan login atau gunakan email lain.'
-        }
-        if (errorMsg.includes('Invalid email')) {
-            return 'Format email tidak valid.'
-        }
         if (errorMsg.includes('Too many requests')) {
             return 'Terlalu banyak percobaan. Silakan tunggu beberapa saat.'
         }
@@ -66,43 +54,22 @@ const Login = () => {
         return errorMsg
     }
 
-    // Deteksi apakah input adalah nomor telepon
-    const isPhoneNumber = (input) => {
-        // Hapus spasi dan karakter non-digit kecuali +
-        const cleaned = input.replace(/[^\d+]/g, '')
-        // Cek format nomor telepon Indonesia (08xxx, +62xxx, 62xxx)
-        return /^(\+62|62|08)\d{8,12}$/.test(cleaned)
-    }
-
     const handleSubmit = async (e) => {
         e.preventDefault()
         setError('')
-        setSuccess('')
         setLoading(true)
 
         try {
-            if (isRegister) {
-                // Registrasi tetap pakai email
-                if (!emailOrPhone.includes('@')) {
-                    throw new Error('Untuk registrasi, silakan gunakan email')
-                }
-                if (password !== confirmPassword) throw new Error('Password dan konfirmasi password tidak sama')
-                if (password.length < 6) throw new Error('Password minimal 6 karakter')
-                await signUp(emailOrPhone, password)
-                setSuccess('Registrasi berhasil! Silakan login dengan akun baru Anda.')
-                setIsRegister(false)
-                setPassword('')
-            } else {
-                if (!emailOrPhone) throw new Error('Username harus diisi')
-                if (!password) throw new Error('Password harus diisi')
+            if (!emailOrPhone) throw new Error('Username harus diisi')
+            if (!password) throw new Error('Password harus diisi')
 
-                const { role } = await signIn(emailOrPhone, password)
-                // Redirect berdasarkan role
-                if (role === 'wali') {
-                    navigate('/wali-santri')
-                } else {
-                    navigate('/')
-                }
+            const { role } = await signIn(emailOrPhone, password)
+
+            // Redirect berdasarkan role
+            if (role === 'wali') {
+                navigate('/wali-santri')
+            } else {
+                navigate('/')
             }
         } catch (err) {
             console.error('Login error:', err)
@@ -123,15 +90,15 @@ const Login = () => {
 
                 {/* Alerts */}
                 {error && <div className="alert error">{error}</div>}
-                {success && <div className="alert success">{success}</div>}
+
 
                 {/* Form */}
                 <form onSubmit={handleSubmit}>
                     <div className="input-group">
-                        <label>{isRegister ? 'Email' : 'Username'}</label>
+                        <label>Username / Email</label>
                         <input
                             type="text"
-                            placeholder={isRegister ? 'Masukkan email' : 'Masukkan username'}
+                            placeholder="Masukkan username atau email"
                             value={emailOrPhone}
                             onChange={(e) => setEmailOrPhone(e.target.value)}
                             required
@@ -154,34 +121,13 @@ const Login = () => {
                         </div>
                     </div>
 
-                    {isRegister && (
-                        <div className="input-group">
-                            <label>Konfirmasi Password</label>
-                            <input
-                                type="password"
-                                placeholder="Ulangi password"
-                                value={confirmPassword}
-                                onChange={(e) => setConfirmPassword(e.target.value)}
-                                required
-                            />
-                        </div>
-                    )}
-
                     <button type="submit" className="btn-primary" disabled={loading}>
-                        {loading ? <RefreshCw size={18} className="spin" /> : isRegister ? <UserPlus size={18} /> : <LogIn size={18} />}
-                        <span>{loading ? 'Memproses...' : isRegister ? 'Daftar' : 'Masuk'}</span>
+                        {loading ? <RefreshCw size={18} className="spin" /> : <LogIn size={18} />}
+                        <span>{loading ? 'Memproses...' : 'Masuk'}</span>
                     </button>
                 </form>
 
-                {/* Footer */}
-                <div className="login-footer">
-                    <p>
-                        {isRegister ? 'Sudah punya akun?' : 'Belum punya akun?'}{' '}
-                        <button onClick={() => setIsRegister(!isRegister)}>
-                            {isRegister ? 'Masuk' : 'Daftar'}
-                        </button>
-                    </p>
-                </div>
+                {/* Footer - Copyright only now since registration is disabled */}
             </div>
 
             {/* Copyright */}

@@ -4,8 +4,9 @@ import { ThemeProvider } from './context/ThemeContext'
 import Layout from './components/layout/Layout'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 import ErrorBoundary from './components/common/ErrorBoundary'
-import Login from './pages/Login'
-import Dashboard from './pages/Dashboard'
+import Login from './pages/auth/Login'
+// New Dashboard Components
+import { AdminDashboard, AkademikDashboard, KeuanganDashboard, WaliSantriDashboard } from './pages/dashboards'
 import SantriList from './pages/santri/SantriList'
 import SantriForm from './pages/santri/SantriForm'
 import GuruList from './pages/guru/GuruList'
@@ -26,6 +27,9 @@ import ProfilSettingsPage from './pages/profil/ProfilSettingsPage'
 import WaliSantriPage from './pages/walisantri/WaliSantriPage'
 import BackupPage from './pages/backup/BackupPage'
 import SystemStatusPage from './pages/system/SystemStatusPage'
+// Admin Pages
+import UsersPage from './pages/users/UsersPage'
+import RolesPage from './pages/roles/RolesPage'
 // Keuangan Pages
 import KasPemasukanPage from './pages/keuangan/KasPemasukanPage'
 import KasPengeluaranPage from './pages/keuangan/KasPengeluaranPage'
@@ -41,21 +45,26 @@ import LaporanPenyaluranPage from './pages/keuangan/LaporanPenyaluranPage'
 import './index.css'
 import './components/common/ErrorBoundary.css'
 
+// Dashboard redirect mapping based on active role
+const dashboardRoutes = {
+  admin: '/dashboard/admin',
+  guru: '/dashboard/akademik',
+  bendahara: '/dashboard/keuangan',
+  pengasuh: '/dashboard/keuangan',
+  wali: '/dashboard/walisantri'
+}
+
 // Component untuk redirect berdasarkan role setelah login
 const RoleBasedRedirect = () => {
-  const { role, loading } = useAuth()
+  const { activeRole, loading } = useAuth()
 
   if (loading) {
     return <div className="loading">Memuat...</div>
   }
 
-  // Wali diarahkan ke portal wali
-  if (role === 'wali') {
-    return <Navigate to="/wali-santri" replace />
-  }
-
-  // Admin dan Guru ke dashboard
-  return <Dashboard />
+  // Redirect to appropriate dashboard based on active role
+  const targetPath = dashboardRoutes[activeRole] || '/dashboard/admin'
+  return <Navigate to={targetPath} replace />
 }
 
 function App() {
@@ -78,87 +87,128 @@ function App() {
                   </ProtectedRoute>
                 } />
 
+                {/* ============ NEW DASHBOARD ROUTES ============ */}
+
+                {/* Admin Dashboard - Full control */}
+                <Route path="/dashboard/admin" element={
+                  <ProtectedRoute roles={['admin']}>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                } />
+
+                {/* Akademik Dashboard - Teachers & Admin */}
+                <Route path="/dashboard/akademik" element={
+                  <ProtectedRoute roles={['admin', 'guru']}>
+                    <AkademikDashboard />
+                  </ProtectedRoute>
+                } />
+
+                {/* Keuangan Dashboard - Bendahara & Admin */}
+                <Route path="/dashboard/keuangan" element={
+                  <ProtectedRoute roles={['admin', 'bendahara', 'pengasuh']}>
+                    <KeuanganDashboard />
+                  </ProtectedRoute>
+                } />
+
+                {/* Wali Santri Dashboard - Parents Only */}
+                <Route path="/dashboard/walisantri" element={
+                  <ProtectedRoute roles={['wali']}>
+                    <WaliSantriDashboard />
+                  </ProtectedRoute>
+                } />
+
                 {/* ============ ADMIN ONLY ROUTES ============ */}
 
-                {/* Santri Management */}
+                {/* User Management */}
+                <Route path="/users" element={
+                  <ProtectedRoute roles={['admin']}>
+                    <UsersPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/roles" element={
+                  <ProtectedRoute roles={['admin']}>
+                    <RolesPage />
+                  </ProtectedRoute>
+                } />
+
                 <Route path="/santri" element={
-                  <ProtectedRoute roles={['admin']} fallbackRedirect="/wali-santri">
+                  <ProtectedRoute roles={['admin', 'guru']} fallbackRedirect="/dashboard/admin">
                     <SantriList />
                   </ProtectedRoute>
                 } />
                 <Route path="/santri/create" element={
-                  <ProtectedRoute roles={['admin']} fallbackRedirect="/wali-santri">
+                  <ProtectedRoute roles={['admin']} fallbackRedirect="/dashboard/admin">
                     <SantriForm />
                   </ProtectedRoute>
                 } />
                 <Route path="/santri/:id" element={
-                  <ProtectedRoute roles={['admin']} fallbackRedirect="/wali-santri">
+                  <ProtectedRoute roles={['admin', 'guru']} fallbackRedirect="/dashboard/admin">
                     <SantriForm />
                   </ProtectedRoute>
                 } />
                 <Route path="/santri/:id/edit" element={
-                  <ProtectedRoute roles={['admin']} fallbackRedirect="/wali-santri">
+                  <ProtectedRoute roles={['admin']} fallbackRedirect="/dashboard/admin">
                     <SantriForm />
                   </ProtectedRoute>
                 } />
 
                 {/* Guru Management */}
                 <Route path="/guru" element={
-                  <ProtectedRoute roles={['admin']} fallbackRedirect="/wali-santri">
+                  <ProtectedRoute roles={['admin', 'guru']} fallbackRedirect="/dashboard/admin">
                     <GuruList />
                   </ProtectedRoute>
                 } />
                 <Route path="/guru/create" element={
-                  <ProtectedRoute roles={['admin']} fallbackRedirect="/wali-santri">
+                  <ProtectedRoute roles={['admin']} fallbackRedirect="/dashboard/admin">
                     <GuruForm />
                   </ProtectedRoute>
                 } />
                 <Route path="/guru/:id" element={
-                  <ProtectedRoute roles={['admin']} fallbackRedirect="/wali-santri">
+                  <ProtectedRoute roles={['admin', 'guru']} fallbackRedirect="/dashboard/admin">
                     <GuruForm />
                   </ProtectedRoute>
                 } />
                 <Route path="/guru/:id/edit" element={
-                  <ProtectedRoute roles={['admin']} fallbackRedirect="/wali-santri">
+                  <ProtectedRoute roles={['admin']} fallbackRedirect="/dashboard/admin">
                     <GuruForm />
                   </ProtectedRoute>
                 } />
 
                 {/* Master Data - Admin Only */}
                 <Route path="/kelas" element={
-                  <ProtectedRoute roles={['admin']} fallbackRedirect="/wali-santri">
+                  <ProtectedRoute roles={['admin', 'guru']} fallbackRedirect="/dashboard/admin">
                     <KelasPage />
                   </ProtectedRoute>
                 } />
                 <Route path="/mapel" element={
-                  <ProtectedRoute roles={['admin']} fallbackRedirect="/wali-santri">
+                  <ProtectedRoute roles={['admin', 'guru']} fallbackRedirect="/dashboard/admin">
                     <MapelPage />
                   </ProtectedRoute>
                 } />
                 <Route path="/semester" element={
-                  <ProtectedRoute roles={['admin']} fallbackRedirect="/wali-santri">
+                  <ProtectedRoute roles={['admin', 'guru']} fallbackRedirect="/dashboard/admin">
                     <SemesterPage />
                   </ProtectedRoute>
                 } />
 
                 {/* Admin Settings */}
                 <Route path="/audit-log" element={
-                  <ProtectedRoute roles={['admin']} fallbackRedirect="/wali-santri">
+                  <ProtectedRoute roles={['admin']} fallbackRedirect="/dashboard/admin">
                     <AuditLogPage />
                   </ProtectedRoute>
                 } />
                 <Route path="/pengaturan" element={
-                  <ProtectedRoute roles={['admin']} fallbackRedirect="/wali-santri">
+                  <ProtectedRoute roles={['admin']} fallbackRedirect="/dashboard/admin">
                     <PengaturanPage />
                   </ProtectedRoute>
                 } />
                 <Route path="/backup" element={
-                  <ProtectedRoute roles={['admin']} fallbackRedirect="/wali-santri">
+                  <ProtectedRoute roles={['admin']} fallbackRedirect="/dashboard/admin">
                     <BackupPage />
                   </ProtectedRoute>
                 } />
                 <Route path="/system-status" element={
-                  <ProtectedRoute roles={['admin']} fallbackRedirect="/wali-santri">
+                  <ProtectedRoute roles={['admin']} fallbackRedirect="/dashboard/admin">
                     <SystemStatusPage />
                   </ProtectedRoute>
                 } />
@@ -167,50 +217,50 @@ function App() {
 
                 {/* Halaqoh */}
                 <Route path="/halaqoh" element={
-                  <ProtectedRoute roles={['admin', 'guru']} fallbackRedirect="/wali-santri">
+                  <ProtectedRoute roles={['admin', 'guru']} fallbackRedirect="/dashboard/admin">
                     <HalaqohPage />
                   </ProtectedRoute>
                 } />
 
                 {/* Hafalan */}
                 <Route path="/hafalan" element={
-                  <ProtectedRoute roles={['admin', 'guru']} fallbackRedirect="/wali-santri">
+                  <ProtectedRoute roles={['admin', 'guru']} fallbackRedirect="/dashboard/admin">
                     <HafalanList />
                   </ProtectedRoute>
                 } />
                 <Route path="/hafalan/create" element={
-                  <ProtectedRoute roles={['admin', 'guru']} fallbackRedirect="/wali-santri">
+                  <ProtectedRoute roles={['admin', 'guru']} fallbackRedirect="/dashboard/admin">
                     <HafalanForm />
                   </ProtectedRoute>
                 } />
                 <Route path="/hafalan/:id/edit" element={
-                  <ProtectedRoute roles={['admin', 'guru']} fallbackRedirect="/wali-santri">
+                  <ProtectedRoute roles={['admin', 'guru']} fallbackRedirect="/dashboard/admin">
                     <HafalanForm />
                   </ProtectedRoute>
                 } />
 
                 {/* Presensi */}
                 <Route path="/presensi" element={
-                  <ProtectedRoute roles={['admin', 'guru']} fallbackRedirect="/wali-santri">
+                  <ProtectedRoute roles={['admin', 'guru']} fallbackRedirect="/dashboard/admin">
                     <PresensiPage />
                   </ProtectedRoute>
                 } />
 
                 {/* Nilai */}
                 <Route path="/input-nilai" element={
-                  <ProtectedRoute roles={['admin', 'guru']} fallbackRedirect="/wali-santri">
+                  <ProtectedRoute roles={['admin', 'guru']} fallbackRedirect="/dashboard/admin">
                     <InputNilaiPage />
                   </ProtectedRoute>
                 } />
                 <Route path="/rekap-nilai" element={
-                  <ProtectedRoute roles={['admin', 'guru']} fallbackRedirect="/wali-santri">
+                  <ProtectedRoute roles={['admin', 'guru']} fallbackRedirect="/dashboard/admin">
                     <RekapNilaiPage />
                   </ProtectedRoute>
                 } />
 
                 {/* Laporan */}
                 <Route path="/laporan" element={
-                  <ProtectedRoute roles={['admin', 'guru']} fallbackRedirect="/wali-santri">
+                  <ProtectedRoute roles={['admin', 'guru']} fallbackRedirect="/dashboard/admin">
                     <LaporanPage />
                   </ProtectedRoute>
                 } />
@@ -219,69 +269,69 @@ function App() {
 
                 {/* Kas - Pemasukan */}
                 <Route path="/keuangan/kas/pemasukan" element={
-                  <ProtectedRoute roles={['admin', 'bendahara', 'pengasuh']} fallbackRedirect="/wali-santri">
+                  <ProtectedRoute roles={['admin', 'bendahara', 'pengasuh']} fallbackRedirect="/dashboard/admin">
                     <KasPemasukanPage />
                   </ProtectedRoute>
                 } />
                 {/* Kas - Pengeluaran */}
                 <Route path="/keuangan/kas/pengeluaran" element={
-                  <ProtectedRoute roles={['admin', 'bendahara', 'pengasuh']} fallbackRedirect="/wali-santri">
+                  <ProtectedRoute roles={['admin', 'bendahara', 'pengasuh']} fallbackRedirect="/dashboard/admin">
                     <KasPengeluaranPage />
                   </ProtectedRoute>
                 } />
                 {/* Kas - Laporan */}
                 <Route path="/keuangan/kas/laporan" element={
-                  <ProtectedRoute roles={['admin', 'bendahara', 'pengasuh']} fallbackRedirect="/wali-santri">
+                  <ProtectedRoute roles={['admin', 'bendahara', 'pengasuh']} fallbackRedirect="/dashboard/admin">
                     <KasLaporanPage />
                   </ProtectedRoute>
                 } />
 
                 {/* Pembayaran - Tagihan Santri */}
                 <Route path="/keuangan/pembayaran/tagihan" element={
-                  <ProtectedRoute roles={['admin', 'bendahara', 'pengasuh']} fallbackRedirect="/wali-santri">
+                  <ProtectedRoute roles={['admin', 'bendahara', 'pengasuh']} fallbackRedirect="/dashboard/admin">
                     <TagihanSantriPage />
                   </ProtectedRoute>
                 } />
                 {/* Pembayaran - Kategori */}
                 <Route path="/keuangan/pembayaran/kategori" element={
-                  <ProtectedRoute roles={['admin', 'bendahara', 'pengasuh']} fallbackRedirect="/wali-santri">
+                  <ProtectedRoute roles={['admin', 'bendahara', 'pengasuh']} fallbackRedirect="/dashboard/admin">
                     <KategoriPembayaranPage />
                   </ProtectedRoute>
                 } />
                 {/* Pembayaran - Pembayaran Santri */}
                 <Route path="/keuangan/pembayaran/bayar" element={
-                  <ProtectedRoute roles={['admin', 'bendahara', 'pengasuh']} fallbackRedirect="/wali-santri">
+                  <ProtectedRoute roles={['admin', 'bendahara', 'pengasuh']} fallbackRedirect="/dashboard/admin">
                     <PembayaranSantriPage />
                   </ProtectedRoute>
                 } />
                 {/* Pembayaran - Laporan */}
                 <Route path="/keuangan/pembayaran/laporan" element={
-                  <ProtectedRoute roles={['admin', 'bendahara', 'pengasuh']} fallbackRedirect="/wali-santri">
+                  <ProtectedRoute roles={['admin', 'bendahara', 'pengasuh']} fallbackRedirect="/dashboard/admin">
                     <LaporanPembayaranPage />
                   </ProtectedRoute>
                 } />
 
                 {/* Penyaluran Dana - Anggaran */}
                 <Route path="/keuangan/dana/anggaran" element={
-                  <ProtectedRoute roles={['admin', 'bendahara', 'pengasuh']} fallbackRedirect="/wali-santri">
+                  <ProtectedRoute roles={['admin', 'bendahara', 'pengasuh']} fallbackRedirect="/dashboard/admin">
                     <AnggaranPage />
                   </ProtectedRoute>
                 } />
                 {/* Penyaluran Dana - Persetujuan */}
                 <Route path="/keuangan/dana/persetujuan" element={
-                  <ProtectedRoute roles={['admin', 'bendahara', 'pengasuh']} fallbackRedirect="/wali-santri">
+                  <ProtectedRoute roles={['admin', 'bendahara', 'pengasuh']} fallbackRedirect="/dashboard/admin">
                     <PersetujuanDanaPage />
                   </ProtectedRoute>
                 } />
                 {/* Penyaluran Dana - Realisasi */}
                 <Route path="/keuangan/dana/realisasi" element={
-                  <ProtectedRoute roles={['admin', 'bendahara', 'pengasuh']} fallbackRedirect="/wali-santri">
+                  <ProtectedRoute roles={['admin', 'bendahara', 'pengasuh']} fallbackRedirect="/dashboard/admin">
                     <RealisasiDanaPage />
                   </ProtectedRoute>
                 } />
                 {/* Penyaluran Dana - Laporan */}
                 <Route path="/keuangan/dana/laporan" element={
-                  <ProtectedRoute roles={['admin', 'bendahara', 'pengasuh']} fallbackRedirect="/wali-santri">
+                  <ProtectedRoute roles={['admin', 'bendahara', 'pengasuh']} fallbackRedirect="/dashboard/admin">
                     <LaporanPenyaluranPage />
                   </ProtectedRoute>
                 } />
@@ -290,7 +340,7 @@ function App() {
 
                 {/* Wali Santri Portal */}
                 <Route path="/wali-santri" element={
-                  <ProtectedRoute>
+                  <ProtectedRoute roles={['wali']}>
                     <WaliSantriPage />
                   </ProtectedRoute>
                 } />

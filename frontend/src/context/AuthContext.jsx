@@ -16,7 +16,11 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null)
-    const [userProfile, setUserProfile] = useState({ role: 'guest' }) // Default role
+    const [userProfile, setUserProfile] = useState({
+        roles: [],
+        activeRole: 'guest',
+        role: 'guest' // Legacy support
+    })
     const [loading, setLoading] = useState(true)
     const idleTimerRef = useRef(null)
     const lastActivityRef = useRef(Date.now())
@@ -44,7 +48,7 @@ export const AuthProvider = ({ children }) => {
         try {
             await supabase.auth.signOut()
             setUser(null)
-            setUserProfile({ role: 'guest' })
+            setUserProfile({ roles: [], activeRole: 'guest', role: 'guest' })
             alert('Sesi Anda telah berakhir karena tidak ada aktivitas selama 20 menit. Silakan login kembali.')
             window.location.href = '/login'
         } catch (error) {
@@ -118,7 +122,7 @@ export const AuthProvider = ({ children }) => {
                 if (session?.user) {
                     fetchUserProfile(session.user.id)
                 } else {
-                    setUserProfile({ role: 'guest' })
+                    setUserProfile({ roles: [], activeRole: 'guest', role: 'guest' })
                 }
                 setLoading(false)
             }
@@ -145,15 +149,58 @@ export const AuthProvider = ({ children }) => {
             if (error) {
                 // Tabel tidak ada atau error lainnya - gunakan default
                 console.log('Profile not found, using default guest role')
-                setUserProfile({ role: 'guest' })
+                setUserProfile({ roles: [], activeRole: 'guest', role: 'guest' })
                 return
             }
 
-            setUserProfile(data || { role: 'admin' })
+            // Handle both old (single role) and new (multi-role) format
+            // Admin gets access to ALL dashboards by default
+            let roles = data.roles || (data.role ? [data.role] : ['admin'])
+            const activeRole = data.active_role || data.role || 'admin'
+
+            // If user is admin (either in roles array or single role), grant access to all dashboards
+            if (roles.includes('admin') || data.role === 'admin') {
+                // Admin can switch to any dashboard
+                roles = ['admin', 'guru', 'bendahara', 'wali']
+            }
+
+            setUserProfile({
+                ...data,
+                roles: roles,
+                activeRole: activeRole,
+                role: activeRole // Legacy support
+            })
         } catch (err) {
             // Timeout atau error - gunakan default
             console.log('Using default guest role')
-            setUserProfile({ role: 'guest' })
+            setUserProfile({ roles: [], activeRole: 'guest', role: 'guest' })
+        }
+    }
+
+    // Switch active role (for multi-role users)
+    const switchRole = async (newRole) => {
+        if (!userProfile.roles.includes(newRole)) {
+            throw new Error('User tidak memiliki role ini')
+        }
+
+        try {
+            const { error } = await supabase
+                .from('user_profiles')
+                .update({ active_role: newRole })
+                .eq('user_id', user.id)
+
+            if (error) throw error
+
+            setUserProfile(prev => ({
+                ...prev,
+                activeRole: newRole,
+                role: newRole // Legacy support
+            }))
+
+            return { success: true, activeRole: newRole }
+        } catch (error) {
+            console.error('Switch role error:', error)
+            throw error
         }
     }
 
@@ -188,17 +235,29 @@ export const AuthProvider = ({ children }) => {
         })
         if (error) throw error
 
-        // Fetch profile untuk mendapatkan role
+        // Fetch profile untuk mendapatkan roles
         const { data: profile } = await supabase
             .from('user_profiles')
-            .select('role')
+            .select('roles, active_role, role')
             .eq('user_id', data.user.id)
             .single()
 
-        const role = profile?.role || 'admin'
-        setUserProfile({ ...profile, role })
+        let roles = profile?.roles || (profile?.role ? [profile.role] : ['admin'])
+        const activeRole = profile?.active_role || profile?.role || 'admin'
 
-        return { ...data, role }
+        // If user is admin, grant access to all dashboards
+        if (roles.includes('admin') || profile?.role === 'admin') {
+            roles = ['admin', 'guru', 'bendahara', 'wali']
+        }
+
+        setUserProfile({
+            ...profile,
+            roles: roles,
+            activeRole: activeRole,
+            role: activeRole
+        })
+
+        return { ...data, roles, activeRole, role: activeRole }
     }
 
     const signUp = async (email, password, metadata = {}) => {
@@ -217,14 +276,33 @@ export const AuthProvider = ({ children }) => {
         const { error } = await supabase.auth.signOut()
         if (error) throw error
         setUser(null)
-        setUserProfile({ role: 'admin' })
+        setUserProfile({ roles: [], activeRole: 'guest', role: 'guest' })
     }
 
     // Role checking helpers
-    const isAdmin = () => userProfile?.role === 'admin'
-    const isGuru = () => userProfile?.role === 'guru'
-    const isWali = () => userProfile?.role === 'wali'
-    const hasRole = (roles) => roles.includes(userProfile?.role)
+    const isAdmin = () => userProfile?.activeRole === 'admin'
+    const isGuru = () => userProfile?.activeRole === 'guru'
+    const isBendahara = () => userProfile?.activeRole === 'bendahara'
+    const isWali = () => userProfile?.activeRole === 'wali'
+
+    // Check if user has specific role in their roles array
+    const hasRole = (roles) => {
+        if (typeof roles === 'string') {
+            return userProfile?.roles?.includes(roles)
+        }
+        return roles.some(r => userProfile?.roles?.includes(r))
+    }
+
+    // Check if user can access based on active role
+    const canAccessWithActiveRole = (allowedRoles) => {
+        if (typeof allowedRoles === 'string') {
+            return userProfile?.activeRole === allowedRoles
+        }
+        return allowedRoles.includes(userProfile?.activeRole)
+    }
+
+    // Check if user has multiple roles (for showing role switcher)
+    const hasMultipleRoles = () => (userProfile?.roles?.length || 0) > 1
 
     const value = {
         user,
@@ -233,12 +311,20 @@ export const AuthProvider = ({ children }) => {
         signIn,
         signUp,
         signOut,
+        switchRole,
         isAuthenticated: !!user,
         isAdmin,
         isGuru,
+        isBendahara,
         isWali,
         hasRole,
-        role: userProfile?.role || 'admin'
+        canAccessWithActiveRole,
+        hasMultipleRoles,
+        // Multi-role properties
+        roles: userProfile?.roles || [],
+        activeRole: userProfile?.activeRole || 'guest',
+        // Legacy support (single role)
+        role: userProfile?.activeRole || userProfile?.role || 'guest'
     }
 
     return (

@@ -1,0 +1,308 @@
+/* =====================================================
+   Wali Santri Dashboard Styles
+   ===================================================== */
+
+.walisantri-dashboard {
+    padding: 0;
+}
+
+/* Welcome Section */
+.dashboard-welcome.walisantri {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+}
+
+.dashboard-welcome.walisantri .welcome-content h1 {
+    color: white;
+}
+
+.dashboard-welcome.walisantri .welcome-content p {
+    margin: 0;
+    opacity: 1;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.9rem;
+}
+
+/* Santri Selector */
+.santri-selector {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+    padding: 16px;
+    background: var(--bg-secondary, white);
+    border-radius: 12px;
+    border: 1px solid var(--border-color, #e5e7eb);
+}
+
+.selector-label {
+    font-weight: 600;
+    color: var(--text-secondary, #6b7280);
+}
+
+.santri-tabs {
+    display: flex;
+    gap: 8px;
+}
+
+.santri-tab {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: var(--bg-tertiary, #f9fafb);
+    border: 1px solid var(--border-color, #e5e7eb);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-primary, #1f2937);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.santri-tab:hover,
+.santri-tab.active {
+    background: #8b5cf6;
+    border-color: #8b5cf6;
+    color: white;
+}
+
+/* Profile Card */
+.wali-card.profile-card {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 24px;
+    margin-bottom: 24px;
+}
+
+.profile-avatar {
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+    border-radius: 50%;
+    color: white;
+}
+
+.profile-info h2 {
+    margin: 0 0 8px 0;
+    font-size: 1.5rem;
+    color: var(--text-primary, #1f2937);
+}
+
+.profile-details {
+    display: flex;
+    gap: 20px;
+}
+
+.profile-details span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-secondary, #6b7280);
+    font-size: 0.9rem;
+}
+
+/* Stats Grid */
+.wali-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.wali-stat-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px;
+    background: var(--bg-secondary, white);
+    border-radius: 12px;
+    border: 1px solid var(--border-color, #e5e7eb);
+}
+
+.wali-stat-card .stat-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    color: white;
+}
+
+.stat-icon.hafalan {
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+}
+
+.stat-icon.lancar {
+    background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.stat-icon.tagihan {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.stat-icon.lunas {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+}
+
+.wali-stat-card .stat-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.wali-stat-card .stat-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text-primary, #1f2937);
+}
+
+.wali-stat-card .stat-label {
+    font-size: 0.8rem;
+    color: var(--text-secondary, #6b7280);
+}
+
+/* Cards Grid */
+.wali-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.wali-card {
+    background: var(--bg-secondary, white);
+    border-radius: 12px;
+    border: 1px solid var(--border-color, #e5e7eb);
+    padding: 20px;
+}
+
+.wali-card .card-header {
+    margin-bottom: 12px;
+}
+
+.wali-card .card-header h3 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--text-primary, #1f2937);
+}
+
+.wali-card .card-body.placeholder {
+    color: var(--text-secondary, #6b7280);
+    font-size: 0.9rem;
+}
+
+.wali-card .card-body.placeholder p {
+    margin: 0;
+}
+
+/* Notice */
+.wali-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px 20px;
+    background: rgba(139, 92, 246, 0.1);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 12px;
+    color: #7c3aed;
+}
+
+.wali-notice strong {
+    display: block;
+    margin-bottom: 4px;
+}
+
+.wali-notice p {
+    margin: 0;
+    font-size: 0.85rem;
+    opacity: 0.9;
+}
+
+/* Loading State */
+.loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    color: var(--text-secondary, #6b7280);
+}
+
+.loading-state .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #e5e7eb;
+    border-top-color: #8b5cf6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 12px;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Empty State */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    text-align: center;
+    color: var(--text-secondary, #6b7280);
+}
+
+.empty-state h3 {
+    margin: 16px 0 8px;
+    color: var(--text-primary, #1f2937);
+}
+
+.empty-state p {
+    margin: 0;
+    max-width: 400px;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+    .wali-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+
+    .wali-stats-grid,
+    .wali-cards-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .santri-selector {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .santri-tabs {
+        flex-wrap: wrap;
+    }
+
+    .wali-card.profile-card {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .profile-details {
+        flex-direction: column;
+        gap: 8px;
+    }
+}

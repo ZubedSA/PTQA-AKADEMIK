@@ -2,12 +2,16 @@ import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { Plus, Search, Edit, Trash2, Eye, RefreshCw, Upload, FileSpreadsheet, X, MoreVertical } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
+import { useAuth } from '../../context/AuthContext'
 import { logDelete } from '../../lib/auditLog'
 import MobileActionMenu from '../../components/ui/MobileActionMenu'
 import * as XLSX from 'xlsx'
 import './Santri.css'
 
 const SantriList = () => {
+    const { activeRole } = useAuth()
+    const isAdmin = activeRole === 'admin'
+
     const [santri, setSantri] = useState([])
     const [searchTerm, setSearchTerm] = useState('')
     const [sortBy, setSortBy] = useState('nama-asc')
@@ -19,6 +23,9 @@ const SantriList = () => {
     const [importData, setImportData] = useState([])
     const [importing, setImporting] = useState(false)
     const [importSuccess, setImportSuccess] = useState('')
+    const [manualAngkatan, setManualAngkatan] = useState('')
+    const [detectedHeaders, setDetectedHeaders] = useState([]) // New: Store headers
+
     const fileInputRef = useRef(null)
 
     useEffect(() => {
@@ -27,19 +34,35 @@ const SantriList = () => {
 
     const fetchSantri = async () => {
         setLoading(true)
-        setError(null)
+        setError('')
         try {
+            // Fetch santri without angkatan JOIN (to avoid schema cache issue)
             const { data, error } = await supabase
                 .from('santri')
-                .select(`*, kelas:kelas_id(nama), halaqoh:halaqoh_id(nama)`)
+                .select(`
+                    *,
+                    kelas:kelas_id(nama),
+                    halaqoh:halaqoh_id(nama)
+                `)
                 .order('nama')
 
             if (error) throw error
 
+            // Fetch angkatan data separately
+            const { data: angkatanList } = await supabase
+                .from('angkatan')
+                .select('id, nama')
+
+            const angkatanMap = {}
+            if (angkatanList) {
+                angkatanList.forEach(a => { angkatanMap[a.id] = a.nama })
+            }
+
             setSantri(data.map(s => ({
                 ...s,
                 kelas: s.kelas?.nama || '-',
-                halaqoh: s.halaqoh?.nama || '-'
+                halaqoh: s.halaqoh?.nama || '-',
+                angkatan: angkatanMap[s.angkatan_id] || '-'
             })))
         } catch (err) {
             console.error('Error fetching santri:', err.message)
@@ -53,6 +76,12 @@ const SantriList = () => {
         const file = e.target.files[0]
         if (!file) return
 
+        // Validate file type
+        if (!file.name.match(/\.(xlsx|xls)$/i)) {
+            alert('❌ File harus berformat .xlsx atau .xls')
+            return
+        }
+
         const reader = new FileReader()
         reader.onload = (evt) => {
             try {
@@ -62,34 +91,64 @@ const SantriList = () => {
                 const ws = wb.Sheets[wsname]
                 const data = XLSX.utils.sheet_to_json(ws, { defval: '' })
 
-                // Auto-mapping: cari kolom yang mirip
-                const mappedData = data.map(row => {
-                    const mapped = {}
+                if (data.length > 0) {
+                    setDetectedHeaders(Object.keys(data[0]))
+                }
+
+                // Parse and validate each row
+                const mappedData = data.map((row, index) => {
+                    const mapped = { rowNum: index + 2, errors: [] } // rowNum for Excel row (header = 1)
+
+                    // Map columns (flexible naming)
                     Object.keys(row).forEach(key => {
                         const lowerKey = key.toLowerCase().trim()
-                        if (lowerKey.includes('nis') || lowerKey.includes('nisn')) {
-                            mapped.nis = String(row[key])
-                        } else if (lowerKey.includes('nama') || lowerKey.includes('name')) {
-                            mapped.nama = row[key]
-                        } else if (lowerKey.includes('jenis') || lowerKey.includes('kelamin') || lowerKey.includes('gender') || lowerKey === 'l/p' || lowerKey === 'jk') {
+                        if (lowerKey.includes('nis') || lowerKey.includes('nisn') || lowerKey === 'no_induk') {
+                            mapped.nis = String(row[key]).trim()
+                        } else if (lowerKey === 'nama' || lowerKey.includes('nama_santri') || lowerKey === 'name') {
+                            mapped.nama = String(row[key]).trim()
+                        } else if (lowerKey.includes('jenis') || lowerKey.includes('kelamin') || lowerKey === 'l/p' || lowerKey === 'jk') {
                             const val = String(row[key]).toLowerCase()
                             mapped.jenis_kelamin = val.includes('l') || val.includes('laki') ? 'Laki-laki' : 'Perempuan'
-                        } else if (lowerKey.includes('tempat') && lowerKey.includes('lahir')) {
-                            mapped.tempat_lahir = row[key]
-                        } else if (lowerKey.includes('tanggal') && lowerKey.includes('lahir') || lowerKey === 'ttl') {
-                            mapped.tanggal_lahir = row[key]
-                        } else if (lowerKey.includes('alamat') || lowerKey.includes('address')) {
-                            mapped.alamat = row[key]
-                        } else if (lowerKey.includes('wali') || lowerKey.includes('ortu') || lowerKey.includes('parent')) {
-                            mapped.nama_wali = row[key]
-                        } else if (lowerKey.includes('telp') || lowerKey.includes('hp') || lowerKey.includes('phone')) {
-                            mapped.no_telp_wali = String(row[key])
+                        } else if (lowerKey === 'kelas' || lowerKey.includes('class')) {
+                            mapped.kelas = String(row[key]).trim()
+                        } else if (lowerKey === 'halaqoh' || lowerKey.includes('halaqah')) {
+                            mapped.halaqoh = String(row[key]).trim()
+                        } else if (lowerKey === 'tahun_masuk' || lowerKey.includes('tahun masuk') || lowerKey === 'year') {
+                            const num = parseInt(String(row[key]))
+                            mapped.tahun_masuk = !isNaN(num) ? num : null
+                        } else if (lowerKey === 'nama_angkatan' || lowerKey.includes('angkatan')) {
+                            mapped.nama_angkatan = String(row[key]).trim()
+                        } else if (lowerKey.includes('alamat') || lowerKey === 'address') {
+                            mapped.alamat = String(row[key]).trim()
+                        } else if (lowerKey.includes('wali') || lowerKey.includes('ortu')) {
+                            mapped.nama_wali = String(row[key]).trim()
+                        } else if (
+                            lowerKey.includes('telp') ||
+                            lowerKey.includes('hp') ||
+                            lowerKey.includes('phone') ||
+                            lowerKey.includes('handphone') ||
+                            lowerKey.includes('whatsapp') ||
+                            lowerKey.includes('wa') ||
+                            lowerKey.includes('kontak') ||
+                            lowerKey.includes('mobile') ||
+                            lowerKey.includes('nomor') ||
+                            lowerKey === 'no_hp' ||
+                            lowerKey === 'no hp'
+                        ) {
+                            mapped.no_telp_wali = String(row[key]).trim()
                         }
                     })
-                    // Default values
+
+                    // VALIDATION
+                    if (!mapped.nis) mapped.errors.push('NIS wajib diisi')
+                    if (!mapped.nama) mapped.errors.push('Nama wajib diisi')
+                    if (!mapped.nama_angkatan) mapped.errors.push('Angkatan wajib diisi')
+
+                    mapped.isValid = mapped.errors.length === 0
                     mapped.status = 'Aktif'
+
                     return mapped
-                }).filter(row => row.nama) // Hanya ambil yang punya nama
+                }).filter(row => row.nis || row.nama) // Filter completely empty rows
 
                 setImportData(mappedData)
                 setShowImportModal(true)
@@ -98,25 +157,110 @@ const SantriList = () => {
             }
         }
         reader.readAsBinaryString(file)
-        e.target.value = '' // Reset input
+        e.target.value = ''
     }
 
     const handleImport = async () => {
         if (importData.length === 0) return
+
+        // Filter only valid rows
+        const validRows = importData.filter(d => d.isValid)
+        const skippedCount = importData.length - validRows.length
+
+        if (validRows.length === 0) {
+            alert('❌ Tidak ada data valid untuk diimport!\nPerbaiki data yang error terlebih dahulu.')
+            return
+        }
+
         setImporting(true)
         try {
-            const { error } = await supabase.from('santri').insert(importData)
-            if (error) throw error
+            // ========================================
+            // STEP 1: Collect unique angkatan names
+            // ========================================
+            const uniqueAngkatan = [...new Set(validRows.map(d => d.nama_angkatan).filter(Boolean))]
+            console.log('Unique Angkatan:', uniqueAngkatan)
 
-            setImportSuccess(`${importData.length} data santri berhasil diimport!`)
-            setImportData([])
-            fetchSantri()
+            // ========================================
+            // STEP 2: Find or Create each Angkatan
+            // ========================================
+            const angkatanMap = {} // { "Angkatan 1": "uuid-xxx" }
+
+            for (const namaAngkatan of uniqueAngkatan) {
+                // Try to find existing
+                const { data: existing } = await supabase
+                    .from('angkatan')
+                    .select('id')
+                    .eq('nama', namaAngkatan)
+                    .single()
+
+                if (existing) {
+                    angkatanMap[namaAngkatan] = existing.id
+                    console.log(`Found angkatan "${namaAngkatan}":`, existing.id)
+                } else {
+                    // Create new
+                    const { data: created, error: createErr } = await supabase
+                        .from('angkatan')
+                        .insert({ nama: namaAngkatan })
+                        .select('id')
+                        .single()
+
+                    if (createErr) {
+                        throw new Error(`Gagal membuat angkatan "${namaAngkatan}": ${createErr.message}`)
+                    }
+                    angkatanMap[namaAngkatan] = created.id
+                    console.log(`Created angkatan "${namaAngkatan}":`, created.id)
+                }
+            }
+
+            // ========================================
+            // STEP 3: Prepare Santri Data with angkatan_id
+            // ========================================
+            const santriData = validRows.map(d => ({
+                nis: d.nis,
+                nama: d.nama,
+                jenis_kelamin: d.jenis_kelamin || 'Laki-laki',
+                alamat: d.alamat || null,
+                nama_wali: d.nama_wali || null,
+                no_telp: d.no_telp_wali || null, // Santri phone
+                no_telp_wali: d.no_telp_wali || null, // Wali phone (same for now)
+                status: 'Aktif',
+                angkatan_id: angkatanMap[d.nama_angkatan] || null
+            }))
+
+            console.log('Santri Data Sample:', santriData[0])
+
+            // ========================================
+            // STEP 4: Upsert Santri (INSERT or UPDATE)
+            // ========================================
+            const { error: upsertError } = await supabase
+                .from('santri')
+                .upsert(santriData, {
+                    onConflict: 'nis',
+                    ignoreDuplicates: false
+                })
+
+            if (upsertError) {
+                throw new Error('Gagal menyimpan data: ' + upsertError.message)
+            }
+
+            // ========================================
+            // SUCCESS!
+            // ========================================
+            const msg = skippedCount > 0
+                ? `✅ Import selesai!\n\n• Berhasil: ${validRows.length} data\n• Dilewati (error): ${skippedCount} data`
+                : `✅ Sukses! ${validRows.length} data santri berhasil diimport.`
+
+            setImportSuccess(msg)
             setTimeout(() => {
                 setShowImportModal(false)
+                setImportData([])
                 setImportSuccess('')
-            }, 2000)
+                fetchSantri()
+            }, 2500)
+
         } catch (err) {
-            alert('Gagal import: ' + err.message)
+            console.error('Import failed:', err)
+            alert('Gagal Import: ' + err.message)
         } finally {
             setImporting(false)
         }
@@ -163,19 +307,23 @@ const SantriList = () => {
                     <p className="page-subtitle">Kelola data santri pondok pesantren</p>
                 </div>
                 <div className="header-actions">
-                    <input
-                        type="file"
-                        ref={fileInputRef}
-                        onChange={handleFileUpload}
-                        accept=".xlsx,.xls,.csv"
-                        style={{ display: 'none' }}
-                    />
-                    <button className="btn btn-secondary" onClick={() => fileInputRef.current?.click()}>
-                        <Upload size={18} /> Import Excel/CSV
-                    </button>
-                    <Link to="/santri/create" className="btn btn-primary">
-                        <Plus size={18} /> Tambah Santri
-                    </Link>
+                    {isAdmin && (
+                        <>
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                onChange={handleFileUpload}
+                                accept=".xlsx,.xls,.csv"
+                                style={{ display: 'none' }}
+                            />
+                            <button className="btn btn-secondary" onClick={() => fileInputRef.current?.click()}>
+                                <Upload size={18} /> Import Excel/CSV
+                            </button>
+                            <Link to="/santri/create" className="btn btn-primary">
+                                <Plus size={18} /> Tambah Santri
+                            </Link>
+                        </>
+                    )}
                 </div>
             </div>
 
@@ -212,6 +360,7 @@ const SantriList = () => {
                                 <option value="kelas-asc">Kelas A-Z</option>
                                 <option value="kelas-desc">Kelas Z-A</option>
                                 <option value="status-asc">Status A-Z</option>
+                                <option value="status-desc">Status Z-A</option>
                             </select>
                         </div>
                     </div>
@@ -224,6 +373,7 @@ const SantriList = () => {
                                 <th>NIS</th>
                                 <th>Nama</th>
                                 <th>Jenis Kelamin</th>
+                                <th>Angkatan</th>
                                 <th>Kelas</th>
                                 <th>Halaqoh</th>
                                 <th>Status</th>
@@ -232,15 +382,23 @@ const SantriList = () => {
                         </thead>
                         <tbody>
                             {loading ? (
-                                <tr><td colSpan="7" className="text-center"><RefreshCw size={20} className="spin" /> Loading...</td></tr>
+                                <tr><td colSpan="8" className="text-center"><RefreshCw size={20} className="spin" /> Loading...</td></tr>
                             ) : filteredSantri.length === 0 ? (
-                                <tr><td colSpan="7" className="text-center">{error ? 'Gagal memuat data' : 'Tidak ada data santri'}</td></tr>
+                                <tr><td colSpan="8" className="text-center">{error ? 'Gagal memuat data' : 'Tidak ada data santri'}</td></tr>
                             ) : (
                                 filteredSantri.map((item) => (
                                     <tr key={item.id}>
                                         <td>{item.nis}</td>
                                         <td className="name-cell">{item.nama}</td>
                                         <td>{item.jenis_kelamin}</td>
+                                        <td>
+                                            {item.angkatan}
+                                            {item.raw_angkatan_id && (
+                                                <div style={{ fontSize: '10px', color: '#888' }}>
+                                                    ID: {item.raw_angkatan_id.substring(0, 6)}...
+                                                </div>
+                                            )}
+                                        </td>
                                         <td>{item.kelas}</td>
                                         <td>{item.halaqoh}</td>
                                         <td><span className={`badge ${item.status === 'Aktif' ? 'badge-success' : 'badge-warning'}`}>{item.status}</span></td>
@@ -248,13 +406,19 @@ const SantriList = () => {
                                             <MobileActionMenu
                                                 actions={[
                                                     { icon: <Eye size={16} />, label: 'Detail', path: `/santri/${item.id}` },
-                                                    { icon: <Edit size={16} />, label: 'Edit', path: `/santri/${item.id}/edit` },
-                                                    { icon: <Trash2 size={16} />, label: 'Hapus', onClick: () => { setSelectedSantri(item); setShowDeleteModal(true) }, danger: true }
+                                                    ...(isAdmin ? [
+                                                        { icon: <Edit size={16} />, label: 'Edit', path: `/santri/${item.id}/edit` },
+                                                        { icon: <Trash2 size={16} />, label: 'Hapus', onClick: () => { setSelectedSantri(item); setShowDeleteModal(true) }, danger: true }
+                                                    ] : [])
                                                 ]}
                                             >
                                                 <Link to={`/santri/${item.id}`} className="btn-icon" title="Lihat Detail"><Eye size={16} /></Link>
-                                                <Link to={`/santri/${item.id}/edit`} className="btn-icon" title="Edit"><Edit size={16} /></Link>
-                                                <button className="btn-icon btn-icon-danger" title="Hapus" onClick={() => { setSelectedSantri(item); setShowDeleteModal(true) }}><Trash2 size={16} /></button>
+                                                {isAdmin && (
+                                                    <>
+                                                        <Link to={`/santri/${item.id}/edit`} className="btn-icon" title="Edit"><Edit size={16} /></Link>
+                                                        <button className="btn-icon btn-icon-danger" title="Hapus" onClick={() => { setSelectedSantri(item); setShowDeleteModal(true) }}><Trash2 size={16} /></button>
+                                                    </>
+                                                )}
                                             </MobileActionMenu>
                                         </td>
                                     </tr>
@@ -280,35 +444,90 @@ const SantriList = () => {
                         </div>
                         <div className="modal-body">
                             {importSuccess ? (
-                                <div className="alert alert-success">{importSuccess}</div>
+                                <div className="alert alert-success" style={{ whiteSpace: 'pre-line' }}>{importSuccess}</div>
                             ) : (
                                 <>
-                                    <p className="mb-3">Ditemukan <strong>{importData.length}</strong> data. Preview:</p>
-                                    <div style={{ maxHeight: '300px', overflow: 'auto' }}>
-                                        <table className="table">
-                                            <thead>
-                                                <tr><th>NIS</th><th>Nama</th><th>L/P</th><th>Alamat</th></tr>
+                                    <div className="text-xs text-muted mb-2 p-2 bg-gray-100 rounded">
+                                        <strong>Kolom Terbaca:</strong> {detectedHeaders.join(', ')}
+                                    </div>
+
+                                    {/* Stats */}
+                                    <div className="flex gap-3 mb-3">
+                                        <span className="badge badge-success">
+                                            ✓ Valid: {importData.filter(d => d.isValid).length}
+                                        </span>
+                                        <span className="badge badge-danger" style={{ backgroundColor: importData.some(d => !d.isValid) ? '#dc3545' : '#6c757d' }}>
+                                            ✗ Error: {importData.filter(d => !d.isValid).length}
+                                        </span>
+                                    </div>
+
+                                    {/* Preview Table */}
+                                    <div style={{ maxHeight: '280px', overflow: 'auto', border: '1px solid #ddd' }}>
+                                        <table className="table table-sm" style={{ fontSize: '12px' }}>
+                                            <thead style={{ position: 'sticky', top: 0, background: '#f8f9fa' }}>
+                                                <tr>
+                                                    <th style={{ width: '40px' }}>#</th>
+                                                    <th>NIS</th>
+                                                    <th>Nama</th>
+                                                    <th>No HP</th>
+                                                    <th>Angkatan</th>
+                                                    <th>Status</th>
+                                                </tr>
                                             </thead>
                                             <tbody>
-                                                {importData.slice(0, 10).map((row, i) => (
-                                                    <tr key={i}>
-                                                        <td>{row.nis || '-'}</td>
-                                                        <td>{row.nama}</td>
-                                                        <td>{row.jenis_kelamin || '-'}</td>
-                                                        <td>{row.alamat || '-'}</td>
+                                                {importData.map((row, i) => (
+                                                    <tr
+                                                        key={i}
+                                                        style={{
+                                                            backgroundColor: row.isValid ? 'transparent' : '#ffe6e6',
+                                                            color: row.isValid ? 'inherit' : '#721c24'
+                                                        }}
+                                                    >
+                                                        <td>{row.rowNum}</td>
+                                                        <td>{row.nis || <span style={{ color: 'red' }}>-</span>}</td>
+                                                        <td>{row.nama || <span style={{ color: 'red' }}>-</span>}</td>
+                                                        <td style={{ color: row.no_telp_wali ? 'green' : 'orange' }}>
+                                                            {row.no_telp_wali || <span style={{ fontStyle: 'italic' }}>kosong</span>}
+                                                        </td>
+                                                        <td>{row.nama_angkatan || <span style={{ color: 'red' }}>-</span>}</td>
+                                                        <td>
+                                                            {row.isValid ? (
+                                                                <span style={{ color: 'green' }}>✓ OK</span>
+                                                            ) : (
+                                                                <span style={{ color: 'red', fontSize: '11px' }}>
+                                                                    {row.errors.join(', ')}
+                                                                </span>
+                                                            )}
+                                                        </td>
                                                     </tr>
                                                 ))}
                                             </tbody>
                                         </table>
-                                        {importData.length > 10 && <p className="text-muted mt-2">...dan {importData.length - 10} data lainnya</p>}
                                     </div>
+
+                                    {importData.some(d => !d.isValid) && (
+                                        <div className="alert alert-warning mt-3" style={{ fontSize: '13px' }}>
+                                            ⚠️ Baris dengan error akan <strong>dilewati</strong> saat import.
+                                            Hanya data valid yang akan disimpan.
+                                        </div>
+                                    )}
                                 </>
                             )}
                         </div>
                         <div className="modal-footer">
-                            <button className="btn btn-secondary" onClick={() => { setShowImportModal(false); setImportData([]) }}>Batal</button>
-                            <button className="btn btn-primary" onClick={handleImport} disabled={importing || importSuccess}>
-                                {importing ? <><RefreshCw size={16} className="spin" /> Importing...</> : 'Import Semua'}
+                            <button className="btn btn-secondary" onClick={() => { setShowImportModal(false); setImportData([]) }}>
+                                Batal
+                            </button>
+                            <button
+                                className="btn btn-primary"
+                                onClick={handleImport}
+                                disabled={importing || importSuccess || !importData.some(d => d.isValid)}
+                            >
+                                {importing ? (
+                                    <><RefreshCw size={16} className="spin" /> Importing...</>
+                                ) : (
+                                    `Import ${importData.filter(d => d.isValid).length} Data Valid`
+                                )}
                             </button>
                         </div>
                     </div>

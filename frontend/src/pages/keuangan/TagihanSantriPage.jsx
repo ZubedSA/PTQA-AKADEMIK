@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
-import { Plus, Search, Edit2, Trash2, Receipt, Download, RefreshCw, MessageCircle, AlertCircle } from 'lucide-react'
+import { Plus, Search, Edit2, Trash2, Receipt, Download, RefreshCw, MessageCircle, AlertCircle, Calendar } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 import { generateLaporanPDF } from '../../utils/pdfGenerator'
 import { sendWhatsApp, templateTagihanSantri, templatePengingatTagihan } from '../../utils/whatsapp'
+import MobileActionMenu from '../../components/ui/MobileActionMenu'
 import './Keuangan.css'
 
 const TagihanSantriPage = () => {
@@ -11,17 +12,20 @@ const TagihanSantriPage = () => {
     const [data, setData] = useState([])
     const [santriList, setSantriList] = useState([])
     const [kategoriList, setKategoriList] = useState([])
+    const [angkatanList, setAngkatanList] = useState([])
     const [loading, setLoading] = useState(true)
     const [showModal, setShowModal] = useState(false)
     const [editItem, setEditItem] = useState(null)
     const [filters, setFilters] = useState({ search: '', status: '', kategori: '' })
     const [form, setForm] = useState({
-        santri_id: '',
+        angkatan_id: '', // Single select dropdown
+        santri_id: '', // For single edit
         kategori_id: '',
         jumlah: '',
-        jatuh_tempo: '',
+        jatuh_tempo_bulan: new Date().toISOString().slice(0, 7), // YYYY-MM
         keterangan: ''
     })
+    const [isBulkMode, setIsBulkMode] = useState(true)
 
     useEffect(() => {
         fetchData()
@@ -30,11 +34,25 @@ const TagihanSantriPage = () => {
 
     const fetchOptions = async () => {
         const [santriRes, kategoriRes] = await Promise.all([
-            supabase.from('santri').select('id, nama, nis, no_telp_wali').eq('status', 'Aktif').order('nama'),
+            supabase.from('santri').select('id, nama, nis, no_telp_wali, angkatan_id').eq('status', 'Aktif').order('nama'),
             supabase.from('kategori_pembayaran').select('*').eq('is_active', true).eq('tipe', 'pembayaran').order('nama')
         ])
-        setSantriList(santriRes.data || [])
+        const santris = santriRes.data || []
+        setSantriList(santris)
         setKategoriList(kategoriRes.data || [])
+
+        // Fetch angkatan data for santri that have angkatan_id
+        const angkatanIds = [...new Set(santris.map(s => s.angkatan_id).filter(Boolean))]
+        if (angkatanIds.length > 0) {
+            const { data: angkatanData } = await supabase
+                .from('angkatan')
+                .select('id, nama')
+                .in('id', angkatanIds)
+                .order('nama')
+            setAngkatanList(angkatanData || [])
+        } else {
+            setAngkatanList([])
+        }
     }
 
     const fetchData = async () => {
@@ -56,18 +74,45 @@ const TagihanSantriPage = () => {
     const handleSubmit = async (e) => {
         e.preventDefault()
         try {
-            const payload = {
-                ...form,
+            // Calculate Due Date: 10th of the selected month
+            const dueDate = `${form.jatuh_tempo_bulan}-10`
+
+            const basePayload = {
+                kategori_id: form.kategori_id,
                 jumlah: parseFloat(form.jumlah),
+                jatuh_tempo: dueDate,
+                keterangan: form.keterangan || '',
                 created_by: user?.id
             }
 
             if (editItem) {
-                const { error } = await supabase.from('tagihan_santri').update(payload).eq('id', editItem.id)
+                // Update Single
+                const { error } = await supabase.from('tagihan_santri').update(basePayload).eq('id', editItem.id)
                 if (error) throw error
             } else {
-                const { error } = await supabase.from('tagihan_santri').insert([payload])
+                // Bulk Insert by angkatan
+                if (!form.angkatan_id) {
+                    alert('Pilih angkatan terlebih dahulu')
+                    return
+                }
+
+                const targetSantris = santriList.filter(s => s.angkatan_id === form.angkatan_id)
+
+                if (targetSantris.length === 0) {
+                    alert('Tidak ada santri pada angkatan yang dipilih')
+                    return
+                }
+
+                // Prepare bulk data
+                const bulkData = targetSantris.map(s => ({
+                    ...basePayload,
+                    santri_id: s.id
+                }))
+
+                const { error } = await supabase.from('tagihan_santri').insert(bulkData)
                 if (error) throw error
+
+                alert(`Berhasil membuat tagihan untuk ${targetSantris.length} santri`)
             }
 
             setShowModal(false)
@@ -90,19 +135,29 @@ const TagihanSantriPage = () => {
     }
 
     const resetForm = () => {
-        setForm({ santri_id: '', kategori_id: '', jumlah: '', jatuh_tempo: '', keterangan: '' })
+        setForm({
+            angkatan_id: '',
+            santri_id: '',
+            kategori_id: '',
+            jumlah: '',
+            jatuh_tempo_bulan: new Date().toISOString().slice(0, 7),
+            keterangan: ''
+        })
         setEditItem(null)
+        setIsBulkMode(true)
     }
 
     const openEdit = (item) => {
         setEditItem(item)
         setForm({
+            angkatan_id: '',
             santri_id: item.santri_id,
             kategori_id: item.kategori_id,
             jumlah: item.jumlah.toString(),
-            jatuh_tempo: item.jatuh_tempo,
+            jatuh_tempo_bulan: item.jatuh_tempo.slice(0, 7),
             keterangan: item.keterangan || ''
         })
+        setIsBulkMode(false)
         setShowModal(true)
     }
 
@@ -114,6 +169,8 @@ const TagihanSantriPage = () => {
             jumlah: kat?.nominal_default?.toString() || form.jumlah
         })
     }
+
+    // handleAngkatanToggle removed - using dropdown now
 
     const handleSendWhatsApp = (item) => {
         const phone = item.santri?.no_telp_wali
@@ -271,13 +328,19 @@ const TagihanSantriPage = () => {
                                     </td>
                                     <td><span className={`status-badge ${getStatusClass(item.status)}`}>{item.status}</span></td>
                                     <td>
-                                        <div className="action-buttons">
+                                        <MobileActionMenu
+                                            actions={[
+                                                { icon: <MessageCircle size={16} />, label: 'WhatsApp', onClick: () => handleSendWhatsApp(item) },
+                                                { icon: <Edit2 size={16} />, label: 'Edit', onClick: () => openEdit(item) },
+                                                { icon: <Trash2 size={16} />, label: 'Hapus', onClick: () => handleDelete(item.id), danger: true }
+                                            ]}
+                                        >
                                             <button className="btn-icon-sm success" onClick={() => handleSendWhatsApp(item)} title="Kirim WhatsApp">
                                                 <MessageCircle size={16} />
                                             </button>
                                             <button className="btn-icon-sm" onClick={() => openEdit(item)}><Edit2 size={16} /></button>
                                             <button className="btn-icon-sm danger" onClick={() => handleDelete(item.id)}><Trash2 size={16} /></button>
-                                        </div>
+                                        </MobileActionMenu>
                                     </td>
                                 </tr>
                             ))}
@@ -290,18 +353,30 @@ const TagihanSantriPage = () => {
                 <div className="modal-overlay active">
                     <div className="modal">
                         <div className="modal-header">
-                            <h3>{editItem ? 'Edit Tagihan' : 'Buat Tagihan Baru'}</h3>
+                            <h3>{editItem ? 'Edit Tagihan' : 'Buat Tagihan (Per Angkatan)'}</h3>
                             <button className="modal-close" onClick={() => setShowModal(false)}>×</button>
                         </div>
                         <form onSubmit={handleSubmit}>
                             <div className="modal-body">
-                                <div className="form-group">
-                                    <label>Santri *</label>
-                                    <select value={form.santri_id} onChange={e => setForm({ ...form, santri_id: e.target.value })} required>
-                                        <option value="">Pilih Santri</option>
-                                        {santriList.map(s => <option key={s.id} value={s.id}>{s.nama} ({s.nis})</option>)}
-                                    </select>
-                                </div>
+                                {!editItem && (
+                                    <div className="form-group">
+                                        <label>Pilih Angkatan *</label>
+                                        <select
+                                            value={form.angkatan_id}
+                                            onChange={e => setForm({ ...form, angkatan_id: e.target.value })}
+                                            required
+                                        >
+                                            <option value="">-- Pilih Angkatan --</option>
+                                            {angkatanList.map(ang => (
+                                                <option key={ang.id} value={ang.id}>{ang.nama}</option>
+                                            ))}
+                                        </select>
+                                        {angkatanList.length === 0 && (
+                                            <small className="text-muted" style={{ color: 'red' }}>Belum ada data angkatan di santri</small>
+                                        )}
+                                    </div>
+                                )}
+
                                 <div className="form-row">
                                     <div className="form-group">
                                         <label>Kategori *</label>
@@ -316,8 +391,14 @@ const TagihanSantriPage = () => {
                                     </div>
                                 </div>
                                 <div className="form-group">
-                                    <label>Jatuh Tempo *</label>
-                                    <input type="date" value={form.jatuh_tempo} onChange={e => setForm({ ...form, jatuh_tempo: e.target.value })} required />
+                                    <label>Jatuh Tempo (Bulan & Tahun) *</label>
+                                    <input
+                                        type="month"
+                                        value={form.jatuh_tempo_bulan}
+                                        onChange={e => setForm({ ...form, jatuh_tempo_bulan: e.target.value })}
+                                        required
+                                    />
+                                    <small className="text-muted">Tanggal jatuh tempo otomatis diset ke tanggal 10 bulan tersebut</small>
                                 </div>
                                 <div className="form-group">
                                     <label>Keterangan</label>
@@ -326,7 +407,7 @@ const TagihanSantriPage = () => {
                             </div>
                             <div className="modal-footer">
                                 <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Batal</button>
-                                <button type="submit" className="btn btn-primary">{editItem ? 'Simpan' : 'Buat Tagihan'}</button>
+                                <button type="submit" className="btn btn-primary">{editItem ? 'Simpan' : 'Buat Tagihan Massal'}</button>
                             </div>
                         </form>
                     </div>

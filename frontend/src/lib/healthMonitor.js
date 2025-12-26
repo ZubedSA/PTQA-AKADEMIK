@@ -103,30 +103,52 @@ export const checkMemoryUsage = () => {
 }
 
 /**
- * Cek localStorage usage
+ * Cek Supabase database usage (estimated by row counts)
  */
-export const checkStorageUsage = () => {
+export const checkStorageUsage = async () => {
     try {
-        let totalSize = 0
+        // Query row counts from main tables
+        const tables = ['santri', 'guru', 'hafalan', 'nilai', 'presensi', 'kelas', 'mapel', 'halaqoh']
+        let totalRows = 0
+        let tableStats = {}
 
-        for (let key in localStorage) {
-            if (localStorage.hasOwnProperty(key)) {
-                totalSize += localStorage.getItem(key).length * 2 // UTF-16
+        for (const table of tables) {
+            try {
+                const { count, error } = await supabase
+                    .from(table)
+                    .select('*', { count: 'exact', head: true })
+
+                if (!error && count !== null) {
+                    tableStats[table] = count
+                    totalRows += count
+                }
+            } catch {
+                tableStats[table] = 0
             }
         }
 
-        const usedKB = Math.round(totalSize / 1024)
-        const limitKB = 5 * 1024 // 5MB typical limit
-        const percentage = Math.round((usedKB / limitKB) * 100)
+        // Estimate storage (rough estimate: ~1KB per row average)
+        const estimatedKB = Math.round(totalRows * 1)
+        // Supabase free tier: 500MB database limit
+        const limitKB = 500 * 1024
+        const percentage = Math.round((estimatedKB / limitKB) * 100)
 
         return {
             status: percentage > 80 ? HealthStatus.DEGRADED : HealthStatus.HEALTHY,
-            usedKB,
+            usedKB: estimatedKB,
             limitKB,
-            percentage
+            percentage,
+            totalRows,
+            tableStats,
+            source: 'supabase'
         }
-    } catch {
-        return { status: HealthStatus.UNKNOWN }
+    } catch (error) {
+        console.error('Storage check error:', error)
+        return {
+            status: HealthStatus.UNKNOWN,
+            error: error.message,
+            source: 'supabase'
+        }
     }
 }
 
@@ -151,9 +173,6 @@ export const runHealthCheck = async () => {
     // Network
     checks.network = checkNetworkStatus()
 
-    // Storage
-    checks.storage = checkStorageUsage()
-
     // Memory
     checks.memory = checkMemoryUsage()
 
@@ -161,9 +180,12 @@ export const runHealthCheck = async () => {
     if (navigator.onLine) {
         checks.database = await checkSupabaseConnection()
         checks.auth = await checkAuthHealth()
+        // Storage now queries Supabase
+        checks.storage = await checkStorageUsage()
     } else {
         checks.database = { status: HealthStatus.UNKNOWN, error: 'Offline' }
         checks.auth = { status: HealthStatus.UNKNOWN, error: 'Offline' }
+        checks.storage = { status: HealthStatus.UNKNOWN, error: 'Offline', usedKB: 0, percentage: 0 }
     }
 
     // Determine overall status
@@ -224,7 +246,7 @@ export const getHealthSummary = () => {
         issues.push('Database tidak dapat diakses')
     }
     if (details.storage?.percentage > 80) {
-        issues.push(`Storage hampir penuh (${details.storage.percentage}%)`)
+        issues.push(`Database hampir penuh (${details.storage.percentage}% - ${details.storage.totalRows} data)`)
     }
     if (details.memory?.percentage > 90) {
         issues.push('Memory usage tinggi')

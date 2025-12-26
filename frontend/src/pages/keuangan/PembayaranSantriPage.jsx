@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Search, CreditCard, Download, RefreshCw, MessageCircle, Printer, Check, User, AlertCircle, CheckCircle, ChevronDown, X, Layers, List } from 'lucide-react'
+import MobileActionMenu from '../../components/ui/MobileActionMenu'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 import { generateLaporanPDF, generateKwitansiPDF } from '../../utils/pdfGenerator'
@@ -623,12 +624,19 @@ Jazakumullah khairan.
                                                     <span className="lunas-amount">Rp {Number(tagihan.jumlah).toLocaleString('id-ID')}</span>
                                                     <span className="lunas-badge">✓ Lunas</span>
                                                     <div className="lunas-item-actions">
-                                                        <button className="btn-icon-xs" onClick={() => handleSendLunasWASingle(tagihan)} title="Kirim WA">
-                                                            <MessageCircle size={14} />
-                                                        </button>
-                                                        <button className="btn-icon-xs" onClick={() => handlePrintLunasSingle(tagihan)} title="Cetak">
-                                                            <Printer size={14} />
-                                                        </button>
+                                                        <MobileActionMenu
+                                                            actions={[
+                                                                { icon: <MessageCircle size={16} />, label: 'Kirim WA', onClick: () => handleSendLunasWASingle(tagihan) },
+                                                                { icon: <Printer size={16} />, label: 'Cetak', onClick: () => handlePrintLunasSingle(tagihan) }
+                                                            ]}
+                                                        >
+                                                            <button className="btn-icon-xs" onClick={() => handleSendLunasWASingle(tagihan)} title="Kirim WA">
+                                                                <MessageCircle size={14} />
+                                                            </button>
+                                                            <button className="btn-icon-xs" onClick={() => handlePrintLunasSingle(tagihan)} title="Cetak">
+                                                                <Printer size={14} />
+                                                            </button>
+                                                        </MobileActionMenu>
                                                     </div>
                                                 </div>
                                             ))}
@@ -663,12 +671,19 @@ Jazakumullah khairan.
                                                 </div>
                                                 <span className="history-method">{p.metode}</span>
                                                 <div className="history-item-actions">
-                                                    <button className="btn-icon-xs" onClick={() => handleSendHistoryWASingle(p)} title="Kirim WA">
-                                                        <MessageCircle size={14} />
-                                                    </button>
-                                                    <button className="btn-icon-xs" onClick={() => handlePrintHistorySingle(p)} title="Cetak Kwitansi">
-                                                        <Printer size={14} />
-                                                    </button>
+                                                    <MobileActionMenu
+                                                        actions={[
+                                                            { icon: <MessageCircle size={16} />, label: 'Kirim WA', onClick: () => handleSendHistoryWASingle(p) },
+                                                            { icon: <Printer size={16} />, label: 'Cetak Kwitansi', onClick: () => handlePrintHistorySingle(p) }
+                                                        ]}
+                                                    >
+                                                        <button className="btn-icon-xs" onClick={() => handleSendHistoryWASingle(p)} title="Kirim WA">
+                                                            <MessageCircle size={14} />
+                                                        </button>
+                                                        <button className="btn-icon-xs" onClick={() => handlePrintHistorySingle(p)} title="Cetak Kwitansi">
+                                                            <Printer size={14} />
+                                                        </button>
+                                                    </MobileActionMenu>
                                                 </div>
                                             </div>
                                         ))}

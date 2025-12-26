@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Calendar, CheckCircle, RefreshCw } from 'lucide-react'
+import { Plus, Calendar, CheckCircle, RefreshCw, Edit, Trash2, AlertCircle } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import './Semester.css'
 
@@ -8,7 +8,11 @@ const SemesterPage = () => {
     const [loading, setLoading] = useState(true)
     const [showModal, setShowModal] = useState(false)
     const [saving, setSaving] = useState(false)
+    const [editMode, setEditMode] = useState(false)
+    const [currentId, setCurrentId] = useState(null)
     const [formData, setFormData] = useState({ nama: 'Ganjil', tahun_ajaran: '', tanggal_mulai: '', tanggal_selesai: '' })
+    const [showDeleteModal, setShowDeleteModal] = useState(false)
+    const [selectedDeleteId, setSelectedDeleteId] = useState(null)
 
     useEffect(() => {
         fetchSemester()
@@ -32,15 +36,48 @@ const SemesterPage = () => {
         }
     }
 
+    const resetForm = () => {
+        setFormData({ nama: 'Ganjil', tahun_ajaran: '', tanggal_mulai: '', tanggal_selesai: '' })
+        setEditMode(false)
+        setCurrentId(null)
+    }
+
+    const openAddModal = () => {
+        resetForm()
+        setShowModal(true)
+    }
+
+    const openEditModal = (sem) => {
+        setFormData({
+            nama: sem.nama,
+            tahun_ajaran: sem.tahun_ajaran,
+            tanggal_mulai: sem.tanggal_mulai,
+            tanggal_selesai: sem.tanggal_selesai
+        })
+        setCurrentId(sem.id)
+        setEditMode(true)
+        setShowModal(true)
+    }
+
     const handleSubmit = async (e) => {
         e.preventDefault()
         setSaving(true)
         try {
-            const { error } = await supabase.from('semester').insert([{ ...formData, is_active: false }])
-            if (error) throw error
+            if (editMode) {
+                const { error } = await supabase
+                    .from('semester')
+                    .update(formData)
+                    .eq('id', currentId)
+                if (error) throw error
+            } else {
+                const { error } = await supabase
+                    .from('semester')
+                    .insert([{ ...formData, is_active: false }])
+                if (error) throw error
+            }
             fetchSemester()
             setShowModal(false)
-            setFormData({ nama: 'Ganjil', tahun_ajaran: '', tanggal_mulai: '', tanggal_selesai: '' })
+            resetForm()
         } catch (err) {
             alert('Error: ' + err.message)
         } finally {
@@ -50,8 +87,16 @@ const SemesterPage = () => {
 
     const setActive = async (id) => {
         try {
-            // Set all to inactive first
-            await supabase.from('semester').update({ is_active: false }).neq('id', '')
+            // Set all to inactive first by updating where id is not 0 (effectively all)
+            // Note: Postgres usually requires a WHERE clause for updates to avoid accidental full table updates, 
+            // but Supabase client adds one if 'eq' is used. Here we want to update ALL others.
+            // Using a hack: .neq('id', '00000000-0000-0000-0000-000000000000') or similar if UUID.
+            // But cleaner is to update all. 
+            // supabase-js: .update({is_active: false}).neq('id', 0) might fail if id is UUID.
+            // Better to iterate or use a stored procedure, but for small list, client side loop or wide update is ok.
+            // Let's try updating all where is_active is true.
+            await supabase.from('semester').update({ is_active: false }).eq('is_active', true)
+
             // Set selected to active
             const { error } = await supabase.from('semester').update({ is_active: true }).eq('id', id)
             if (error) throw error
@@ -72,6 +117,42 @@ const SemesterPage = () => {
         }
     }
 
+    const confirmDelete = (id) => {
+        setSelectedDeleteId(id)
+        setShowDeleteModal(true)
+    }
+
+    const handleDelete = async () => {
+        if (!selectedDeleteId) return
+        try {
+            const { error } = await supabase.from('semester').delete().eq('id', selectedDeleteId)
+            if (error) throw error
+            fetchSemester()
+            setShowDeleteModal(false)
+            setSelectedDeleteId(null)
+        } catch (err) {
+            alert('Gagal menghapus: ' + err.message)
+        }
+    }
+
+    const initData = async () => {
+        if (!confirm('Ini akan menambahkan data semester default. Lanjutkan?')) return
+        setLoading(true)
+        try {
+            const currentYear = new Date().getFullYear()
+            const { error } = await supabase.from('semester').insert([
+                { nama: 'Ganjil', tahun_ajaran: `${currentYear}/${currentYear + 1}`, tanggal_mulai: `${currentYear}-07-15`, tanggal_selesai: `${currentYear}-12-20`, is_active: true },
+                { nama: 'Genap', tahun_ajaran: `${currentYear}/${currentYear + 1}`, tanggal_mulai: `${currentYear + 1}-01-05`, tanggal_selesai: `${currentYear + 1}-06-20`, is_active: false }
+            ])
+            if (error) throw error
+            fetchSemester()
+        } catch (err) {
+            alert('Error: ' + err.message)
+        } finally {
+            setLoading(false)
+        }
+    }
+
     const formatDate = (date) => {
         if (!date) return '-'
         return new Date(date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -84,7 +165,7 @@ const SemesterPage = () => {
                     <h1 className="page-title">Manajemen Semester</h1>
                     <p className="page-subtitle">Kelola periode semester dan tahun ajaran</p>
                 </div>
-                <button className="btn btn-primary" onClick={() => setShowModal(true)}>
+                <button className="btn btn-primary" onClick={openAddModal}>
                     <Plus size={18} /> Tambah Semester
                 </button>
             </div>
@@ -92,7 +173,12 @@ const SemesterPage = () => {
             {loading ? (
                 <div className="text-center py-4"><RefreshCw size={24} className="spin" /></div>
             ) : semesterList.length === 0 ? (
-                <div className="text-center py-4 text-muted">Belum ada data semester</div>
+                <div className="empty-state text-center py-5">
+                    <p className="text-muted mb-3">Belum ada data semester</p>
+                    <button className="btn btn-secondary btn-sm" onClick={initData}>
+                        Generate Data Default
+                    </button>
+                </div>
             ) : (
                 <div className="semester-grid">
                     {semesterList.map(sem => (
@@ -118,15 +204,26 @@ const SemesterPage = () => {
                                     </div>
                                 </div>
                             </div>
-                            {sem.is_active ? (
-                                <button className="btn btn-warning btn-sm" style={{ width: '100%', marginTop: '16px' }} onClick={() => setInactive(sem.id)}>
-                                    Nonaktifkan Semester
-                                </button>
-                            ) : (
-                                <button className="btn btn-secondary btn-sm" style={{ width: '100%', marginTop: '16px' }} onClick={() => setActive(sem.id)}>
-                                    Set sebagai Aktif
-                                </button>
-                            )}
+
+                            <div className="semester-actions">
+                                {sem.is_active ? (
+                                    <button className="btn btn-warning btn-sm btn-block" onClick={() => setInactive(sem.id)}>
+                                        Nonaktifkan
+                                    </button>
+                                ) : (
+                                    <button className="btn btn-success btn-sm btn-block" onClick={() => setActive(sem.id)}>
+                                        Set Aktif
+                                    </button>
+                                )}
+                                <div className="action-row mt-2">
+                                    <button className="btn btn-secondary btn-sm flex-1 mr-1" onClick={() => openEditModal(sem)}>
+                                        <Edit size={14} /> Edit
+                                    </button>
+                                    <button className="btn btn-danger btn-sm flex-1 ml-1" onClick={() => confirmDelete(sem.id)}>
+                                        <Trash2 size={14} /> Hapus
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     ))}
                 </div>
@@ -136,7 +233,7 @@ const SemesterPage = () => {
                 <div className="modal-overlay active">
                     <div className="modal">
                         <div className="modal-header">
-                            <h3 className="modal-title">Tambah Semester</h3>
+                            <h3 className="modal-title">{editMode ? 'Edit Semester' : 'Tambah Semester'}</h3>
                             <button className="modal-close" onClick={() => setShowModal(false)}>×</button>
                         </div>
                         <form onSubmit={handleSubmit}>
@@ -166,6 +263,29 @@ const SemesterPage = () => {
                                 <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? 'Menyimpan...' : 'Simpan'}</button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {showDeleteModal && (
+                <div className="modal-overlay active">
+                    <div className="modal">
+                        <div className="modal-header">
+                            <h3 className="modal-title">Konfirmasi Hapus</h3>
+                            <button className="modal-close" onClick={() => setShowDeleteModal(false)}>×</button>
+                        </div>
+                        <div className="modal-body">
+                            <div className="alert alert-warning">
+                                <AlertCircle size={20} />
+                                <span className="ml-2">Perhatian: Menghapus semester dapat mempengaruhi data nilai dan riwayat lainnya yang terkait.</span>
+                            </div>
+                            <p className="mt-3">Apakah Anda yakin ingin menghapus data semester ini?</p>
+                        </div>
+                        <div className="modal-footer">
+                            <button className="btn btn-secondary" onClick={() => setShowDeleteModal(false)}>Batal</button>
+                            <button className="btn btn-danger" onClick={handleDelete}>Hapus</button>
+                        </div>
                     </div>
                 </div>
             )}

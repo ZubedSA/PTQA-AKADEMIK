@@ -29,7 +29,8 @@ const SantriForm = () => {
         no_telp_wali: '',
         kelas_id: '',
         halaqoh_id: '',
-        status: 'Aktif'
+        status: 'Aktif',
+        angkatan: '' // Add angkatan field
     })
 
     useEffect(() => {
@@ -63,6 +64,17 @@ const SantriForm = () => {
 
             if (error) throw error
 
+            // Fetch angkatan name separately if exists
+            let angkatanNama = ''
+            if (data.angkatan_id) {
+                const { data: angkatan } = await supabase
+                    .from('angkatan')
+                    .select('nama')
+                    .eq('id', data.angkatan_id)
+                    .single()
+                angkatanNama = angkatan?.nama || ''
+            }
+
             setFormData({
                 nis: data.nis || '',
                 nama: data.nama || '',
@@ -75,7 +87,8 @@ const SantriForm = () => {
                 no_telp_wali: data.no_telp_wali || '',
                 kelas_id: data.kelas_id || '',
                 halaqoh_id: data.halaqoh_id || '',
-                status: data.status || 'Aktif'
+                status: data.status || 'Aktif',
+                angkatan: angkatanNama
             })
         } catch (err) {
             setError('Gagal memuat data: ' + err.message)
@@ -96,11 +109,47 @@ const SantriForm = () => {
         setSuccess('')
 
         try {
+            // Find or Create Angkatan by nama
+            let angkatanId = null
+            if (formData.angkatan) {
+                const namaAngkatan = formData.angkatan.trim()
+
+                // Try to find existing
+                const { data: existing } = await supabase
+                    .from('angkatan')
+                    .select('id')
+                    .eq('nama', namaAngkatan)
+                    .single()
+
+                if (existing) {
+                    angkatanId = existing.id
+                } else {
+                    // Create new
+                    const { data: created, error: createErr } = await supabase
+                        .from('angkatan')
+                        .insert({ nama: namaAngkatan })
+                        .select('id')
+                        .single()
+
+                    if (createErr) throw createErr
+                    angkatanId = created.id
+                }
+            }
+
             const payload = {
-                ...formData,
+                nis: formData.nis,
+                nama: formData.nama,
+                jenis_kelamin: formData.jenis_kelamin,
+                tempat_lahir: formData.tempat_lahir || null,
+                tanggal_lahir: formData.tanggal_lahir || null,
+                alamat: formData.alamat || null,
+                no_telp: formData.no_telp || null,
+                nama_wali: formData.nama_wali || null,
+                no_telp_wali: formData.no_telp_wali || null,
                 kelas_id: formData.kelas_id || null,
                 halaqoh_id: formData.halaqoh_id || null,
-                tanggal_lahir: formData.tanggal_lahir || null
+                status: formData.status,
+                angkatan_id: angkatanId
             }
 
             if (isEdit) {
@@ -222,6 +271,18 @@ const SantriForm = () => {
                                 <option value="">Pilih Halaqoh</option>
                                 {halaqohList.map(h => <option key={h.id} value={h.id}>{h.nama}</option>)}
                             </select>
+                        </div>
+                        <div className="form-group">
+                            <label className="form-label">Angkatan</label>
+                            <input
+                                type="number"
+                                name="angkatan"
+                                placeholder="Angkatan ke- (1, 2, 3...)"
+                                className="form-control"
+                                value={formData.angkatan}
+                                onChange={handleChange}
+                                min="1"
+                            />
                         </div>
                         <div className="form-group">
                             <label className="form-label">Status</label>

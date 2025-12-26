@@ -33,14 +33,93 @@ import {
     CheckCircle,
     TrendingUp,
     Database,
-    School
+    School,
+    Shield,
+    Eye,
+    UserCog,
+    BarChart3,
+    FileSearch,
+    ScrollText
 } from 'lucide-react'
 import './Sidebar.css'
 
-// Menu items dengan role yang diizinkan
-// roles: ['admin', 'guru', 'wali'] - jika undefined/kosong = semua role
-const menuItems = [
-    { path: '/', icon: LayoutDashboard, label: 'Dashboard', roles: ['admin', 'guru'] },
+// ============ ADMIN MENU - Controller/Audit Focus ============
+// Admin = controller, fokus kontrol & audit, menu sedikit tapi kuat
+const adminMenuItems = [
+    { path: '/dashboard/admin', icon: LayoutDashboard, label: 'Overview' },
+
+    // Users & Roles
+    {
+        id: 'users-roles',
+        icon: UserCog,
+        label: 'Users & Roles',
+        children: [
+            { path: '/users', icon: Users, label: 'Manajemen User' },
+            { path: '/roles', icon: Shield, label: 'Roles & Akses' },
+        ]
+    },
+
+    // Master Data
+    {
+        id: 'master-data',
+        icon: Database,
+        label: 'Master Data',
+        children: [
+            { path: '/santri', icon: Users, label: 'Data Santri' },
+            { path: '/guru', icon: GraduationCap, label: 'Data Guru' },
+            { path: '/kelas', icon: Home, label: 'Kelas' },
+            { path: '/mapel', icon: BookOpen, label: 'Mata Pelajaran' },
+            { path: '/halaqoh', icon: Circle, label: 'Halaqoh' },
+            { path: '/semester', icon: Calendar, label: 'Semester' },
+        ]
+    },
+
+    // Monitoring Akademik
+    {
+        id: 'monitoring-akademik',
+        icon: Eye,
+        label: 'Monitoring Akademik',
+        children: [
+            { path: '/dashboard/akademik', icon: School, label: 'Dashboard Akademik' },
+            { path: '/rekap-nilai', icon: FileText, label: 'Rekap Nilai' },
+            { path: '/hafalan', icon: BookMarked, label: 'Progress Hafalan' },
+            { path: '/presensi', icon: CalendarCheck, label: 'Kehadiran' },
+            { path: '/laporan', icon: FileSearch, label: 'Laporan' },
+        ]
+    },
+
+    // Monitoring Keuangan
+    {
+        id: 'monitoring-keuangan',
+        icon: BarChart3,
+        label: 'Monitoring Keuangan',
+        children: [
+            { path: '/dashboard/keuangan', icon: Wallet, label: 'Dashboard Keuangan' },
+            { path: '/keuangan/kas/laporan', icon: FileBarChart, label: 'Laporan Kas' },
+            { path: '/keuangan/pembayaran/laporan', icon: Receipt, label: 'Laporan Pembayaran' },
+            { path: '/keuangan/dana/laporan', icon: TrendingUp, label: 'Laporan Penyaluran' },
+        ]
+    },
+
+    // Logs
+    {
+        id: 'logs',
+        icon: ScrollText,
+        label: 'Logs',
+        children: [
+            { path: '/audit-log', icon: ClipboardList, label: 'Audit Log' },
+            { path: '/system-status', icon: Activity, label: 'Status Sistem' },
+        ]
+    },
+
+
+    // Pengaturan
+    { path: '/pengaturan', icon: Settings, label: 'Pengaturan' },
+]
+
+// ============ OPERATOR MENU - Guru/Akademik ============
+const operatorMenuItems = [
+    { path: '/', icon: LayoutDashboard, label: 'Dashboard', roles: ['guru', 'bendahara', 'pengasuh'] },
 
     // Data Pondok Menu dengan Nested Submenu
     {
@@ -49,10 +128,10 @@ const menuItems = [
         label: 'Data Pondok',
         roles: ['admin', 'guru'],
         children: [
-            { path: '/santri', icon: Users, label: 'Data Santri', roles: ['admin'] },
-            { path: '/guru', icon: GraduationCap, label: 'Data Guru', roles: ['admin'] },
-            { path: '/kelas', icon: Home, label: 'Kelas', roles: ['admin'] },
-            { path: '/mapel', icon: BookOpen, label: 'Mapel', roles: ['admin'] },
+            { path: '/santri', icon: Users, label: 'Data Santri', roles: ['admin', 'guru'] },
+            { path: '/guru', icon: GraduationCap, label: 'Data Guru', roles: ['admin', 'guru'] },
+            { path: '/kelas', icon: Home, label: 'Kelas', roles: ['admin', 'guru'] },
+            { path: '/mapel', icon: BookOpen, label: 'Mapel', roles: ['admin', 'guru'] },
             { path: '/halaqoh', icon: Circle, label: 'Halaqoh', roles: ['admin', 'guru'] },
         ]
     },
@@ -68,68 +147,76 @@ const menuItems = [
             { path: '/rekap-nilai', icon: FileText, label: 'Rekap Nilai', roles: ['admin', 'guru'] },
             { path: '/hafalan', icon: BookMarked, label: 'Hafalan', roles: ['admin', 'guru'] },
             { path: '/presensi', icon: CalendarCheck, label: 'Pembinaan Santri', roles: ['admin', 'guru'] },
-            { path: '/semester', icon: Calendar, label: 'Semester', roles: ['admin'] },
+            { path: '/semester', icon: Calendar, label: 'Semester', roles: ['admin', 'guru'] },
             { path: '/laporan', icon: Download, label: 'Laporan', roles: ['admin', 'guru'] },
         ]
     },
 
-    // Keuangan Menu dengan Nested Submenu
+    // ============ KEUANGAN MENU (Bendahara) - Flattened Structure ============
+    // Alur KAS - Main menu (bukan submenu dari Keuangan)
     {
-        id: 'keuangan',
-        icon: Wallet,
-        label: 'Keuangan',
+        id: 'alur-kas',
+        icon: PiggyBank,
+        label: 'Alur KAS',
         roles: ['admin', 'bendahara', 'pengasuh'],
         children: [
-            {
-                id: 'alur-kas',
-                icon: PiggyBank,
-                label: 'Alur KAS',
-                children: [
-                    { path: '/keuangan/kas/pemasukan', icon: ArrowUpCircle, label: 'Pemasukan' },
-                    { path: '/keuangan/kas/pengeluaran', icon: ArrowDownCircle, label: 'Pengeluaran' },
-                    { path: '/keuangan/kas/laporan', icon: FileBarChart, label: 'Laporan Kas' },
-                ]
-            },
-            {
-                id: 'pembayaran',
-                icon: CreditCard,
-                label: 'Pembayaran',
-                children: [
-                    { path: '/keuangan/pembayaran/tagihan', icon: Receipt, label: 'Tagihan Santri' },
-                    { path: '/keuangan/pembayaran/kategori', icon: Tag, label: 'Kategori' },
-                    { path: '/keuangan/pembayaran/bayar', icon: CreditCard, label: 'Pembayaran Santri' },
-                    { path: '/keuangan/pembayaran/laporan', icon: FileBarChart, label: 'Laporan Pembayaran' },
-                ]
-            },
-            {
-                id: 'penyaluran',
-                icon: TrendingUp,
-                label: 'Penyaluran Dana',
-                children: [
-                    { path: '/keuangan/dana/anggaran', icon: PiggyBank, label: 'Anggaran' },
-                    { path: '/keuangan/dana/persetujuan', icon: CheckCircle, label: 'Persetujuan' },
-                    { path: '/keuangan/dana/realisasi', icon: TrendingUp, label: 'Realisasi Dana' },
-                    { path: '/keuangan/dana/laporan', icon: FileBarChart, label: 'Laporan Penyaluran' },
-                ]
-            }
+            { path: '/keuangan/kas/pemasukan', icon: ArrowUpCircle, label: 'Pemasukan' },
+            { path: '/keuangan/kas/pengeluaran', icon: ArrowDownCircle, label: 'Pengeluaran' },
+            { path: '/keuangan/kas/laporan', icon: FileBarChart, label: 'Laporan Kas' },
         ]
     },
-    { path: '/wali-santri', icon: UserCircle, label: 'Portal Wali', roles: ['admin', 'guru', 'wali'] },
+
+    // Pembayaran - Main menu (bukan submenu dari Keuangan)
+    {
+        id: 'pembayaran',
+        icon: CreditCard,
+        label: 'Pembayaran',
+        roles: ['admin', 'bendahara', 'pengasuh'],
+        children: [
+            { path: '/keuangan/pembayaran/tagihan', icon: Receipt, label: 'Tagihan Santri' },
+            { path: '/keuangan/pembayaran/kategori', icon: Tag, label: 'Kategori' },
+            { path: '/keuangan/pembayaran/bayar', icon: CreditCard, label: 'Pembayaran Santri' },
+            { path: '/keuangan/pembayaran/laporan', icon: FileBarChart, label: 'Laporan Pembayaran' },
+        ]
+    },
+
+    // Penyaluran Dana - Main menu (bukan submenu dari Keuangan)
+    {
+        id: 'penyaluran',
+        icon: TrendingUp,
+        label: 'Penyaluran Dana',
+        roles: ['admin', 'bendahara', 'pengasuh'],
+        children: [
+            { path: '/keuangan/dana/anggaran', icon: PiggyBank, label: 'Anggaran' },
+            { path: '/keuangan/dana/persetujuan', icon: CheckCircle, label: 'Persetujuan' },
+            { path: '/keuangan/dana/realisasi', icon: TrendingUp, label: 'Realisasi Dana' },
+            { path: '/keuangan/dana/laporan', icon: FileBarChart, label: 'Laporan Penyaluran' },
+        ]
+    },
+
+    // Portal Wali - hanya untuk admin dan wali (BUKAN guru)
+    { path: '/wali-santri', icon: UserCircle, label: 'Portal Wali', roles: ['admin', 'wali'] },
+
+    // Admin-only menus
     { path: '/audit-log', icon: ClipboardList, label: 'Audit Log', roles: ['admin'] },
     { path: '/system-status', icon: Activity, label: 'Status Sistem', roles: ['admin'] },
     { path: '/pengaturan', icon: Settings, label: 'Pengaturan', roles: ['admin'] },
 ]
 
 const Sidebar = ({ mobileOpen, onClose }) => {
-    const { signOut, role } = useAuth()
+    const { signOut, activeRole } = useAuth()
     const navigate = useNavigate()
     const location = useLocation()
     const [openMenus, setOpenMenus] = useState({})
 
-    // Filter menu berdasarkan role user
-    const filteredMenuItems = menuItems.filter(item => {
+    // Select menu based on active role
+    // Admin gets special controller menu, others get operator menu
+    const baseMenuItems = activeRole === 'admin' ? adminMenuItems : operatorMenuItems
+
+    // Filter menu berdasarkan role user (for operator menu)
+    const filteredMenuItems = baseMenuItems.filter(item => {
         if (!item.roles || item.roles.length === 0) return true
-        return item.roles.includes(role)
+        return item.roles.includes(activeRole)
     })
 
     const handleLogout = async () => {
@@ -145,11 +232,16 @@ const Sidebar = ({ mobileOpen, onClose }) => {
         if (onClose) onClose()
     }
 
-    // Get all top-level menu IDs
-    const topLevelMenuIds = ['data-pondok', 'akademik', 'keuangan']
+    // Get all top-level menu IDs (both admin and operator menus)
+    const topLevelMenuIds = [
+        // Admin menu IDs
+        'users-roles', 'master-data', 'monitoring-akademik', 'monitoring-keuangan', 'logs',
+        // Operator menu IDs
+        'data-pondok', 'akademik', 'alur-kas', 'pembayaran', 'penyaluran'
+    ]
 
-    // Get nested submenu IDs (children of keuangan)
-    const nestedSubmenuIds = ['alur-kas', 'pembayaran', 'penyaluran']
+    // No more nested submenus since keuangan items are now top-level
+    const nestedSubmenuIds = []
 
     const toggleMenu = (menuId) => {
         setOpenMenus(prev => {

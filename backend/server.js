@@ -10,6 +10,7 @@ import kelasRoutes from './src/routes/kelasRoutes.js'
 import hafalanRoutes from './src/routes/hafalanRoutes.js'
 import presensiRoutes from './src/routes/presensiRoutes.js'
 import userRoutes from './src/routes/userRoutes.js'
+import roleRoutes from './src/routes/roleRoutes.js'
 
 // Load environment variables
 dotenv.config()
@@ -34,6 +35,7 @@ app.use('/api/kelas', kelasRoutes)
 app.use('/api/hafalan', hafalanRoutes)
 app.use('/api/presensi', presensiRoutes)
 app.use('/api/users', userRoutes)
+app.use('/api/roles', roleRoutes)
 
 // Health check
 app.get('/api/health', (req, res) => {

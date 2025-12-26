@@ -1,0 +1,182 @@
+/* =====================================================
+   Keuangan Dashboard Styles
+   ===================================================== */
+
+.keuangan-dashboard {
+    padding: 0;
+}
+
+/* Welcome Section */
+.dashboard-welcome.keuangan {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.dashboard-welcome.keuangan .welcome-content h1 {
+    color: white;
+}
+
+.dashboard-welcome.keuangan .welcome-content p {
+    margin: 0;
+    opacity: 1;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.9rem;
+}
+
+/* Stats Grid */
+.keuangan-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.keuangan-stat-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-radius: 12px;
+    color: white;
+}
+
+.keuangan-stat-card.income {
+    background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.keuangan-stat-card.expense {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+.keuangan-stat-card.payment {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+}
+
+.keuangan-stat-card.balance.positive {
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+}
+
+.keuangan-stat-card.balance.negative {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.keuangan-stat-card .stat-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.keuangan-stat-card .stat-label {
+    font-size: 0.8rem;
+    opacity: 1;
+    color: rgba(255, 255, 255, 0.95);
+    font-weight: 500;
+}
+
+.keuangan-stat-card .stat-value {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: inherit;
+}
+
+.keuangan-stat-card .stat-icon-box {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+}
+
+/* Card */
+.keuangan-card {
+    background: var(--bg-secondary, white);
+    border-radius: 12px;
+    border: 1px solid var(--border-color, #e5e7eb);
+    padding: 20px;
+    margin-bottom: 24px;
+}
+
+.keuangan-card.chart-card {
+    min-height: 350px;
+}
+
+.keuangan-card .chart-container {
+    height: 280px;
+}
+
+/* Quick Actions Grid */
+.quick-actions-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+}
+
+.action-group {
+    background: var(--bg-tertiary, #f9fafb);
+    padding: 16px;
+    border-radius: 12px;
+}
+
+.action-group h4 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary, #1f2937);
+    margin: 0 0 12px 0;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-color, #e5e7eb);
+}
+
+.action-links {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.action-links a {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background: var(--bg-secondary, white);
+    border-radius: 8px;
+    color: var(--text-primary, #1f2937);
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.action-links a:hover {
+    background: #10b981;
+    color: white;
+    transform: translateX(4px);
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+    .keuangan-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .quick-actions-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .keuangan-stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .quick-actions-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .keuangan-stat-card .stat-value {
+        font-size: 1.1rem;
+    }
+}

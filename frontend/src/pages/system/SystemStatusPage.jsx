@@ -314,10 +314,15 @@ const SystemStatusPage = () => {
                     <div className="health-card">
                         <div className="health-card-icon"><HardDrive size={24} /></div>
                         <div className="health-card-content">
-                            <h4>Storage</h4>
-                            <p>{health?.details?.storage?.usedKB || 0} KB</p>
+                            <h4>Database Storage</h4>
+                            <p style={{ color: getStatusColor(health?.details?.storage?.status) }}>
+                                {health?.details?.storage?.totalRows || 0} data
+                            </p>
+                            <small className="text-muted">
+                                ~{health?.details?.storage?.usedKB || 0} KB / 500 MB
+                            </small>
                             <div className="progress-bar">
-                                <div className="progress-fill" style={{ width: `${health?.details?.storage?.percentage || 0}%`, backgroundColor: (health?.details?.storage?.percentage || 0) > 80 ? '#ef4444' : '#10b981' }} />
+                                <div className="progress-fill" style={{ width: `${Math.min(health?.details?.storage?.percentage || 0, 100)}%`, backgroundColor: (health?.details?.storage?.percentage || 0) > 80 ? '#ef4444' : '#10b981' }} />
                             </div>
                         </div>
                     </div>

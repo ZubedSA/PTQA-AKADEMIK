@@ -5,10 +5,11 @@ import { useTheme } from '../../context/ThemeContext'
 import { Bell, User, Menu, ChevronDown, Settings, LogOut, UserCircle, Clock, Sun, Moon, Search } from 'lucide-react'
 import GlobalSearch from '../common/GlobalSearch'
 import NotificationDropdown from './NotificationDropdown'
+import RoleSwitcher from './RoleSwitcher'
 import './Header.css'
 
 const Header = ({ onMenuClick }) => {
-    const { user, userProfile, role, signOut } = useAuth()
+    const { user, userProfile, activeRole, signOut, hasMultipleRoles } = useAuth()
     const { theme, toggleTheme, isDark } = useTheme()
     const navigate = useNavigate()
     const [showDropdown, setShowDropdown] = useState(false)
@@ -89,9 +90,11 @@ const Header = ({ onMenuClick }) => {
     }
 
     const getRoleLabel = () => {
-        switch (role) {
+        switch (activeRole) {
             case 'admin': return 'Administrator'
             case 'guru': return 'Guru/Pengajar'
+            case 'bendahara': return 'Bendahara'
+            case 'pengasuh': return 'Pengasuh'
             case 'wali': return 'Wali Santri'
             default: return 'User'
         }
@@ -212,6 +215,15 @@ const Header = ({ onMenuClick }) => {
                                     <Settings size={18} />
                                     <span>Pengaturan Akun</span>
                                 </button>
+                                {/* Role Switcher - Only show if user has multiple roles */}
+                                {hasMultipleRoles() && (
+                                    <>
+                                        <div className="dropdown-divider"></div>
+                                        <div className="dropdown-role-switcher">
+                                            <RoleSwitcher inDropdown={true} onSwitch={() => setShowDropdown(false)} />
+                                        </div>
+                                    </>
+                                )}
                                 <div className="dropdown-divider"></div>
                                 <button className="dropdown-item logout" onClick={handleLogout}>
                                     <LogOut size={18} />

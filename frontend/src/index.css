@@ -1286,13 +1286,9 @@ select option:hover {
     grid-template-columns: 1fr;
   }
 
-  .search-container {
-    display: none;
-  }
 
-  .user-info {
-    display: none;
-  }
+
+
 
   .header-actions {
     gap: 12px;

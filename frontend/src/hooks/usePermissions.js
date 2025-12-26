@@ -11,7 +11,7 @@ export const usePermissions = () => {
     // Permission definitions
     const permissions = {
         // Module access
-        canAccessDashboard: ['admin', 'guru', 'wali'].includes(role),
+        canAccessDashboard: ['admin', 'guru', 'wali', 'bendahara'].includes(role),
         canAccessSantri: ['admin', 'guru'].includes(role),
         canAccessGuru: ['admin'].includes(role),
         canAccessKelas: ['admin'].includes(role),
@@ -22,7 +22,12 @@ export const usePermissions = () => {
         canAccessLaporan: ['admin', 'guru'].includes(role),
         canAccessSettings: ['admin'].includes(role),
         canAccessAuditLog: ['admin'].includes(role),
-        canAccessWaliPortal: ['wali'].includes(role),
+        canAccessWaliPortal: ['wali', 'admin'].includes(role),
+        // Keuangan permissions
+        canAccessKeuangan: ['admin', 'bendahara', 'pengasuh'].includes(role),
+        canAccessKas: ['admin', 'bendahara', 'pengasuh'].includes(role),
+        canAccessPembayaran: ['admin', 'bendahara', 'pengasuh'].includes(role),
+        canAccessAnggaran: ['admin', 'bendahara', 'pengasuh'].includes(role),
 
         // CRUD operations
         canCreate: {

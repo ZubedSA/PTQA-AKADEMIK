@@ -2,9 +2,12 @@ import { useState, useEffect } from 'react'
 import { Plus, Edit, Trash2, BookOpen, Search, RefreshCw, BookMarked, GraduationCap } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { logCreate, logUpdate, logDelete } from '../../lib/auditLog'
+import { useAuth } from '../../context/AuthContext'
 import './Mapel.css'
 
 const MapelPage = () => {
+    const { activeRole } = useAuth()
+    const isAdmin = activeRole === 'admin'
     const [mapelList, setMapelList] = useState([])
     const [searchTerm, setSearchTerm] = useState('')
     const [loading, setLoading] = useState(true)
@@ -90,9 +93,11 @@ const MapelPage = () => {
                     <h1 className="page-title">Mata Pelajaran</h1>
                     <p className="page-subtitle">Kelola daftar mata pelajaran</p>
                 </div>
-                <button className="btn btn-primary" onClick={() => { setEditData(null); setFormData({ kode: '', nama: '', deskripsi: '', kategori: 'Madrosiyah' }); setShowModal(true) }}>
-                    <Plus size={18} /> Tambah Mapel
-                </button>
+                {isAdmin && (
+                    <button className="btn btn-primary" onClick={() => { setEditData(null); setFormData({ kode: '', nama: '', deskripsi: '', kategori: 'Madrosiyah' }); setShowModal(true) }}>
+                        <Plus size={18} /> Tambah Mapel
+                    </button>
+                )}
             </div>
 
             {/* Kategori Filter Buttons */}
@@ -152,10 +157,12 @@ const MapelPage = () => {
                                     </td>
                                     <td className="text-muted">{mapel.deskripsi || '-'}</td>
                                     <td>
-                                        <div className="action-buttons">
-                                            <button className="btn-icon" onClick={() => handleEdit(mapel)}><Edit size={16} /></button>
-                                            <button className="btn-icon btn-icon-danger" onClick={() => handleDelete(mapel.id)}><Trash2 size={16} /></button>
-                                        </div>
+                                        {isAdmin && (
+                                            <div className="action-buttons">
+                                                <button className="btn-icon" onClick={() => handleEdit(mapel)}><Edit size={16} /></button>
+                                                <button className="btn-icon btn-icon-danger" onClick={() => handleDelete(mapel.id)}><Trash2 size={16} /></button>
+                                            </div>
+                                        )}
                                     </td>
                                 </tr>
                             ))
