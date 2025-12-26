@@ -4,9 +4,6 @@ import { Eye, EyeOff, LogIn, UserPlus, RefreshCw } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import './Login.css'
 
-// Force light mode immediately on module load
-document.documentElement.setAttribute('data-theme', 'light')
-
 const Login = () => {
     const navigate = useNavigate()
     const { signIn, signUp } = useAuth()
