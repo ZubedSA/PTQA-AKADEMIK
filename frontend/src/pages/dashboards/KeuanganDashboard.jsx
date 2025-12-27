@@ -356,7 +356,7 @@ const KeuanganDashboard = () => {
             {/* Chart */}
             <div className="keuangan-card chart-card">
                 <div className="card-header">
-                    <h3><TrendingUp size={20} /> Alur Kas Bulanan {currentYear}</h3>
+                    <h3><TrendingUp size={20} /> Arus Kas Bulanan {currentYear}</h3>
                 </div>
                 <div className="chart-container">
                     <Bar data={kasBarData} options={chartOptions} />

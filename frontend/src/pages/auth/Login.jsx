@@ -92,10 +92,10 @@ const Login = () => {
                 {/* Form */}
                 <form onSubmit={handleSubmit}>
                     <div className="input-group">
-                        <label>Username / Email</label>
+                        <label>Username</label>
                         <input
                             type="text"
-                            placeholder="Masukkan username atau email"
+                            placeholder="Masukkan username"
                             value={emailOrPhone}
                             onChange={(e) => setEmailOrPhone(e.target.value)}
                             required

@@ -41,13 +41,46 @@ const GlobalSearch = ({ isOpen, onClose }) => {
         const searchResults = []
 
         try {
-            // Search Santri
-            const { data: santriData } = await supabase
-                .from('santri')
-                .select('id, nama, nis')
-                .ilike('nama', `%${searchQuery}%`)
-                .limit(5)
+            const [
+                { data: santriData },
+                { data: guruData },
+                { data: kelasData },
+                { data: halaqohData },
+                { data: mapelData }
+            ] = await Promise.all([
+                // Search Santri (Nama & NIS)
+                supabase
+                    .from('santri')
+                    .select('id, nama, nis')
+                    .or(`nama.ilike.%${searchQuery}%,nis.ilike.%${searchQuery}%`)
+                    .limit(5),
+                // Search Guru (Nama & NIP)
+                supabase
+                    .from('guru')
+                    .select('id, nama, nip')
+                    .or(`nama.ilike.%${searchQuery}%,nip.ilike.%${searchQuery}%`)
+                    .limit(5),
+                // Search Kelas
+                supabase
+                    .from('kelas')
+                    .select('id, nama_kelas')
+                    .ilike('nama_kelas', `%${searchQuery}%`)
+                    .limit(5),
+                // Search Halaqoh
+                supabase
+                    .from('halaqoh')
+                    .select('id, nama_halaqoh')
+                    .ilike('nama_halaqoh', `%${searchQuery}%`)
+                    .limit(5),
+                // Search Mapel
+                supabase
+                    .from('mapel')
+                    .select('id, nama_mapel')
+                    .ilike('nama_mapel', `%${searchQuery}%`)
+                    .limit(5)
+            ])
 
+            // Process Santri
             if (santriData) {
                 santriData.forEach(item => {
                     searchResults.push({
@@ -60,13 +93,7 @@ const GlobalSearch = ({ isOpen, onClose }) => {
                 })
             }
 
-            // Search Guru
-            const { data: guruData } = await supabase
-                .from('guru')
-                .select('id, nama, nip')
-                .ilike('nama', `%${searchQuery}%`)
-                .limit(5)
-
+            // Process Guru
             if (guruData) {
                 guruData.forEach(item => {
                     searchResults.push({
@@ -79,13 +106,7 @@ const GlobalSearch = ({ isOpen, onClose }) => {
                 })
             }
 
-            // Search Kelas
-            const { data: kelasData } = await supabase
-                .from('kelas')
-                .select('id, nama_kelas')
-                .ilike('nama_kelas', `%${searchQuery}%`)
-                .limit(5)
-
+            // Process Kelas
             if (kelasData) {
                 kelasData.forEach(item => {
                     searchResults.push({
@@ -98,13 +119,7 @@ const GlobalSearch = ({ isOpen, onClose }) => {
                 })
             }
 
-            // Search Halaqoh
-            const { data: halaqohData } = await supabase
-                .from('halaqoh')
-                .select('id, nama_halaqoh')
-                .ilike('nama_halaqoh', `%${searchQuery}%`)
-                .limit(5)
-
+            // Process Halaqoh
             if (halaqohData) {
                 halaqohData.forEach(item => {
                     searchResults.push({
@@ -117,13 +132,7 @@ const GlobalSearch = ({ isOpen, onClose }) => {
                 })
             }
 
-            // Search Mapel
-            const { data: mapelData } = await supabase
-                .from('mapel')
-                .select('id, nama_mapel')
-                .ilike('nama_mapel', `%${searchQuery}%`)
-                .limit(5)
-
+            // Process Mapel
             if (mapelData) {
                 mapelData.forEach(item => {
                     searchResults.push({

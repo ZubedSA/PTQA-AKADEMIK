@@ -59,7 +59,7 @@ const PembayaranSantriPage = () => {
             const { data, error } = await supabase
                 .from('santri')
                 .select('id, nama, nis, nama_wali, no_telp_wali, status, kelas:kelas_id(nama)')
-                .or(`nama.ilike.*${query}*,nis.ilike.*${query}*`)
+                .or(`nama.ilike.%${query}%,nis.ilike.%${query}%`)
                 .limit(10)
                 .order('nama')
 
