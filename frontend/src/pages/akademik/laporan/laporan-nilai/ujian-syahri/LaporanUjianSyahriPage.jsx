@@ -25,6 +25,7 @@ const LaporanUjianSyahriPage = () => {
     const [loading, setLoading] = useState(false)
     const [semester, setSemester] = useState([])
     const [halaqoh, setHalaqoh] = useState([])
+    const [guruMap, setGuruMap] = useState({})
     const [data, setData] = useState([])
     const [filters, setFilters] = useState({
         semester_id: '',
@@ -38,9 +39,10 @@ const LaporanUjianSyahriPage = () => {
     }, [])
 
     const fetchOptions = async () => {
-        const [semRes, halRes] = await Promise.all([
+        const [semRes, halRes, guruRes] = await Promise.all([
             supabase.from('semester').select('*').order('tahun_ajaran', { ascending: false }),
-            supabase.from('halaqoh').select('id, nama').order('nama')
+            supabase.from('halaqoh').select('id, nama').order('nama'),
+            supabase.from('guru').select('id, nama')
         ])
         if (semRes.data) {
             setSemester(semRes.data)
@@ -48,6 +50,11 @@ const LaporanUjianSyahriPage = () => {
             if (active) setFilters(prev => ({ ...prev, semester_id: active.id }))
         }
         if (halRes.data) setHalaqoh(halRes.data)
+        if (guruRes.data) {
+            const map = {}
+            guruRes.data.forEach(g => { map[g.id] = g.nama })
+            setGuruMap(map)
+        }
     }
 
     const fetchData = async () => {
@@ -81,13 +88,31 @@ const LaporanUjianSyahriPage = () => {
                 .eq('bulan', filters.bulan)
                 .eq('tahun', filters.tahun)
 
+            // Get latest setoran (Pencapaian Terakhir) per santri
+            const { data: hafalanData } = await supabase
+                .from('hafalan')
+                .select('santri_id, juz, surah, tanggal, jenis')
+                .in('santri_id', santriIds)
+                .eq('jenis', 'Setoran')
+                .order('tanggal', { ascending: false })
+
+            // Create map of latest setoran per santri
+            const latestSetoranMap = {}
+            hafalanData?.forEach(h => {
+                if (!latestSetoranMap[h.santri_id]) {
+                    latestSetoranMap[h.santri_id] = h
+                }
+            })
+
             // Map nilai to santri
             const result = santriData.map(santri => {
                 const nilai = nilaiData?.find(n => n.santri_id === santri.id)
+                const latestSetoran = latestSetoranMap[santri.id]
+
                 const hafalan = nilai?.nilai_hafalan || 0
                 const tajwid = nilai?.nilai_tajwid || 0
-                const kelancaran = nilai?.nilai_kelancaran || 0
-                const rataRata = nilai ? ((hafalan + tajwid + kelancaran) / 3) : 0
+                const tilawah = nilai?.nilai_kelancaran || 0
+                const rataRata = nilai ? ((hafalan + tajwid + tilawah) / 3) : 0
 
                 let predikat = '-'
                 if (nilai) {
@@ -102,9 +127,13 @@ const LaporanUjianSyahriPage = () => {
                     ...santri,
                     hafalan: nilai ? hafalan : '-',
                     tajwid: nilai ? tajwid : '-',
-                    kelancaran: nilai ? kelancaran : '-',
+                    tilawah: nilai ? tilawah : '-',
                     rata_rata: nilai ? rataRata.toFixed(1) : '-',
-                    predikat
+                    predikat,
+                    pencapaian_juz: latestSetoran?.juz || '-',
+                    pencapaian_surah: latestSetoran?.surah || '-',
+                    jumlah_hafalan: nilai?.jumlah_hafalan || '-',
+                    penguji: nilai?.penguji_id ? (guruMap[nilai.penguji_id] || '-') : '-'
                 }
             })
 
@@ -118,7 +147,7 @@ const LaporanUjianSyahriPage = () => {
 
     useEffect(() => {
         if (filters.halaqoh_id && filters.semester_id) fetchData()
-    }, [filters.halaqoh_id, filters.semester_id, filters.bulan, filters.tahun])
+    }, [filters.halaqoh_id, filters.semester_id, filters.bulan, filters.tahun, guruMap])
 
     const getPredikatBadgeClass = (predikat) => {
         if (predikat.startsWith('A')) return 'badge-success'
@@ -132,7 +161,7 @@ const LaporanUjianSyahriPage = () => {
     const generatePDF = () => {
         if (data.length === 0) return
 
-        const doc = new jsPDF()
+        const doc = new jsPDF('landscape')
         const pageWidth = doc.internal.pageSize.getWidth()
         const selectedHalaqoh = halaqoh.find(h => h.id === filters.halaqoh_id)
         const bulanNama = bulanOptions.find(b => b.value === filters.bulan)?.label || '-'
@@ -157,29 +186,37 @@ const LaporanUjianSyahriPage = () => {
         // Table
         autoTable(doc, {
             startY: 50,
-            head: [['No', 'NIS', 'Nama', 'Hafalan', 'Tajwid', 'Kelancaran', 'Rata-rata', 'Predikat']],
+            head: [['No', 'NIS', 'Nama', 'Hafalan', 'Tajwid', 'Tilawah', 'Rata-rata', 'Predikat', 'Pencapaian', 'Jml Hfln', 'Penguji']],
             body: data.map((s, i) => [
                 i + 1,
                 s.nis,
                 s.nama,
                 s.hafalan,
                 s.tajwid,
-                s.kelancaran,
+                s.tilawah,
                 s.rata_rata,
-                s.predikat
+                s.predikat,
+                s.pencapaian_juz !== '-' ? `Juz ${s.pencapaian_juz} - ${s.pencapaian_surah}` : '-',
+                s.jumlah_hafalan !== '-' ? `${s.jumlah_hafalan} Juz` : '-',
+                s.penguji
             ]),
             theme: 'grid',
-            headStyles: { fillColor: [5, 150, 105] },
-            styles: { fontSize: 8 },
+            headStyles: { fillColor: [5, 150, 105], fontSize: 7 },
+            styles: { fontSize: 7 },
             columnStyles: {
-                0: { cellWidth: 10 },
-                1: { cellWidth: 18 },
-                3: { halign: 'center' },
-                4: { halign: 'center' },
-                5: { halign: 'center' },
-                6: { halign: 'center' }
+                0: { cellWidth: 8 },
+                1: { cellWidth: 15 },
+                2: { cellWidth: 35 },
+                3: { halign: 'center', cellWidth: 15 },
+                4: { halign: 'center', cellWidth: 15 },
+                5: { halign: 'center', cellWidth: 15 },
+                6: { halign: 'center', cellWidth: 15 },
+                7: { cellWidth: 30 },
+                8: { cellWidth: 40 },
+                9: { halign: 'center', cellWidth: 18 },
+                10: { cellWidth: 35 }
             },
-            margin: { left: 14, right: 14 }
+            margin: { left: 10, right: 10 }
         })
 
         // Footer
@@ -191,15 +228,6 @@ const LaporanUjianSyahriPage = () => {
 
         doc.save(`Ujian_Syahri_${bulanNama}_${filters.tahun}.pdf`)
     }
-
-    const bulanOptions = [
-        { value: 1, label: 'Januari' }, { value: 2, label: 'Februari' },
-        { value: 3, label: 'Maret' }, { value: 4, label: 'April' },
-        { value: 5, label: 'Mei' }, { value: 6, label: 'Juni' },
-        { value: 7, label: 'Juli' }, { value: 8, label: 'Agustus' },
-        { value: 9, label: 'September' }, { value: 10, label: 'Oktober' },
-        { value: 11, label: 'November' }, { value: 12, label: 'Desember' }
-    ]
 
     return (
         <div className="laporan-page">
@@ -286,7 +314,7 @@ const LaporanUjianSyahriPage = () => {
                         <p>Pilih semester dan halaqoh untuk melihat laporan</p>
                     </div>
                 ) : (
-                    <div className="table-container">
+                    <div className="table-container" style={{ overflowX: 'auto' }}>
                         <table className="data-table">
                             <thead>
                                 <tr>
@@ -295,9 +323,12 @@ const LaporanUjianSyahriPage = () => {
                                     <th>Nama Santri</th>
                                     <th style={{ textAlign: 'center' }}>Hafalan</th>
                                     <th style={{ textAlign: 'center' }}>Tajwid</th>
-                                    <th style={{ textAlign: 'center' }}>Kelancaran</th>
+                                    <th style={{ textAlign: 'center' }}>Tilawah</th>
                                     <th style={{ textAlign: 'center' }}>Rata-rata</th>
                                     <th style={{ textAlign: 'center' }}>Predikat</th>
+                                    <th style={{ textAlign: 'center' }}>Pencapaian Terakhir</th>
+                                    <th style={{ textAlign: 'center' }}>Jml Hafalan</th>
+                                    <th style={{ textAlign: 'center' }}>Mukhtabir</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -308,11 +339,20 @@ const LaporanUjianSyahriPage = () => {
                                         <td>{s.nama}</td>
                                         <td style={{ textAlign: 'center' }}>{s.hafalan}</td>
                                         <td style={{ textAlign: 'center' }}>{s.tajwid}</td>
-                                        <td style={{ textAlign: 'center' }}>{s.kelancaran}</td>
+                                        <td style={{ textAlign: 'center' }}>{s.tilawah}</td>
                                         <td style={{ textAlign: 'center', fontWeight: '600' }}>{s.rata_rata}</td>
                                         <td style={{ textAlign: 'center' }}>
                                             <span className={`badge ${getPredikatBadgeClass(s.predikat)}`}>{s.predikat}</span>
                                         </td>
+                                        <td style={{ textAlign: 'center', fontSize: '0.85rem' }}>
+                                            {s.pencapaian_juz !== '-' ? (
+                                                <span>Juz {s.pencapaian_juz}<br /><small style={{ color: '#64748b' }}>{s.pencapaian_surah}</small></span>
+                                            ) : '-'}
+                                        </td>
+                                        <td style={{ textAlign: 'center' }}>
+                                            {s.jumlah_hafalan !== '-' ? `${s.jumlah_hafalan} Juz` : '-'}
+                                        </td>
+                                        <td style={{ textAlign: 'center', fontSize: '0.85rem' }}>{s.penguji}</td>
                                     </tr>
                                 ))}
                             </tbody>

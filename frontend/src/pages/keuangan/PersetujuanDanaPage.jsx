@@ -162,31 +162,50 @@ const PersetujuanDanaPage = () => {
                                     <td>{new Date(item.tanggal_pengajuan).toLocaleDateString('id-ID')}</td>
                                     <td><span className={`status-badge ${getStatusClass(item.status)}`}>{item.status}</span></td>
                                     <td>
-                                        {item.status === 'Pending' ? (
-                                            <MobileActionMenu
-                                                actions={[
-                                                    { label: 'Setujui', icon: <CheckCircle size={14} />, onClick: () => openApproval(item, 'approve') },
-                                                    { label: 'Tolak', icon: <XCircle size={14} />, onClick: () => openApproval(item, 'reject'), danger: true }
-                                                ]}
+                                        <MobileActionMenu
+                                            actions={[
+                                                { label: 'Setujui', icon: <CheckCircle size={14} />, onClick: () => openApproval(item, 'approve') },
+                                                { label: 'Tolak', icon: <XCircle size={14} />, onClick: () => openApproval(item, 'reject'), danger: true }
+                                            ]}
+                                        >
+                                            <button
+                                                onClick={() => openApproval(item, 'approve')}
+                                                title="Setujui"
+                                                style={{
+                                                    display: 'inline-flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    width: '32px',
+                                                    height: '32px',
+                                                    borderRadius: '6px',
+                                                    background: '#dcfce7',
+                                                    color: '#16a34a',
+                                                    border: 'none',
+                                                    cursor: 'pointer',
+                                                    marginRight: '4px'
+                                                }}
                                             >
-                                                <button
-                                                    className="btn-icon-sm success"
-                                                    onClick={() => openApproval(item, 'approve')}
-                                                    title="Setujui"
-                                                >
-                                                    <CheckCircle size={16} />
-                                                </button>
-                                                <button
-                                                    className="btn-icon-sm danger"
-                                                    onClick={() => openApproval(item, 'reject')}
-                                                    title="Tolak"
-                                                >
-                                                    <XCircle size={16} />
-                                                </button>
-                                            </MobileActionMenu>
-                                        ) : (
-                                            <span className="text-muted">-</span>
-                                        )}
+                                                <CheckCircle size={16} />
+                                            </button>
+                                            <button
+                                                onClick={() => openApproval(item, 'reject')}
+                                                title="Tolak"
+                                                style={{
+                                                    display: 'inline-flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    width: '32px',
+                                                    height: '32px',
+                                                    borderRadius: '6px',
+                                                    background: '#fee2e2',
+                                                    color: '#dc2626',
+                                                    border: 'none',
+                                                    cursor: 'pointer'
+                                                }}
+                                            >
+                                                <XCircle size={16} />
+                                            </button>
+                                        </MobileActionMenu>
                                     </td>
                                 </tr>
                             ))}

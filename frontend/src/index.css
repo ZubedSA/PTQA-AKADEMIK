@@ -1554,21 +1554,22 @@ select option:hover {
 /* Mobile Responsive - Show dropdown, hide buttons */
 @media (max-width: 768px) {
 
-  /* Hide ALL direct children buttons/links except mobile-action-wrapper */
+  /* Hide ALL direct children buttons/links from action-buttons except mobile-action-wrapper */
+  .action-buttons>button,
+  .action-buttons>a,
   .action-buttons>.btn-icon,
-  .action-buttons>button:not(.mobile-action-toggle),
-  .action-buttons>a:not(.mobile-action-toggle) {
+  .action-buttons>*:not(.mobile-action-wrapper) {
     display: none !important;
   }
 
   /* Show kebab menu toggle on mobile */
   .action-buttons .mobile-action-toggle {
-    display: flex;
+    display: flex !important;
   }
 
   /* Ensure mobile wrapper is visible */
   .action-buttons .mobile-action-wrapper {
-    display: block;
+    display: block !important;
   }
 }
 

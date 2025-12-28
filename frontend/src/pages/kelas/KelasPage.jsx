@@ -6,8 +6,11 @@ import { useAuth } from '../../context/AuthContext'
 import './Kelas.css'
 
 const KelasPage = () => {
-    const { activeRole } = useAuth()
-    const isAdmin = activeRole === 'admin'
+    const { activeRole, isAdmin, isBendahara, userProfile, hasRole } = useAuth()
+    // Multiple checks for role detection - Guru hanya read-only di Data Pondok
+    const adminCheck = isAdmin() || userProfile?.role === 'admin' || hasRole('admin')
+    const bendaharaCheck = isBendahara() || userProfile?.role === 'bendahara' || hasRole('bendahara')
+    const canEdit = adminCheck || bendaharaCheck
     const [kelasList, setKelasList] = useState([])
     const [loading, setLoading] = useState(true)
     const [showModal, setShowModal] = useState(false)
@@ -198,7 +201,7 @@ const KelasPage = () => {
                     <h1 className="page-title">Manajemen Kelas</h1>
                     <p className="page-subtitle">Kelola data kelas dan wali kelas</p>
                 </div>
-                {isAdmin && (
+                {canEdit && (
                     <button className="btn btn-primary" onClick={() => { setEditData(null); setFormData({ nama: '', wali_kelas_id: '' }); setShowModal(true) }}>
                         <Plus size={18} /> Tambah Kelas
                     </button>
@@ -223,7 +226,7 @@ const KelasPage = () => {
                                 </div>
                                 <p className="wali-kelas">Wali: {kelas.wali_kelas?.nama || '-'}</p>
                             </div>
-                            {isAdmin && (
+                            {canEdit && (
                                 <div className="kelas-actions" onClick={e => e.stopPropagation()}>
                                     <button className="btn-icon btn-icon-success" title="Tambah Santri" onClick={() => openAddSantriModal(kelas)}><UserPlus size={16} /></button>
                                     <button className="btn-icon" onClick={() => handleEdit(kelas)}><Edit size={16} /></button>

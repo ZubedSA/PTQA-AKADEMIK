@@ -15,7 +15,8 @@ import {
     Eye,
     EyeOff,
     Save,
-    Loader2
+    Loader2,
+    Key
 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import './UsersPage.css'
@@ -33,6 +34,13 @@ const UsersPage = () => {
     const [editingUser, setEditingUser] = useState(null)
     const [saving, setSaving] = useState(false)
     const [showPassword, setShowPassword] = useState(false)
+
+    // Change Password Modal State
+    const [showPasswordModal, setShowPasswordModal] = useState(false)
+    const [passwordTarget, setPasswordTarget] = useState(null)
+    const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassword: '' })
+    const [passwordErrors, setPasswordErrors] = useState({})
+    const [savingPassword, setSavingPassword] = useState(false)
 
     // Form state
     const [formData, setFormData] = useState({
@@ -495,6 +503,75 @@ const UsersPage = () => {
         setFormErrors({})
     }
 
+    // ==========================================
+    // CHANGE PASSWORD FUNCTIONS
+    // ==========================================
+    const openPasswordModal = (user) => {
+        setPasswordTarget(user)
+        setPasswordForm({ newPassword: '', confirmPassword: '' })
+        setPasswordErrors({})
+        setShowPasswordModal(true)
+    }
+
+    const closePasswordModal = () => {
+        setShowPasswordModal(false)
+        setPasswordTarget(null)
+        setPasswordForm({ newPassword: '', confirmPassword: '' })
+        setPasswordErrors({})
+    }
+
+    const validatePasswordForm = () => {
+        const errors = {}
+
+        if (!passwordForm.newPassword) {
+            errors.newPassword = 'Password baru wajib diisi'
+        } else if (passwordForm.newPassword.length < 8) {
+            errors.newPassword = 'Password minimal 8 karakter'
+        }
+
+        if (!passwordForm.confirmPassword) {
+            errors.confirmPassword = 'Konfirmasi password wajib diisi'
+        } else if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+            errors.confirmPassword = 'Password tidak sama'
+        }
+
+        setPasswordErrors(errors)
+        return Object.keys(errors).length === 0
+    }
+
+    const handleChangePassword = async () => {
+        if (!validatePasswordForm()) return
+        if (!passwordTarget?.user_id) {
+            alert('User tidak valid')
+            return
+        }
+
+        setSavingPassword(true)
+        try {
+            // Use Supabase RPC to change password (requires admin function)
+            const { data, error } = await supabase.rpc('admin_change_user_password', {
+                target_user_id: passwordTarget.user_id,
+                new_password: passwordForm.newPassword
+            })
+
+            if (error) throw error
+
+            alert(`✅ Password untuk ${passwordTarget.nama} berhasil diubah!`)
+            closePasswordModal()
+        } catch (error) {
+            console.error('Change password error:', error)
+
+            // If RPC doesn't exist, show helpful message
+            if (error.message.includes('function') && error.message.includes('does not exist')) {
+                alert('Fitur ubah password memerlukan fungsi database. Silakan hubungi administrator.')
+            } else {
+                alert('Gagal mengubah password: ' + error.message)
+            }
+        } finally {
+            setSavingPassword(false)
+        }
+    }
+
     return (
         <div className="users-page">
             {/* Header */}
@@ -639,6 +716,14 @@ const UsersPage = () => {
                                                 onClick={() => setEditingUser(user)}
                                             >
                                                 <Edit size={14} />
+                                            </button>
+                                            <button
+                                                className="btn-action password"
+                                                title="Ubah Password"
+                                                onClick={() => openPasswordModal(user)}
+                                                style={{ background: '#f59e0b', color: 'white' }}
+                                            >
+                                                <Key size={14} />
                                             </button>
                                             <button
                                                 className="btn-action delete"
@@ -812,6 +897,98 @@ const UsersPage = () => {
                                     <><Loader2 size={18} className="spin" /> Menyimpan...</>
                                 ) : (
                                     <><Save size={18} /> Simpan</>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Change Password Modal */}
+            {showPasswordModal && passwordTarget && (
+                <div className="modal-overlay" onClick={closePasswordModal}>
+                    <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '450px' }}>
+                        <div className="modal-header">
+                            <h2><Key size={20} /> Ubah Password</h2>
+                            <button className="modal-close" onClick={closePasswordModal}>
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="form-body">
+                            <div style={{
+                                background: '#f0fdf4',
+                                border: '1px solid #bbf7d0',
+                                borderRadius: '8px',
+                                padding: '12px',
+                                marginBottom: '16px'
+                            }}>
+                                <p style={{ margin: 0, fontSize: '0.9rem' }}>
+                                    <strong>User:</strong> {passwordTarget.nama}
+                                </p>
+                                <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: '#64748b' }}>
+                                    {passwordTarget.email}
+                                </p>
+                            </div>
+
+                            <div className="form-group">
+                                <label>Password Baru *</label>
+                                <div className="password-input">
+                                    <input
+                                        type={showPassword ? 'text' : 'password'}
+                                        value={passwordForm.newPassword}
+                                        onChange={e => {
+                                            setPasswordForm(prev => ({ ...prev, newPassword: e.target.value }))
+                                            if (passwordErrors.newPassword) {
+                                                setPasswordErrors(prev => ({ ...prev, newPassword: null }))
+                                            }
+                                        }}
+                                        placeholder="Minimal 8 karakter"
+                                        className={passwordErrors.newPassword ? 'error' : ''}
+                                    />
+                                    <button
+                                        type="button"
+                                        className="password-toggle"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                    >
+                                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                    </button>
+                                </div>
+                                {passwordErrors.newPassword && <span className="error-text">{passwordErrors.newPassword}</span>}
+                            </div>
+
+                            <div className="form-group">
+                                <label>Konfirmasi Password Baru *</label>
+                                <input
+                                    type={showPassword ? 'text' : 'password'}
+                                    value={passwordForm.confirmPassword}
+                                    onChange={e => {
+                                        setPasswordForm(prev => ({ ...prev, confirmPassword: e.target.value }))
+                                        if (passwordErrors.confirmPassword) {
+                                            setPasswordErrors(prev => ({ ...prev, confirmPassword: null }))
+                                        }
+                                    }}
+                                    placeholder="Ulangi password baru"
+                                    className={passwordErrors.confirmPassword ? 'error' : ''}
+                                />
+                                {passwordErrors.confirmPassword && <span className="error-text">{passwordErrors.confirmPassword}</span>}
+                            </div>
+                        </div>
+
+                        <div className="modal-footer">
+                            <button className="btn-secondary" onClick={closePasswordModal}>
+                                Batal
+                            </button>
+                            <button
+                                className="btn-primary"
+                                onClick={handleChangePassword}
+                                disabled={savingPassword}
+                                style={{ background: '#f59e0b' }}
+                            >
+                                {savingPassword ? (
+                                    <><Loader2 size={18} className="spin" /> Menyimpan...</>
+                                ) : (
+                                    <><Key size={18} /> Ubah Password</>
                                 )}
                             </button>
                         </div>

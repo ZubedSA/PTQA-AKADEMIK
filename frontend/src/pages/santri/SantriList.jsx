@@ -9,8 +9,27 @@ import * as XLSX from 'xlsx'
 import './Santri.css'
 
 const SantriList = () => {
-    const { activeRole } = useAuth()
-    const isAdmin = activeRole === 'admin'
+    const { activeRole, userProfile, role, isAdmin, isGuru, isBendahara, hasRole } = useAuth()
+
+    // Multiple checks to ensure role is correctly detected
+    // Check using helper functions first, then fall back to direct role checks
+    const adminCheck = isAdmin() || userProfile?.role === 'admin' || userProfile?.activeRole === 'admin' || hasRole('admin')
+    const bendaharaCheck = isBendahara() || userProfile?.role === 'bendahara' || userProfile?.activeRole === 'bendahara' || hasRole('bendahara')
+    const guruCheck = isGuru() || userProfile?.role === 'guru' || userProfile?.activeRole === 'guru' || hasRole('guru')
+
+    // Admin dan Bendahara bisa CRUD santri, Guru hanya read-only
+    const canEditSantri = adminCheck || bendaharaCheck
+
+    // DEBUG: Log role info
+    console.log('🔐 SantriList Debug:', {
+        activeRole,
+        'userProfile?.role': userProfile?.role,
+        'userProfile?.activeRole': userProfile?.activeRole,
+        adminCheck,
+        bendaharaCheck,
+        guruCheck,
+        canEditSantri
+    })
 
     const [santri, setSantri] = useState([])
     const [searchTerm, setSearchTerm] = useState('')
@@ -307,7 +326,7 @@ const SantriList = () => {
                     <p className="page-subtitle">Kelola data santri pondok pesantren</p>
                 </div>
                 <div className="header-actions">
-                    {isAdmin && (
+                    {canEditSantri && (
                         <>
                             <input
                                 type="file"
@@ -406,17 +425,71 @@ const SantriList = () => {
                                             <MobileActionMenu
                                                 actions={[
                                                     { icon: <Eye size={16} />, label: 'Detail', path: `/santri/${item.id}` },
-                                                    ...(isAdmin ? [
+                                                    ...(canEditSantri ? [
                                                         { icon: <Edit size={16} />, label: 'Edit', path: `/santri/${item.id}/edit` },
                                                         { icon: <Trash2 size={16} />, label: 'Hapus', onClick: () => { setSelectedSantri(item); setShowDeleteModal(true) }, danger: true }
                                                     ] : [])
                                                 ]}
                                             >
-                                                <Link to={`/santri/${item.id}`} className="btn-icon" title="Lihat Detail"><Eye size={16} /></Link>
-                                                {isAdmin && (
+                                                <Link
+                                                    to={`/santri/${item.id}`}
+                                                    className="btn-icon"
+                                                    title="Lihat Detail"
+                                                    style={{
+                                                        display: 'inline-flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        width: '32px',
+                                                        height: '32px',
+                                                        borderRadius: '6px',
+                                                        background: '#dbeafe',
+                                                        color: '#2563eb',
+                                                        marginRight: '4px',
+                                                        textDecoration: 'none'
+                                                    }}
+                                                >
+                                                    <Eye size={16} />
+                                                </Link>
+                                                {canEditSantri && (
                                                     <>
-                                                        <Link to={`/santri/${item.id}/edit`} className="btn-icon" title="Edit"><Edit size={16} /></Link>
-                                                        <button className="btn-icon btn-icon-danger" title="Hapus" onClick={() => { setSelectedSantri(item); setShowDeleteModal(true) }}><Trash2 size={16} /></button>
+                                                        <Link
+                                                            to={`/santri/${item.id}/edit`}
+                                                            className="btn-icon"
+                                                            title="Edit"
+                                                            style={{
+                                                                display: 'inline-flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                width: '32px',
+                                                                height: '32px',
+                                                                borderRadius: '6px',
+                                                                background: '#fef3c7',
+                                                                color: '#d97706',
+                                                                marginRight: '4px',
+                                                                textDecoration: 'none'
+                                                            }}
+                                                        >
+                                                            <Edit size={16} />
+                                                        </Link>
+                                                        <button
+                                                            className="btn-icon btn-icon-danger"
+                                                            title="Hapus"
+                                                            onClick={() => { setSelectedSantri(item); setShowDeleteModal(true) }}
+                                                            style={{
+                                                                display: 'inline-flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                width: '32px',
+                                                                height: '32px',
+                                                                borderRadius: '6px',
+                                                                background: '#fee2e2',
+                                                                color: '#dc2626',
+                                                                border: 'none',
+                                                                cursor: 'pointer'
+                                                            }}
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
                                                     </>
                                                 )}
                                             </MobileActionMenu>

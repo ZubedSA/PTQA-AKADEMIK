@@ -5,8 +5,9 @@ import { useAuth } from '../context/AuthContext'
  * Menggunakan RBAC (Role Based Access Control)
  */
 export const usePermissions = () => {
-    const { userProfile, user } = useAuth()
-    const role = userProfile?.role || 'guest'
+    const { userProfile, user, hasRole: authHasRole } = useAuth()
+    // Multiple fallback untuk role detection - check activeRole first, then role
+    const role = userProfile?.activeRole || userProfile?.role || 'guest'
 
     // Permission definitions
     const permissions = {
@@ -124,9 +125,14 @@ export const usePermissions = () => {
     const isAuthenticated = () => !!user
 
     // Check if user has any of the specified roles
+    // Check both activeRole/role AND the roles array (for admins who switched roles)
     const hasRole = (roles) => {
-        if (typeof roles === 'string') return role === roles
-        return roles.includes(role)
+        const userRoles = userProfile?.roles || []
+        if (typeof roles === 'string') {
+            return role === roles || userRoles.includes(roles)
+        }
+        // Check if current role matches OR if any role in userRoles matches
+        return roles.includes(role) || roles.some(r => userRoles.includes(r))
     }
 
     // Check if user can access a specific route/module

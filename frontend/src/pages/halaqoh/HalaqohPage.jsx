@@ -2,9 +2,15 @@ import { useState, useEffect } from 'react'
 import { Plus, Edit, Trash2, Users, Clock, RefreshCw, UserPlus, X, Check } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { logCreate, logUpdate, logDelete } from '../../lib/auditLog'
+import { useAuth } from '../../context/AuthContext'
 import './Halaqoh.css'
 
 const HalaqohPage = () => {
+    const { activeRole, isAdmin, isBendahara, userProfile, hasRole } = useAuth()
+    // Multiple checks for role detection - Guru hanya read-only di Data Pondok
+    const adminCheck = isAdmin() || userProfile?.role === 'admin' || hasRole('admin')
+    const bendaharaCheck = isBendahara() || userProfile?.role === 'bendahara' || hasRole('bendahara')
+    const canEdit = adminCheck || bendaharaCheck
     const [halaqohList, setHalaqohList] = useState([])
     const [loading, setLoading] = useState(true)
     const [showModal, setShowModal] = useState(false)
@@ -223,9 +229,11 @@ const HalaqohPage = () => {
                     <h1 className="page-title">Manajemen Halaqoh</h1>
                     <p className="page-subtitle">Kelola kelompok tahfizh dan musyrif</p>
                 </div>
-                <button className="btn btn-primary" onClick={() => { setEditData(null); setFormData({ nama: '', musyrif_id: '', waktu: '', keterangan: '' }); setShowModal(true) }}>
-                    <Plus size={18} /> Tambah Halaqoh
-                </button>
+                {canEdit && (
+                    <button className="btn btn-primary" onClick={() => { setEditData(null); setFormData({ nama: '', musyrif_id: '', waktu: '', keterangan: '' }); setShowModal(true) }}>
+                        <Plus size={18} /> Tambah Halaqoh
+                    </button>
+                )}
             </div>
 
             {loading ? (
@@ -245,11 +253,13 @@ const HalaqohPage = () => {
                                     <span><Users size={14} /> {santriCounts[halaqoh.id] || 0} Santri</span>
                                 </div>
                             </div>
-                            <div className="halaqoh-actions" onClick={e => e.stopPropagation()}>
-                                <button className="btn-icon btn-icon-success" title="Tambah Santri" onClick={() => openAddSantriModal(halaqoh)}><UserPlus size={16} /></button>
-                                <button className="btn-icon" onClick={() => handleEdit(halaqoh)}><Edit size={16} /></button>
-                                <button className="btn-icon btn-icon-danger" onClick={() => handleDelete(halaqoh.id)}><Trash2 size={16} /></button>
-                            </div>
+                            {canEdit && (
+                                <div className="halaqoh-actions" onClick={e => e.stopPropagation()}>
+                                    <button className="btn-icon btn-icon-success" title="Tambah Santri" onClick={() => openAddSantriModal(halaqoh)}><UserPlus size={16} /></button>
+                                    <button className="btn-icon" onClick={() => handleEdit(halaqoh)}><Edit size={16} /></button>
+                                    <button className="btn-icon btn-icon-danger" onClick={() => handleDelete(halaqoh.id)}><Trash2 size={16} /></button>
+                                </div>
+                            )}
                         </div>
                     ))}
                 </div>

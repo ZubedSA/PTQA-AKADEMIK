@@ -8,8 +8,11 @@ import MobileActionMenu from '../../components/ui/MobileActionMenu'
 import './Guru.css'
 
 const GuruList = () => {
-    const { activeRole } = useAuth()
-    const isAdmin = activeRole === 'admin'
+    const { activeRole, isAdmin, isBendahara, userProfile, hasRole } = useAuth()
+    // Multiple checks for role detection - Guru hanya read-only di Data Pondok
+    const adminCheck = isAdmin() || userProfile?.role === 'admin' || hasRole('admin')
+    const bendaharaCheck = isBendahara() || userProfile?.role === 'bendahara' || hasRole('bendahara')
+    const canEdit = adminCheck || bendaharaCheck
     const [guru, setGuru] = useState([])
     const [searchTerm, setSearchTerm] = useState('')
     const [sortBy, setSortBy] = useState('nama-asc')
@@ -88,7 +91,7 @@ const GuruList = () => {
                     <h1 className="page-title">Data Guru</h1>
                     <p className="page-subtitle">Kelola data pengajar dan wali kelas</p>
                 </div>
-                {isAdmin && (
+                {canEdit && (
                     <Link to="/guru/create" className="btn btn-primary">
                         <Plus size={18} />
                         Tambah Guru
@@ -178,18 +181,51 @@ const GuruList = () => {
                                             <MobileActionMenu
                                                 actions={[
                                                     { icon: <Eye size={16} />, label: 'Detail', path: `/guru/${item.id}` },
-                                                    ...(isAdmin ? [
+                                                    ...(canEdit ? [
                                                         { icon: <Edit size={16} />, label: 'Edit', path: `/guru/${item.id}/edit` },
                                                         { icon: <Trash2 size={16} />, label: 'Hapus', onClick: () => { setSelectedGuru(item); setShowDeleteModal(true) }, danger: true }
                                                     ] : [])
                                                 ]}
                                             >
-                                                <Link to={`/guru/${item.id}`} className="btn-icon" title="Lihat Detail">
+                                                <Link
+                                                    to={`/guru/${item.id}`}
+                                                    className="btn-icon"
+                                                    title="Lihat Detail"
+                                                    style={{
+                                                        display: 'inline-flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        width: '32px',
+                                                        height: '32px',
+                                                        borderRadius: '6px',
+                                                        background: '#dbeafe',
+                                                        color: '#2563eb',
+                                                        marginRight: '4px',
+                                                        textDecoration: 'none'
+                                                    }}
+                                                >
                                                     <Eye size={16} />
                                                 </Link>
-                                                {isAdmin && (
+                                                {/* Edit/Hapus buttons only for canEdit roles */}
+                                                {canEdit && (
                                                     <>
-                                                        <Link to={`/guru/${item.id}/edit`} className="btn-icon" title="Edit">
+                                                        <Link
+                                                            to={`/guru/${item.id}/edit`}
+                                                            className="btn-icon"
+                                                            title="Edit"
+                                                            style={{
+                                                                display: 'inline-flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                width: '32px',
+                                                                height: '32px',
+                                                                borderRadius: '6px',
+                                                                background: '#fef3c7',
+                                                                color: '#d97706',
+                                                                marginRight: '4px',
+                                                                textDecoration: 'none'
+                                                            }}
+                                                        >
                                                             <Edit size={16} />
                                                         </Link>
                                                         <button
@@ -198,6 +234,18 @@ const GuruList = () => {
                                                             onClick={() => {
                                                                 setSelectedGuru(item)
                                                                 setShowDeleteModal(true)
+                                                            }}
+                                                            style={{
+                                                                display: 'inline-flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                width: '32px',
+                                                                height: '32px',
+                                                                borderRadius: '6px',
+                                                                background: '#fee2e2',
+                                                                color: '#dc2626',
+                                                                border: 'none',
+                                                                cursor: 'pointer'
                                                             }}
                                                         >
                                                             <Trash2 size={16} />

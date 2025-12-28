@@ -153,7 +153,7 @@ function App() {
                 } />
 
                 <Route path="/santri" element={
-                  <ProtectedRoute roles={['admin', 'guru']} fallbackRedirect="/dashboard/admin">
+                  <ProtectedRoute roles={['admin', 'guru', 'bendahara']} fallbackRedirect="/dashboard/admin">
                     <SantriList />
                   </ProtectedRoute>
                 } />
@@ -163,19 +163,19 @@ function App() {
                   </ProtectedRoute>
                 } />
                 <Route path="/santri/:id" element={
-                  <ProtectedRoute roles={['admin', 'guru']} fallbackRedirect="/dashboard/admin">
+                  <ProtectedRoute roles={['admin', 'guru', 'bendahara']} fallbackRedirect="/dashboard/admin">
                     <SantriForm />
                   </ProtectedRoute>
                 } />
                 <Route path="/santri/:id/edit" element={
-                  <ProtectedRoute roles={['admin']} fallbackRedirect="/dashboard/admin">
+                  <ProtectedRoute roles={['admin', 'guru', 'bendahara']} fallbackRedirect="/dashboard/admin">
                     <SantriForm />
                   </ProtectedRoute>
                 } />
 
                 {/* Guru Management */}
                 <Route path="/guru" element={
-                  <ProtectedRoute roles={['admin', 'guru']} fallbackRedirect="/dashboard/admin">
+                  <ProtectedRoute roles={['admin', 'guru', 'bendahara']} fallbackRedirect="/dashboard/admin">
                     <GuruList />
                   </ProtectedRoute>
                 } />
@@ -185,29 +185,29 @@ function App() {
                   </ProtectedRoute>
                 } />
                 <Route path="/guru/:id" element={
-                  <ProtectedRoute roles={['admin', 'guru']} fallbackRedirect="/dashboard/admin">
+                  <ProtectedRoute roles={['admin', 'guru', 'bendahara']} fallbackRedirect="/dashboard/admin">
                     <GuruForm />
                   </ProtectedRoute>
                 } />
                 <Route path="/guru/:id/edit" element={
-                  <ProtectedRoute roles={['admin']} fallbackRedirect="/dashboard/admin">
+                  <ProtectedRoute roles={['admin', 'guru', 'bendahara']} fallbackRedirect="/dashboard/admin">
                     <GuruForm />
                   </ProtectedRoute>
                 } />
 
                 {/* Master Data - Admin Only */}
                 <Route path="/kelas" element={
-                  <ProtectedRoute roles={['admin', 'guru']} fallbackRedirect="/dashboard/admin">
+                  <ProtectedRoute roles={['admin', 'guru', 'bendahara']} fallbackRedirect="/dashboard/admin">
                     <KelasPage />
                   </ProtectedRoute>
                 } />
                 <Route path="/mapel" element={
-                  <ProtectedRoute roles={['admin', 'guru']} fallbackRedirect="/dashboard/admin">
+                  <ProtectedRoute roles={['admin', 'guru', 'bendahara']} fallbackRedirect="/dashboard/admin">
                     <MapelPage />
                   </ProtectedRoute>
                 } />
                 <Route path="/semester" element={
-                  <ProtectedRoute roles={['admin', 'guru']} fallbackRedirect="/dashboard/admin">
+                  <ProtectedRoute roles={['admin', 'guru', 'bendahara']} fallbackRedirect="/dashboard/admin">
                     <SemesterPage />
                   </ProtectedRoute>
                 } />
@@ -445,7 +445,7 @@ function App() {
                 } />
                 {/* Penyaluran Dana - Persetujuan */}
                 <Route path="/keuangan/dana/persetujuan" element={
-                  <ProtectedRoute roles={['admin', 'bendahara', 'pengasuh']} fallbackRedirect="/dashboard/admin">
+                  <ProtectedRoute roles={['admin', 'pengasuh']} fallbackRedirect="/dashboard/admin">
                     <PersetujuanDanaPage />
                   </ProtectedRoute>
                 } />

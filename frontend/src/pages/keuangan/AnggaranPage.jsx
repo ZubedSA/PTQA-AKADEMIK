@@ -8,7 +8,11 @@ import MobileActionMenu from '../../components/ui/MobileActionMenu'
 import './Keuangan.css'
 
 const AnggaranPage = () => {
-    const { user } = useAuth()
+    const { user, isAdmin, isBendahara, userProfile, hasRole } = useAuth()
+    // Multiple checks - admin dan bendahara bisa CRUD
+    const adminCheck = isAdmin() || userProfile?.role === 'admin' || hasRole('admin')
+    const bendaharaCheck = isBendahara() || userProfile?.role === 'bendahara' || hasRole('bendahara')
+    const canEditKas = adminCheck || bendaharaCheck
     const [data, setData] = useState([])
     const [loading, setLoading] = useState(true)
     const [showModal, setShowModal] = useState(false)
@@ -180,9 +184,11 @@ const AnggaranPage = () => {
                     <button className="btn btn-secondary" onClick={handleDownloadPDF}>
                         <Download size={18} /> Download PDF
                     </button>
-                    <button className="btn btn-primary" onClick={() => { resetForm(); setShowModal(true) }}>
-                        <Plus size={18} /> Ajukan Anggaran
-                    </button>
+                    {canEditKas && (
+                        <button className="btn btn-primary" onClick={() => { resetForm(); setShowModal(true) }}>
+                            <Plus size={18} /> Ajukan Anggaran
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -249,8 +255,8 @@ const AnggaranPage = () => {
                                     <td>{new Date(item.tanggal_pengajuan).toLocaleDateString('id-ID')}</td>
                                     <td><span className={`status-badge ${getStatusClass(item.status)}`}>{item.status}</span></td>
                                     <td>
-                                        <div className="action-buttons">
-                                            {item.status === 'Pending' && (
+                                        <div className="action-buttons" style={{ display: 'flex', gap: '4px' }}>
+                                            {canEditKas && (
                                                 <MobileActionMenu
                                                     actions={[
                                                         { label: 'Edit', icon: <Edit2 size={14} />, onClick: () => openEdit(item) },
@@ -258,13 +264,60 @@ const AnggaranPage = () => {
                                                         { label: 'Detail', icon: <Eye size={14} />, onClick: () => { } }
                                                     ]}
                                                 >
-                                                    <button className="btn-icon-sm" onClick={() => openEdit(item)}><Edit2 size={16} /></button>
-                                                    <button className="btn-icon-sm danger" onClick={() => handleDelete(item.id)}><Trash2 size={16} /></button>
-                                                    <button className="btn-icon-sm" title="Detail"><Eye size={16} /></button>
+                                                    <button
+                                                        onClick={() => openEdit(item)}
+                                                        title="Edit"
+                                                        style={{
+                                                            display: 'inline-flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            width: '32px',
+                                                            height: '32px',
+                                                            borderRadius: '6px',
+                                                            background: '#fef3c7',
+                                                            color: '#d97706',
+                                                            border: 'none',
+                                                            cursor: 'pointer'
+                                                        }}
+                                                    >
+                                                        <Edit2 size={16} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDelete(item.id)}
+                                                        title="Hapus"
+                                                        style={{
+                                                            display: 'inline-flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            width: '32px',
+                                                            height: '32px',
+                                                            borderRadius: '6px',
+                                                            background: '#fee2e2',
+                                                            color: '#dc2626',
+                                                            border: 'none',
+                                                            cursor: 'pointer'
+                                                        }}
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                    <button
+                                                        title="Detail"
+                                                        style={{
+                                                            display: 'inline-flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            width: '32px',
+                                                            height: '32px',
+                                                            borderRadius: '6px',
+                                                            background: '#dbeafe',
+                                                            color: '#2563eb',
+                                                            border: 'none',
+                                                            cursor: 'pointer'
+                                                        }}
+                                                    >
+                                                        <Eye size={16} />
+                                                    </button>
                                                 </MobileActionMenu>
-                                            )}
-                                            {item.status !== 'Pending' && (
-                                                <button className="btn-icon-sm" title="Detail"><Eye size={16} /></button>
                                             )}
                                         </div>
                                     </td>

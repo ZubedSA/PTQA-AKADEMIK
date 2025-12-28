@@ -1,13 +1,17 @@
 import { useState, useEffect } from 'react'
-import { Plus, Edit, Trash2, BookOpen, Search, RefreshCw, BookMarked, GraduationCap } from 'lucide-react'
+import { Plus, Edit, Trash2, BookOpen, Search, RefreshCw, BookMarked, GraduationCap, MoreVertical } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { logCreate, logUpdate, logDelete } from '../../lib/auditLog'
 import { useAuth } from '../../context/AuthContext'
+import MobileActionMenu from '../../components/ui/MobileActionMenu'
 import './Mapel.css'
 
 const MapelPage = () => {
-    const { activeRole } = useAuth()
-    const isAdmin = activeRole === 'admin'
+    const { activeRole, isAdmin, isBendahara, userProfile, hasRole } = useAuth()
+    // Multiple checks for role detection - Guru hanya read-only di Data Pondok
+    const adminCheck = isAdmin() || userProfile?.role === 'admin' || hasRole('admin')
+    const bendaharaCheck = isBendahara() || userProfile?.role === 'bendahara' || hasRole('bendahara')
+    const canEdit = adminCheck || bendaharaCheck
     const [mapelList, setMapelList] = useState([])
     const [searchTerm, setSearchTerm] = useState('')
     const [loading, setLoading] = useState(true)
@@ -93,7 +97,7 @@ const MapelPage = () => {
                     <h1 className="page-title">Mata Pelajaran</h1>
                     <p className="page-subtitle">Kelola daftar mata pelajaran</p>
                 </div>
-                {isAdmin && (
+                {canEdit && (
                     <button className="btn btn-primary" onClick={() => { setEditData(null); setFormData({ kode: '', nama: '', deskripsi: '', kategori: 'Madrosiyah' }); setShowModal(true) }}>
                         <Plus size={18} /> Tambah Mapel
                     </button>
@@ -157,12 +161,55 @@ const MapelPage = () => {
                                     </td>
                                     <td className="text-muted">{mapel.deskripsi || '-'}</td>
                                     <td>
-                                        {isAdmin && (
-                                            <div className="action-buttons">
-                                                <button className="btn-icon" onClick={() => handleEdit(mapel)}><Edit size={16} /></button>
-                                                <button className="btn-icon btn-icon-danger" onClick={() => handleDelete(mapel.id)}><Trash2 size={16} /></button>
-                                            </div>
-                                        )}
+                                        {/* Action buttons only for canEdit roles */}
+                                        {canEdit ? (
+                                            <MobileActionMenu
+                                                actions={[
+                                                    { icon: <Edit size={16} />, label: 'Edit', onClick: () => handleEdit(mapel) },
+                                                    { icon: <Trash2 size={16} />, label: 'Hapus', onClick: () => handleDelete(mapel.id), danger: true }
+                                                ]}
+                                            >
+                                                <button
+                                                    className="btn-icon"
+                                                    onClick={() => handleEdit(mapel)}
+                                                    title="Edit"
+                                                    style={{
+                                                        display: 'inline-flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        width: '32px',
+                                                        height: '32px',
+                                                        borderRadius: '6px',
+                                                        border: 'none',
+                                                        background: '#fef3c7',
+                                                        color: '#d97706',
+                                                        cursor: 'pointer',
+                                                        marginRight: '4px'
+                                                    }}
+                                                >
+                                                    <Edit size={16} />
+                                                </button>
+                                                <button
+                                                    className="btn-icon btn-icon-danger"
+                                                    onClick={() => handleDelete(mapel.id)}
+                                                    title="Hapus"
+                                                    style={{
+                                                        display: 'inline-flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        width: '32px',
+                                                        height: '32px',
+                                                        borderRadius: '6px',
+                                                        border: 'none',
+                                                        background: '#fee2e2',
+                                                        color: '#ef4444',
+                                                        cursor: 'pointer'
+                                                    }}
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </MobileActionMenu>
+                                        ) : null}
                                     </td>
                                 </tr>
                             ))

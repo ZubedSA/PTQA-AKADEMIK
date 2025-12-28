@@ -9,8 +9,12 @@ import MobileActionMenu from '../../components/ui/MobileActionMenu'
 import './Keuangan.css'
 
 const KasPemasukanPage = () => {
-    const { user } = useAuth()
+    const { user, isAdmin, isBendahara, userProfile, hasRole } = useAuth()
     const { canCreate, canUpdate, canDelete } = usePermissions()
+    // Multiple checks - admin dan bendahara bisa CRUD
+    const adminCheck = isAdmin() || userProfile?.role === 'admin' || hasRole('admin')
+    const bendaharaCheck = isBendahara() || userProfile?.role === 'bendahara' || hasRole('bendahara')
+    const canEditKas = adminCheck || bendaharaCheck
     const [data, setData] = useState([])
     const [kategoriList, setKategoriList] = useState([])
     const [loading, setLoading] = useState(true)
@@ -221,7 +225,7 @@ const KasPemasukanPage = () => {
                     <button className="btn btn-secondary" onClick={handleDownloadPDF}>
                         <Download size={18} /> Download PDF
                     </button>
-                    {canCreate('kas') && (
+                    {canEditKas && canCreate('kas') && (
                         <button className="btn btn-primary" onClick={() => { resetForm(); setShowModal(true) }}>
                             <Plus size={18} /> Tambah Pemasukan
                         </button>
@@ -317,32 +321,50 @@ const KasPemasukanPage = () => {
                                     <td className="amount green">Rp {Number(item.jumlah).toLocaleString('id-ID')}</td>
                                     <td>{item.keterangan || '-'}</td>
                                     <td>
-                                        {(canUpdate('kas') || canDelete('kas')) && (
+                                        {canEditKas && (
                                             <MobileActionMenu
                                                 actions={[
-                                                    canUpdate('kas') && {
-                                                        label: 'Edit',
-                                                        icon: <Edit2 size={14} />,
-                                                        onClick: () => openEdit(item)
-                                                    },
-                                                    canDelete('kas') && {
-                                                        label: 'Hapus',
-                                                        icon: <Trash2 size={14} />,
-                                                        onClick: () => handleDelete(item.id),
-                                                        danger: true
-                                                    }
-                                                ].filter(Boolean)}
+                                                    { label: 'Edit', icon: <Edit2 size={14} />, onClick: () => openEdit(item) },
+                                                    { label: 'Hapus', icon: <Trash2 size={14} />, onClick: () => handleDelete(item.id), danger: true }
+                                                ]}
                                             >
-                                                {canUpdate('kas') && (
-                                                    <button className="btn-icon" onClick={() => openEdit(item)} title="Edit">
-                                                        <Edit2 size={16} />
-                                                    </button>
-                                                )}
-                                                {canDelete('kas') && (
-                                                    <button className="btn-icon btn-icon-danger" onClick={() => handleDelete(item.id)} title="Hapus">
-                                                        <Trash2 size={16} />
-                                                    </button>
-                                                )}
+                                                <button
+                                                    onClick={() => openEdit(item)}
+                                                    title="Edit"
+                                                    style={{
+                                                        display: 'inline-flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        width: '32px',
+                                                        height: '32px',
+                                                        borderRadius: '6px',
+                                                        background: '#fef3c7',
+                                                        color: '#d97706',
+                                                        border: 'none',
+                                                        cursor: 'pointer',
+                                                        marginRight: '4px'
+                                                    }}
+                                                >
+                                                    <Edit2 size={16} />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(item.id)}
+                                                    title="Hapus"
+                                                    style={{
+                                                        display: 'inline-flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        width: '32px',
+                                                        height: '32px',
+                                                        borderRadius: '6px',
+                                                        background: '#fee2e2',
+                                                        color: '#dc2626',
+                                                        border: 'none',
+                                                        cursor: 'pointer'
+                                                    }}
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
                                             </MobileActionMenu>
                                         )}
                                     </td>
