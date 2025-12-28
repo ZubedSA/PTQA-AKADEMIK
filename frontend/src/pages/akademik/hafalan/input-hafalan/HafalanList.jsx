@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { Plus, Search, Edit, Trash2, RefreshCw, FileText, BarChart3, CheckCircle, Clock, AlertCircle, Filter, Calendar, MessageCircle, Trophy, Save, Printer, Download, MoreVertical, Send } from 'lucide-react'
+import { Plus, Search, Edit, Trash2, RefreshCw, FileText, BarChart3, CheckCircle, Clock, AlertCircle, Filter, Calendar, MessageCircle, Trophy, Save, Printer, Download, MoreVertical, Send, Eye, EyeOff } from 'lucide-react'
 import { supabase } from '../../../../lib/supabase'
 import { logDelete } from '../../../../lib/auditLog'
 import MobileActionMenu from '../../../../components/ui/MobileActionMenu'
@@ -21,6 +21,7 @@ const HafalanList = () => {
     const [activeTab, setActiveTab] = useState(initialTab) // 'list' or 'rekap'
     const [activeFilter, setActiveFilter] = useState('Semua')
     const [stats, setStats] = useState({ total: 0, lancar: 0, sedang: 0, lemah: 0, bacaNazhor: 0 })
+    const [showDashboard, setShowDashboard] = useState(true) // Toggle untuk mini dashboard
 
     // Date filter for Input Hafalan tab
     const [dateFilter, setDateFilter] = useState({ dari: '', sampai: '' })
@@ -682,72 +683,66 @@ _PTQA Batuan_`
                 </div>
             </div>
 
-            {/* Top Tabs - Show only relevant tab based on route */}
-            <div className="hafalan-tabs">
-                {initialTab !== 'rekap' && (
-                    <button
-                        className={`hafalan-tab ${activeTab === 'list' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('list')}
-                    >
-                        <FileText size={16} /> Input Hafalan
-                    </button>
-                )}
-                {initialTab === 'rekap' && (
-                    <button
-                        className={`hafalan-tab ${activeTab === 'rekap' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('rekap')}
-                    >
-                        <BarChart3 size={16} /> Rekap Hafalan
-                    </button>
-                )}
+            {/* Toggle Dashboard Button */}
+            <div className="dashboard-toggle-wrapper" style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' }}>
+                <button
+                    className="btn btn-sm btn-outline"
+                    onClick={() => setShowDashboard(!showDashboard)}
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', fontSize: '13px' }}
+                >
+                    {showDashboard ? <EyeOff size={14} /> : <Eye size={14} />}
+                    {showDashboard ? 'Sembunyikan Dashboard' : 'Tampilkan Dashboard'}
+                </button>
             </div>
 
             {/* ==================== INPUT HAFALAN TAB ==================== */}
             {activeTab === 'list' && (
                 <>
-                    {/* Mini Dashboard Stats */}
-                    <div className="hafalan-stats">
-                        <div className="hafalan-stat-card">
-                            <div className="stat-header">
-                                <span className="stat-label">Total</span>
-                                <FileText size={18} className="stat-icon" />
+                    {/* Mini Dashboard Stats - dengan toggle */}
+                    {showDashboard && (
+                        <div className="hafalan-stats">
+                            <div className="hafalan-stat-card">
+                                <div className="stat-header">
+                                    <span className="stat-label">Total</span>
+                                    <FileText size={18} className="stat-icon" />
+                                </div>
+                                <div className="stat-value">{stats.total}</div>
+                                <div className="stat-bar stat-bar-total"></div>
                             </div>
-                            <div className="stat-value">{stats.total}</div>
-                            <div className="stat-bar stat-bar-total"></div>
-                        </div>
-                        <div className="hafalan-stat-card">
-                            <div className="stat-header">
-                                <span className="stat-label">Lancar</span>
-                                <CheckCircle size={18} className="stat-icon text-success" />
+                            <div className="hafalan-stat-card">
+                                <div className="stat-header">
+                                    <span className="stat-label">Lancar</span>
+                                    <CheckCircle size={18} className="stat-icon text-success" />
+                                </div>
+                                <div className="stat-value text-success">{stats.lancar}</div>
+                                <div className="stat-bar stat-bar-lancar" style={{ width: stats.total ? `${(stats.lancar / stats.total) * 100}%` : '0%' }}></div>
                             </div>
-                            <div className="stat-value text-success">{stats.lancar}</div>
-                            <div className="stat-bar stat-bar-lancar" style={{ width: stats.total ? `${(stats.lancar / stats.total) * 100}%` : '0%' }}></div>
-                        </div>
-                        <div className="hafalan-stat-card">
-                            <div className="stat-header">
-                                <span className="stat-label">Sedang</span>
-                                <Clock size={18} className="stat-icon text-info" />
+                            <div className="hafalan-stat-card">
+                                <div className="stat-header">
+                                    <span className="stat-label">Sedang</span>
+                                    <Clock size={18} className="stat-icon text-info" />
+                                </div>
+                                <div className="stat-value text-info">{stats.sedang}</div>
+                                <div className="stat-bar stat-bar-sedang" style={{ width: stats.total ? `${(stats.sedang / stats.total) * 100}%` : '0%' }}></div>
                             </div>
-                            <div className="stat-value text-info">{stats.sedang}</div>
-                            <div className="stat-bar stat-bar-sedang" style={{ width: stats.total ? `${(stats.sedang / stats.total) * 100}%` : '0%' }}></div>
-                        </div>
-                        <div className="hafalan-stat-card">
-                            <div className="stat-header">
-                                <span className="stat-label">Lemah</span>
-                                <AlertCircle size={18} className="stat-icon text-warning" />
+                            <div className="hafalan-stat-card">
+                                <div className="stat-header">
+                                    <span className="stat-label">Lemah</span>
+                                    <AlertCircle size={18} className="stat-icon text-warning" />
+                                </div>
+                                <div className="stat-value text-warning">{stats.lemah}</div>
+                                <div className="stat-bar stat-bar-lemah" style={{ width: stats.total ? `${(stats.lemah / stats.total) * 100}%` : '0%' }}></div>
                             </div>
-                            <div className="stat-value text-warning">{stats.lemah}</div>
-                            <div className="stat-bar stat-bar-lemah" style={{ width: stats.total ? `${(stats.lemah / stats.total) * 100}%` : '0%' }}></div>
-                        </div>
-                        <div className="hafalan-stat-card">
-                            <div className="stat-header">
-                                <span className="stat-label">Baca Nazhor</span>
-                                <FileText size={18} className="stat-icon text-purple" />
+                            <div className="hafalan-stat-card">
+                                <div className="stat-header">
+                                    <span className="stat-label">Baca Nazhor</span>
+                                    <FileText size={18} className="stat-icon text-purple" />
+                                </div>
+                                <div className="stat-value text-purple">{stats.bacaNazhor}</div>
+                                <div className="stat-bar stat-bar-nazhor" style={{ width: stats.total ? `${(stats.bacaNazhor / stats.total) * 100}%` : '0%' }}></div>
                             </div>
-                            <div className="stat-value text-purple">{stats.bacaNazhor}</div>
-                            <div className="stat-bar stat-bar-nazhor" style={{ width: stats.total ? `${(stats.bacaNazhor / stats.total) * 100}%` : '0%' }}></div>
                         </div>
-                    </div>
+                    )}
 
                     {/* Filter Tabs */}
                     <div className="hafalan-filter-tabs">
@@ -946,49 +941,51 @@ _PTQA Batuan_`
                         </div>
                     </div>
 
-                    {/* Rekap Mini Dashboard */}
-                    <div className="hafalan-stats">
-                        <div className="hafalan-stat-card">
-                            <div className="stat-header">
-                                <span className="stat-label">Total Data</span>
-                                <FileText size={18} className="stat-icon text-primary" />
+                    {/* Rekap Mini Dashboard - dengan toggle */}
+                    {showDashboard && (
+                        <div className="hafalan-stats">
+                            <div className="hafalan-stat-card">
+                                <div className="stat-header">
+                                    <span className="stat-label">Total Data</span>
+                                    <FileText size={18} className="stat-icon text-primary" />
+                                </div>
+                                <div className="stat-value">{rekapStats.totalData || rekapData.length}</div>
+                                <div className="stat-bar stat-bar-total"></div>
                             </div>
-                            <div className="stat-value">{rekapStats.totalData || rekapData.length}</div>
-                            <div className="stat-bar stat-bar-total"></div>
-                        </div>
-                        <div className="hafalan-stat-card">
-                            <div className="stat-header">
-                                <span className="stat-label">Lancar</span>
-                                <CheckCircle size={18} className="stat-icon text-success" />
+                            <div className="hafalan-stat-card">
+                                <div className="stat-header">
+                                    <span className="stat-label">Lancar</span>
+                                    <CheckCircle size={18} className="stat-icon text-success" />
+                                </div>
+                                <div className="stat-value text-success">{rekapStats.lancar}</div>
+                                <div className="stat-bar stat-bar-lancar" style={{ width: rekapData.length ? `${(rekapStats.lancar / rekapData.length) * 100}%` : '0%' }}></div>
                             </div>
-                            <div className="stat-value text-success">{rekapStats.lancar}</div>
-                            <div className="stat-bar stat-bar-lancar" style={{ width: rekapData.length ? `${(rekapStats.lancar / rekapData.length) * 100}%` : '0%' }}></div>
-                        </div>
-                        <div className="hafalan-stat-card">
-                            <div className="stat-header">
-                                <span className="stat-label">Sedang</span>
-                                <Clock size={18} className="stat-icon text-info" />
+                            <div className="hafalan-stat-card">
+                                <div className="stat-header">
+                                    <span className="stat-label">Sedang</span>
+                                    <Clock size={18} className="stat-icon text-info" />
+                                </div>
+                                <div className="stat-value text-info">{rekapStats.sedang}</div>
+                                <div className="stat-bar stat-bar-sedang" style={{ width: rekapData.length ? `${(rekapStats.sedang / rekapData.length) * 100}%` : '0%' }}></div>
                             </div>
-                            <div className="stat-value text-info">{rekapStats.sedang}</div>
-                            <div className="stat-bar stat-bar-sedang" style={{ width: rekapData.length ? `${(rekapStats.sedang / rekapData.length) * 100}%` : '0%' }}></div>
-                        </div>
-                        <div className="hafalan-stat-card">
-                            <div className="stat-header">
-                                <span className="stat-label">Lemah</span>
-                                <AlertCircle size={18} className="stat-icon text-warning" />
+                            <div className="hafalan-stat-card">
+                                <div className="stat-header">
+                                    <span className="stat-label">Lemah</span>
+                                    <AlertCircle size={18} className="stat-icon text-warning" />
+                                </div>
+                                <div className="stat-value text-warning">{rekapStats.lemah}</div>
+                                <div className="stat-bar stat-bar-lemah" style={{ width: rekapData.length ? `${(rekapStats.lemah / rekapData.length) * 100}%` : '0%' }}></div>
                             </div>
-                            <div className="stat-value text-warning">{rekapStats.lemah}</div>
-                            <div className="stat-bar stat-bar-lemah" style={{ width: rekapData.length ? `${(rekapStats.lemah / rekapData.length) * 100}%` : '0%' }}></div>
-                        </div>
-                        <div className="hafalan-stat-card">
-                            <div className="stat-header">
-                                <span className="stat-label">Baca Nazhor</span>
-                                <FileText size={18} className="stat-icon text-purple" />
+                            <div className="hafalan-stat-card">
+                                <div className="stat-header">
+                                    <span className="stat-label">Baca Nazhor</span>
+                                    <FileText size={18} className="stat-icon text-purple" />
+                                </div>
+                                <div className="stat-value text-purple">{rekapStats.bacaNazhor}</div>
+                                <div className="stat-bar stat-bar-nazhor" style={{ width: rekapData.length ? `${(rekapStats.bacaNazhor / rekapData.length) * 100}%` : '0%' }}></div>
                             </div>
-                            <div className="stat-value text-purple">{rekapStats.bacaNazhor}</div>
-                            <div className="stat-bar stat-bar-nazhor" style={{ width: rekapData.length ? `${(rekapStats.bacaNazhor / rekapData.length) * 100}%` : '0%' }}></div>
                         </div>
-                    </div>
+                    )}
 
                     {/* Rekap Table */}
                     <div className="table-container" id="rekap-print-area">

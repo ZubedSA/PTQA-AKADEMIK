@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { CheckCircle, XCircle, Search, RefreshCw, Clock, AlertCircle } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
+import { logUpdate } from '../../lib/auditLog'
 import MobileActionMenu from '../../components/ui/MobileActionMenu'
 import './Keuangan.css'
 
@@ -60,6 +61,15 @@ const PersetujuanDanaPage = () => {
 
             const { error } = await supabase.from('anggaran').update(payload).eq('id', selectedItem.id)
             if (error) throw error
+
+            // Audit Log - UPDATE (approval/rejection)
+            await logUpdate(
+                'anggaran',
+                selectedItem.nama_program,
+                `${action === 'approve' ? 'Setujui' : 'Tolak'} anggaran: ${selectedItem.nama_program} - Rp ${Number(action === 'approve' ? form.jumlah_disetujui : selectedItem.jumlah_diajukan).toLocaleString('id-ID')}`,
+                { status: selectedItem.status, jumlah_disetujui: selectedItem.jumlah_disetujui },
+                { status: payload.status, jumlah_disetujui: payload.jumlah_disetujui }
+            )
 
             setShowModal(false)
             fetchData()

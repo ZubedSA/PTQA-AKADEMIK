@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 import { generateLaporanPDF, generateKwitansiPDF } from '../../utils/pdfGenerator'
 import { sendWhatsApp, templateKonfirmasiPembayaran, templateTagihanSantri } from '../../utils/whatsapp'
+import { logCreate } from '../../lib/auditLog'
 import './Keuangan.css'
 
 const PembayaranSantriPage = () => {
@@ -182,6 +183,13 @@ const PembayaranSantriPage = () => {
                 const newStatus = amount >= Number(tagihan.jumlah) ? 'Lunas' : 'Sebagian'
                 await supabase.from('tagihan_santri').update({ status: newStatus }).eq('id', tagihan.id)
             }
+
+            // Audit Log - CREATE (payment)
+            await logCreate(
+                'pembayaran_santri',
+                selectedSantri?.nama,
+                `Pembayaran santri: ${selectedSantri?.nama} - ${selectedTagihan.map(t => t.kategori?.nama).join(', ')} - Rp ${Number(jumlahBayar).toLocaleString('id-ID')} (${form.metode})`
+            )
 
             setLastPayment({
                 jumlah: jumlahBayar,

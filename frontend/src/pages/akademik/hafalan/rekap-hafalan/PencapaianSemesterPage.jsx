@@ -20,7 +20,7 @@ const PencapaianSemesterPage = () => {
     const fetchOptions = async () => {
         const [semRes, halRes] = await Promise.all([
             supabase.from('semester').select('*').order('tahun_ajaran', { ascending: false }),
-            supabase.from('halaqoh').select('*').order('nama_halaqoh')
+            supabase.from('halaqoh').select('id, nama').order('nama')
         ])
         if (semRes.data) setSemester(semRes.data)
         if (halRes.data) setHalaqoh(halRes.data)
@@ -71,7 +71,7 @@ const PencapaianSemesterPage = () => {
                 >
                     <option value="">Pilih Halaqoh</option>
                     {halaqoh.map(h => (
-                        <option key={h.id} value={h.id}>{h.nama_halaqoh}</option>
+                        <option key={h.id} value={h.id}>{h.nama}</option>
                     ))}
                 </select>
             </div>

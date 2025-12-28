@@ -3,6 +3,7 @@ import { Plus, Search, Edit2, Trash2, TrendingUp, Download, RefreshCw } from 'lu
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 import { generateLaporanPDF } from '../../utils/pdfGenerator'
+import { logCreate, logUpdate, logDelete } from '../../lib/auditLog'
 import MobileActionMenu from '../../components/ui/MobileActionMenu'
 import './Keuangan.css'
 
@@ -55,6 +56,7 @@ const RealisasiDanaPage = () => {
     const handleSubmit = async (e) => {
         e.preventDefault()
         try {
+            const anggaran = anggaranList.find(a => a.id === form.anggaran_id)
             const payload = {
                 anggaran_id: form.anggaran_id,
                 jumlah_terpakai: parseFloat(form.jumlah_terpakai),
@@ -67,12 +69,20 @@ const RealisasiDanaPage = () => {
             if (editItem) {
                 const { error } = await supabase.from('realisasi_dana').update(payload).eq('id', editItem.id)
                 if (error) throw error
+
+                // Audit Log - UPDATE
+                await logUpdate(
+                    'realisasi_dana',
+                    payload.keperluan || anggaran?.nama_program,
+                    `Update realisasi dana: ${anggaran?.nama_program} - ${payload.keperluan} - Rp ${Number(payload.jumlah_terpakai).toLocaleString('id-ID')}`,
+                    { jumlah: editItem.jumlah_terpakai, keperluan: editItem.keperluan },
+                    { jumlah: payload.jumlah_terpakai, keperluan: payload.keperluan }
+                )
             } else {
                 const { error } = await supabase.from('realisasi_dana').insert([payload])
                 if (error) throw error
 
                 // Add to kas_pengeluaran
-                const anggaran = anggaranList.find(a => a.id === form.anggaran_id)
                 await supabase.from('kas_pengeluaran').insert([{
                     tanggal: form.tanggal,
                     keperluan: `Realisasi: ${anggaran?.nama_program} - ${form.keperluan}`,
@@ -81,6 +91,13 @@ const RealisasiDanaPage = () => {
                     keterangan: form.keterangan,
                     created_by: user?.id
                 }])
+
+                // Audit Log - CREATE
+                await logCreate(
+                    'realisasi_dana',
+                    payload.keperluan || anggaran?.nama_program,
+                    `Tambah realisasi dana: ${anggaran?.nama_program} - ${payload.keperluan} - Rp ${Number(payload.jumlah_terpakai).toLocaleString('id-ID')}`
+                )
             }
 
             setShowModal(false)
@@ -94,8 +111,20 @@ const RealisasiDanaPage = () => {
     const handleDelete = async (id) => {
         if (!confirm('Yakin hapus realisasi ini?')) return
         try {
+            const itemToDelete = data.find(d => d.id === id)
+
             const { error } = await supabase.from('realisasi_dana').delete().eq('id', id)
             if (error) throw error
+
+            // Audit Log - DELETE
+            if (itemToDelete) {
+                await logDelete(
+                    'realisasi_dana',
+                    itemToDelete.keperluan || itemToDelete.anggaran?.nama_program,
+                    `Hapus realisasi dana: ${itemToDelete.anggaran?.nama_program} - Rp ${Number(itemToDelete.jumlah_terpakai).toLocaleString('id-ID')}`
+                )
+            }
+
             fetchData()
         } catch (err) {
             alert('Error: ' + err.message)

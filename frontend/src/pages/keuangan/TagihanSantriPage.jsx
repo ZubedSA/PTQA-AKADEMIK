@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext'
 import { usePermissions } from '../../hooks/usePermissions'
 import { generateLaporanPDF } from '../../utils/pdfGenerator'
 import { sendWhatsApp, templateTagihanSantri, templatePengingatTagihan } from '../../utils/whatsapp'
+import { logCreate, logUpdate, logDelete } from '../../lib/auditLog'
 import MobileActionMenu from '../../components/ui/MobileActionMenu'
 import './Keuangan.css'
 
@@ -78,6 +79,7 @@ const TagihanSantriPage = () => {
         try {
             // Calculate Due Date: 10th of the selected month
             const dueDate = `${form.jatuh_tempo_bulan}-10`
+            const kategori = kategoriList.find(k => k.id === form.kategori_id)
 
             const basePayload = {
                 kategori_id: form.kategori_id,
@@ -91,6 +93,15 @@ const TagihanSantriPage = () => {
                 // Update Single
                 const { error } = await supabase.from('tagihan_santri').update(basePayload).eq('id', editItem.id)
                 if (error) throw error
+
+                // Audit Log - UPDATE
+                await logUpdate(
+                    'tagihan_santri',
+                    editItem.santri?.nama || 'Unknown',
+                    `Update tagihan santri: ${editItem.santri?.nama} - ${kategori?.nama} - Rp ${Number(basePayload.jumlah).toLocaleString('id-ID')}`,
+                    { jumlah: editItem.jumlah, kategori: editItem.kategori?.nama },
+                    { jumlah: basePayload.jumlah, kategori: kategori?.nama }
+                )
             } else {
                 // Bulk Insert by angkatan
                 if (!form.angkatan_id) {
@@ -99,6 +110,7 @@ const TagihanSantriPage = () => {
                 }
 
                 const targetSantris = santriList.filter(s => s.angkatan_id === form.angkatan_id)
+                const angkatan = angkatanList.find(a => a.id === form.angkatan_id)
 
                 if (targetSantris.length === 0) {
                     alert('Tidak ada santri pada angkatan yang dipilih')
@@ -114,6 +126,13 @@ const TagihanSantriPage = () => {
                 const { error } = await supabase.from('tagihan_santri').insert(bulkData)
                 if (error) throw error
 
+                // Audit Log - CREATE (bulk)
+                await logCreate(
+                    'tagihan_santri',
+                    `Bulk - ${angkatan?.nama}`,
+                    `Buat tagihan massal: ${targetSantris.length} santri - ${kategori?.nama} - Rp ${Number(basePayload.jumlah).toLocaleString('id-ID')}`
+                )
+
                 alert(`Berhasil membuat tagihan untuk ${targetSantris.length} santri`)
             }
 
@@ -128,8 +147,20 @@ const TagihanSantriPage = () => {
     const handleDelete = async (id) => {
         if (!confirm('Yakin hapus tagihan ini?')) return
         try {
+            const itemToDelete = data.find(d => d.id === id)
+
             const { error } = await supabase.from('tagihan_santri').delete().eq('id', id)
             if (error) throw error
+
+            // Audit Log - DELETE
+            if (itemToDelete) {
+                await logDelete(
+                    'tagihan_santri',
+                    itemToDelete.santri?.nama || 'Unknown',
+                    `Hapus tagihan: ${itemToDelete.santri?.nama} - ${itemToDelete.kategori?.nama} - Rp ${Number(itemToDelete.jumlah).toLocaleString('id-ID')}`
+                )
+            }
+
             fetchData()
         } catch (err) {
             alert('Error: ' + err.message)

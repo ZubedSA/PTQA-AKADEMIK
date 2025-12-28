@@ -37,10 +37,10 @@
   --text-muted: #64748b;
   --text-light: #94a3b8;
 
-  /* Sidebar Colors - Light Mode */
-  --sidebar-bg: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
-  --sidebar-text: #e2e8f0;
-  --sidebar-hover: rgba(255, 255, 255, 0.08);
+  /* Sidebar Colors - Premium Dark */
+  --sidebar-bg: linear-gradient(180deg, #022c22 0%, #064e3b 50%, #065f46 100%);
+  --sidebar-text: #d1fae5;
+  --sidebar-hover: rgba(16, 185, 129, 0.15);
 
   /* Premium Shadows */
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
@@ -218,14 +218,14 @@ select option:hover {
   top: 0;
   width: var(--sidebar-width);
   height: 100vh;
-  background: linear-gradient(135deg, #059669 0%, #34d399 20%, #059669 45%, #064e3b 100%);
-  color: white;
+  background: linear-gradient(180deg, #022c22 0%, #064e3b 40%, #065f46 100%);
+  color: #d1fae5;
   display: flex;
   flex-direction: column;
   z-index: 1001;
   transition: left 0.3s ease, width 0.25s ease;
   overflow: hidden;
-  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.1);
+  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.25);
 }
 
 .sidebar.collapsed {
@@ -303,15 +303,15 @@ select option:hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(16, 185, 129, 0.2);
   border-radius: 6px;
-  color: white;
+  color: #d1fae5;
   transition: all var(--transition-fast);
   flex-shrink: 0;
 }
 
 .sidebar-toggle:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(16, 185, 129, 0.35);
 }
 
 .sidebar.collapsed .sidebar-toggle svg {
@@ -358,14 +358,16 @@ select option:hover {
 }
 
 .nav-link:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
+  background: rgba(16, 185, 129, 0.2);
+  color: #ecfdf5;
 }
 
 .nav-link.active {
-  background: rgba(255, 255, 255, 0.15);
-  font-weight: 500;
-  color: white;
+  background: linear-gradient(90deg, rgba(16, 185, 129, 0.3) 0%, rgba(16, 185, 129, 0.15) 100%);
+  font-weight: 600;
+  color: #ecfdf5;
+  border-left: 3px solid #10b981;
+  margin-left: -3px;
 }
 
 .nav-icon {
@@ -1551,12 +1553,22 @@ select option:hover {
 
 /* Mobile Responsive - Show dropdown, hide buttons */
 @media (max-width: 768px) {
-  .action-buttons>.btn-icon {
-    display: none;
+
+  /* Hide ALL direct children buttons/links except mobile-action-wrapper */
+  .action-buttons>.btn-icon,
+  .action-buttons>button:not(.mobile-action-toggle),
+  .action-buttons>a:not(.mobile-action-toggle) {
+    display: none !important;
   }
 
+  /* Show kebab menu toggle on mobile */
   .action-buttons .mobile-action-toggle {
     display: flex;
+  }
+
+  /* Ensure mobile wrapper is visible */
+  .action-buttons .mobile-action-wrapper {
+    display: block;
   }
 }
 

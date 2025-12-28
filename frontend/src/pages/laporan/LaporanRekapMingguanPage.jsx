@@ -74,14 +74,26 @@ const LaporanRekapMingguanPage = () => {
 
             const santriIds = santriData.map(s => s.id)
             const { start, end } = getWeekRange()
+            console.log('📅 Date range:', start, 'to', end)
 
             // Get hafalan data for the week
-            const { data: hafalanData } = await supabase
+            const { data: hafalanData, error: hafalanError } = await supabase
                 .from('hafalan')
-                .select('santri_id, jenis, ayat_mulai, ayat_selesai, status')
+                .select('santri_id, jenis, ayat_mulai, ayat_selesai, status, tanggal')
                 .in('santri_id', santriIds)
                 .gte('tanggal', start)
                 .lte('tanggal', end)
+
+            if (hafalanError) {
+                console.error('❌ Hafalan query error:', hafalanError)
+            }
+
+            console.log('📖 Hafalan data count:', hafalanData?.length)
+            console.log('📋 RAW Hafalan data:', hafalanData)
+
+            // Debug: Log all unique jenis values
+            const uniqueJenis = [...new Set(hafalanData?.map(h => h.jenis) || [])]
+            console.log('🏷️ Unique jenis values in data:', uniqueJenis)
 
             // Get presensi data for the week
             const { data: presensiData } = await supabase
@@ -91,16 +103,45 @@ const LaporanRekapMingguanPage = () => {
                 .gte('tanggal', start)
                 .lte('tanggal', end)
 
+
             // Aggregate data per santri
             const aggregatedData = santriData.map(santri => {
                 const hafalans = hafalanData?.filter(h => h.santri_id === santri.id) || []
                 const presensis = presensiData?.filter(p => p.santri_id === santri.id) || []
 
-                const setoran = hafalans.filter(h => h.jenis === 'Setoran')
-                const murajaah = hafalans.filter(h => h.jenis === "Muroja'ah" || h.jenis === 'Murajaah')
+                // Fungsi match jenis yang lebih robust menggunakan includes()
+                const matchJenis = (jenis, target) => {
+                    const normalized = (jenis || '').toLowerCase().trim()
+                    let result = false
+                    switch (target) {
+                        case 'setoran':
+                            result = normalized === 'setoran' || !jenis
+                            break
+                        case 'murajaah':
+                            result = normalized.includes('muroja') || normalized.includes('muraja')
+                            break
+                        case 'ziyadah':
+                            result = normalized.includes('ziyadah')
+                            break
+                        default:
+                            result = false
+                    }
+                    return result
+                }
+
+                const setoran = hafalans.filter(h => matchJenis(h.jenis, 'setoran'))
+                const murajaah = hafalans.filter(h => matchJenis(h.jenis, 'murajaah'))
+                const ziyadahUlang = hafalans.filter(h => matchJenis(h.jenis, 'ziyadah'))
+
+                // Debug per santri
+                if (hafalans.length > 0) {
+                    console.log(`👤 ${santri.nama}: total=${hafalans.length}, setoran=${setoran.length}, murajaah=${murajaah.length}, ziyadah=${ziyadahUlang.length}`)
+                    console.log(`   Jenis values:`, hafalans.map(h => h.jenis))
+                }
 
                 const totalAyatSetoran = setoran.reduce((sum, h) => sum + Math.max(0, (h.ayat_selesai || 0) - (h.ayat_mulai || 0) + 1), 0)
                 const totalAyatMurajaah = murajaah.reduce((sum, h) => sum + Math.max(0, (h.ayat_selesai || 0) - (h.ayat_mulai || 0) + 1), 0)
+                const totalAyatZiyadah = ziyadahUlang.reduce((sum, h) => sum + Math.max(0, (h.ayat_selesai || 0) - (h.ayat_mulai || 0) + 1), 0)
 
                 const hadir = presensis.filter(p => p.status === 'hadir').length
                 const totalHari = presensis.length
@@ -123,7 +164,9 @@ const LaporanRekapMingguanPage = () => {
                     setoran_ayat: totalAyatSetoran,
                     murajaah_count: murajaah.length,
                     murajaah_ayat: totalAyatMurajaah,
-                    total_ayat: totalAyatSetoran + totalAyatMurajaah,
+                    ziyadah_count: ziyadahUlang.length,
+                    ziyadah_ayat: totalAyatZiyadah,
+                    total_ayat: totalAyatSetoran + totalAyatMurajaah + totalAyatZiyadah,
                     kehadiran: totalHari > 0 ? `${hadir}/${totalHari}` : '-',
                     status
                 }
@@ -285,6 +328,32 @@ const LaporanRekapMingguanPage = () => {
                 </div>
             </div>
 
+            {/* Info periode yang dipilih */}
+            {filters.halaqoh_id && (
+                <div style={{
+                    backgroundColor: '#f0fdf4',
+                    border: '1px solid #bbf7d0',
+                    borderRadius: '8px',
+                    padding: '12px 16px',
+                    marginBottom: '16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '16px',
+                    flexWrap: 'wrap'
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Calendar size={18} style={{ color: '#059669' }} />
+                        <strong>Periode:</strong> Minggu {filters.minggu} - {bulanOptions.find(b => b.value === filters.bulan)?.label} {filters.tahun}
+                    </div>
+                    <div style={{ color: '#166534' }}>
+                        📅 {(() => {
+                            const { start, end } = getWeekRange()
+                            return `${new Date(start).toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' })} s/d ${new Date(end).toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}`
+                        })()}
+                    </div>
+                </div>
+            )}
+
             <div className="card">
                 {loading ? (
                     <div className="loading-state">
@@ -306,6 +375,7 @@ const LaporanRekapMingguanPage = () => {
                                     <th>Nama Santri</th>
                                     <th style={{ textAlign: 'center' }}>Setoran</th>
                                     <th style={{ textAlign: 'center' }}>Murajaah</th>
+                                    <th style={{ textAlign: 'center' }}>Ziyadah Ulang</th>
                                     <th style={{ textAlign: 'center' }}>Total Ayat</th>
                                     <th style={{ textAlign: 'center' }}>Kehadiran</th>
                                     <th style={{ textAlign: 'center' }}>Status</th>
@@ -319,6 +389,7 @@ const LaporanRekapMingguanPage = () => {
                                         <td>{s.nama}</td>
                                         <td style={{ textAlign: 'center' }}>{s.setoran_count}x ({s.setoran_ayat} ayat)</td>
                                         <td style={{ textAlign: 'center' }}>{s.murajaah_count}x ({s.murajaah_ayat} ayat)</td>
+                                        <td style={{ textAlign: 'center' }}>{s.ziyadah_count || 0}x ({s.ziyadah_ayat || 0} ayat)</td>
                                         <td style={{ textAlign: 'center', fontWeight: '600' }}>{s.total_ayat}</td>
                                         <td style={{ textAlign: 'center' }}>{s.kehadiran}</td>
                                         <td style={{ textAlign: 'center' }}>
@@ -327,6 +398,26 @@ const LaporanRekapMingguanPage = () => {
                                     </tr>
                                 ))}
                             </tbody>
+                            <tfoot style={{ backgroundColor: '#f8f9fa', fontWeight: '600' }}>
+                                <tr>
+                                    <td colSpan={3} style={{ textAlign: 'right', paddingRight: '12px' }}>
+                                        <strong>TOTAL ({data.length} santri)</strong>
+                                    </td>
+                                    <td style={{ textAlign: 'center' }}>
+                                        {data.reduce((sum, s) => sum + s.setoran_count, 0)}x ({data.reduce((sum, s) => sum + s.setoran_ayat, 0)} ayat)
+                                    </td>
+                                    <td style={{ textAlign: 'center' }}>
+                                        {data.reduce((sum, s) => sum + s.murajaah_count, 0)}x ({data.reduce((sum, s) => sum + s.murajaah_ayat, 0)} ayat)
+                                    </td>
+                                    <td style={{ textAlign: 'center' }}>
+                                        {data.reduce((sum, s) => sum + (s.ziyadah_count || 0), 0)}x ({data.reduce((sum, s) => sum + (s.ziyadah_ayat || 0), 0)} ayat)
+                                    </td>
+                                    <td style={{ textAlign: 'center', color: '#059669' }}>
+                                        {data.reduce((sum, s) => sum + s.total_ayat, 0)}
+                                    </td>
+                                    <td colSpan={2}></td>
+                                </tr>
+                            </tfoot>
                         </table>
                     </div>
                 )}

@@ -18,7 +18,7 @@ const PencapaianBulananPage = () => {
     }, [])
 
     const fetchHalaqoh = async () => {
-        const { data } = await supabase.from('halaqoh').select('*').order('nama_halaqoh')
+        const { data } = await supabase.from('halaqoh').select('id, nama').order('nama')
         if (data) setHalaqoh(data)
     }
 
@@ -57,7 +57,7 @@ const PencapaianBulananPage = () => {
                 >
                     <option value="">Pilih Halaqoh</option>
                     {halaqoh.map(h => (
-                        <option key={h.id} value={h.id}>{h.nama_halaqoh}</option>
+                        <option key={h.id} value={h.id}>{h.nama}</option>
                     ))}
                 </select>
 

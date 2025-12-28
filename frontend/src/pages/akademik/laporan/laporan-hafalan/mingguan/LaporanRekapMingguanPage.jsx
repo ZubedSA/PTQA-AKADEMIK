@@ -1,116 +1,138 @@
 import { useState, useEffect } from 'react'
-import { Calendar, RefreshCw, Download, Printer, Users } from 'lucide-react'
+import { Calendar, RefreshCw, Download, Printer, Users, Search } from 'lucide-react'
 import { supabase } from '../../../../../lib/supabase'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
-
 import '../../../../../pages/laporan/Laporan.css'
 
-const bulanOptions = [
-    { value: 1, label: 'Januari' },
-    { value: 2, label: 'Februari' },
-    { value: 3, label: 'Maret' },
-    { value: 4, label: 'April' },
-    { value: 5, label: 'Mei' },
-    { value: 6, label: 'Juni' },
-    { value: 7, label: 'Juli' },
-    { value: 8, label: 'Agustus' },
-    { value: 9, label: 'September' },
-    { value: 10, label: 'Oktober' },
-    { value: 11, label: 'November' },
-    { value: 12, label: 'Desember' }
-]
-
 const LaporanRekapMingguanPage = () => {
+    // =============================================
+    // STATE
+    // =============================================
     const [loading, setLoading] = useState(false)
-    const [halaqoh, setHalaqoh] = useState([])
-    const [data, setData] = useState([])
+    const [halaqohList, setHalaqohList] = useState([])
+    const [reportData, setReportData] = useState([])
+
+    // Filter dengan rentang tanggal fleksibel
+    const today = new Date()
+    const weekAgo = new Date(today)
+    weekAgo.setDate(today.getDate() - 6)
+
     const [filters, setFilters] = useState({
         halaqoh_id: '',
-        minggu: Math.ceil(new Date().getDate() / 7),
-        bulan: new Date().getMonth() + 1,
-        tahun: new Date().getFullYear()
+        tanggal_mulai: weekAgo.toISOString().split('T')[0],
+        tanggal_akhir: today.toISOString().split('T')[0]
     })
 
+    // =============================================
+    // LOAD HALAQOH OPTIONS
+    // =============================================
     useEffect(() => {
-        fetchHalaqoh()
+        const loadHalaqoh = async () => {
+            const { data, error } = await supabase
+                .from('halaqoh')
+                .select('id, nama')
+                .order('nama')
+
+            if (error) {
+                console.error('Error loading halaqoh:', error)
+                return
+            }
+            setHalaqohList(data || [])
+        }
+        loadHalaqoh()
     }, [])
 
-    const fetchHalaqoh = async () => {
-        const { data } = await supabase.from('halaqoh').select('id, nama').order('nama')
-        if (data) setHalaqoh(data)
-    }
-
-    // Calculate week date range
-    const getWeekRange = () => {
-        const startDay = (filters.minggu - 1) * 7 + 1
-        const endDay = Math.min(filters.minggu * 7, new Date(filters.tahun, filters.bulan, 0).getDate())
-        const startDate = new Date(filters.tahun, filters.bulan - 1, startDay)
-        const endDate = new Date(filters.tahun, filters.bulan - 1, endDay)
-        return {
-            start: startDate.toISOString().split('T')[0],
-            end: endDate.toISOString().split('T')[0]
-        }
-    }
-
-    const fetchData = async () => {
+    // =============================================
+    // FETCH REPORT DATA
+    // =============================================
+    const fetchReportData = async () => {
         if (!filters.halaqoh_id) return
+        if (!filters.tanggal_mulai || !filters.tanggal_akhir) return
+
         setLoading(true)
 
         try {
-            // Get santri in this halaqoh
-            const { data: santriData } = await supabase
+            // STEP 1: Ambil daftar santri aktif di halaqoh
+            const { data: santriList, error: santriError } = await supabase
                 .from('santri')
                 .select('id, nama, nis')
                 .eq('halaqoh_id', filters.halaqoh_id)
                 .eq('status', 'Aktif')
                 .order('nama')
 
-            if (!santriData || santriData.length === 0) {
-                setData([])
+            if (santriError) throw santriError
+
+            if (!santriList || santriList.length === 0) {
+                setReportData([])
                 setLoading(false)
                 return
             }
 
-            const santriIds = santriData.map(s => s.id)
-            const { start, end } = getWeekRange()
+            const santriIds = santriList.map(s => s.id)
 
-            // Get hafalan data for the week
-            const { data: hafalanData } = await supabase
+            // STEP 2: Ambil data hafalan dalam rentang tanggal
+            const { data: hafalanList, error: hafalanError } = await supabase
                 .from('hafalan')
-                .select('santri_id, jenis, ayat_mulai, ayat_selesai, status')
+                .select('id, santri_id, jenis, ayat_mulai, ayat_selesai, status, tanggal')
                 .in('santri_id', santriIds)
-                .gte('tanggal', start)
-                .lte('tanggal', end)
+                .gte('tanggal', filters.tanggal_mulai)
+                .lte('tanggal', filters.tanggal_akhir)
 
-            // Get presensi data for the week
-            const { data: presensiData } = await supabase
+            if (hafalanError) throw hafalanError
+
+            // STEP 3: Ambil data presensi dalam rentang tanggal
+            const { data: presensiList, error: presensiError } = await supabase
                 .from('presensi')
-                .select('santri_id, status')
+                .select('santri_id, status, tanggal')
                 .in('santri_id', santriIds)
-                .gte('tanggal', start)
-                .lte('tanggal', end)
+                .gte('tanggal', filters.tanggal_mulai)
+                .lte('tanggal', filters.tanggal_akhir)
 
-            // Aggregate data per santri
-            const aggregatedData = santriData.map(santri => {
-                const hafalans = hafalanData?.filter(h => h.santri_id === santri.id) || []
-                const presensis = presensiData?.filter(p => p.santri_id === santri.id) || []
+            if (presensiError) console.error('Presensi error:', presensiError)
 
-                const setoran = hafalans.filter(h => h.jenis === 'Setoran')
-                const murajaah = hafalans.filter(h => h.jenis === "Muroja'ah" || h.jenis === 'Murajaah')
+            // STEP 4: Proses dan agregasi data per santri
+            const processedData = santriList.map(santri => {
+                // Filter data untuk santri ini
+                const santriHafalan = (hafalanList || []).filter(h => h.santri_id === santri.id)
+                const santriPresensi = (presensiList || []).filter(p => p.santri_id === santri.id)
 
-                const totalAyatSetoran = setoran.reduce((sum, h) => sum + Math.max(0, (h.ayat_selesai || 0) - (h.ayat_mulai || 0) + 1), 0)
-                const totalAyatMurajaah = murajaah.reduce((sum, h) => sum + Math.max(0, (h.ayat_selesai || 0) - (h.ayat_mulai || 0) + 1), 0)
+                // Inisialisasi counter
+                let setoranCount = 0, setoranAyat = 0
+                let murajaahCount = 0, murajaahAyat = 0
+                let ziyadahCount = 0, ziyadahAyat = 0
 
-                const hadir = presensis.filter(p => p.status === 'hadir').length
-                const totalHari = presensis.length
+                // Hitung per jenis hafalan
+                santriHafalan.forEach(h => {
+                    const jenis = (h.jenis || '').toLowerCase().trim()
+                    const jumlahAyat = Math.max(0, (h.ayat_selesai || 0) - (h.ayat_mulai || 0) + 1)
 
-                // Determine status based on performance
+                    if (jenis === 'setoran' || jenis === '') {
+                        setoranCount++
+                        setoranAyat += jumlahAyat
+                    } else if (jenis.includes('muroja') || jenis.includes('muraja')) {
+                        murajaahCount++
+                        murajaahAyat += jumlahAyat
+                    } else if (jenis.includes('ziyadah')) {
+                        ziyadahCount++
+                        ziyadahAyat += jumlahAyat
+                    }
+                })
+
+                // Hitung kehadiran
+                const totalHari = santriPresensi.length
+                const hadir = santriPresensi.filter(p =>
+                    p.status?.toLowerCase() === 'hadir'
+                ).length
+
+                // Tentukan status berdasarkan performa
                 let status = 'Belum Ada Data'
-                if (hafalans.length > 0) {
-                    const lancar = hafalans.filter(h => h.status === 'Lancar').length
-                    const total = hafalans.length
-                    const ratio = lancar / total
+                if (santriHafalan.length > 0) {
+                    const lancar = santriHafalan.filter(h =>
+                        h.status?.toLowerCase() === 'lancar'
+                    ).length
+                    const ratio = lancar / santriHafalan.length
+
                     if (ratio >= 0.8) status = 'Sangat Baik'
                     else if (ratio >= 0.6) status = 'Baik'
                     else if (ratio >= 0.4) status = 'Cukup'
@@ -118,29 +140,43 @@ const LaporanRekapMingguanPage = () => {
                 }
 
                 return {
-                    ...santri,
-                    setoran_count: setoran.length,
-                    setoran_ayat: totalAyatSetoran,
-                    murajaah_count: murajaah.length,
-                    murajaah_ayat: totalAyatMurajaah,
-                    total_ayat: totalAyatSetoran + totalAyatMurajaah,
+                    id: santri.id,
+                    nis: santri.nis || '-',
+                    nama: santri.nama,
+                    setoran_count: setoranCount,
+                    setoran_ayat: setoranAyat,
+                    murajaah_count: murajaahCount,
+                    murajaah_ayat: murajaahAyat,
+                    ziyadah_count: ziyadahCount,
+                    ziyadah_ayat: ziyadahAyat,
+                    total_ayat: setoranAyat + murajaahAyat + ziyadahAyat,
                     kehadiran: totalHari > 0 ? `${hadir}/${totalHari}` : '-',
-                    status
+                    status: status
                 }
             })
 
-            setData(aggregatedData)
-        } catch (err) {
-            console.error('Error fetching data:', err.message)
+            setReportData(processedData)
+
+        } catch (error) {
+            console.error('Error fetching report:', error)
+            alert('Gagal memuat data: ' + error.message)
         } finally {
             setLoading(false)
         }
     }
 
+    // =============================================
+    // TRIGGER FETCH ON FILTER CHANGE (REAL-TIME)
+    // =============================================
     useEffect(() => {
-        if (filters.halaqoh_id) fetchData()
-    }, [filters.halaqoh_id, filters.minggu, filters.bulan, filters.tahun])
+        if (filters.halaqoh_id && filters.tanggal_mulai && filters.tanggal_akhir) {
+            fetchReportData()
+        }
+    }, [filters.halaqoh_id, filters.tanggal_mulai, filters.tanggal_akhir])
 
+    // =============================================
+    // STATUS BADGE STYLING
+    // =============================================
     const getStatusBadgeClass = (status) => {
         switch (status) {
             case 'Sangat Baik': return 'badge-success'
@@ -151,14 +187,15 @@ const LaporanRekapMingguanPage = () => {
         }
     }
 
+    // =============================================
+    // GENERATE PDF
+    // =============================================
     const generatePDF = () => {
-        if (data.length === 0) return
+        if (reportData.length === 0) return
 
-        const doc = new jsPDF()
+        const doc = new jsPDF('landscape')
         const pageWidth = doc.internal.pageSize.getWidth()
-        const selectedHalaqoh = halaqoh.find(h => h.id === filters.halaqoh_id)
-        const { start, end } = getWeekRange()
-        const bulanNama = new Date(filters.tahun, filters.bulan - 1).toLocaleDateString('id-ID', { month: 'long' })
+        const selectedHalaqoh = halaqohList.find(h => h.id === filters.halaqoh_id)
 
         // Header
         doc.setFillColor(5, 150, 105)
@@ -166,73 +203,83 @@ const LaporanRekapMingguanPage = () => {
         doc.setTextColor(255)
         doc.setFontSize(14)
         doc.setFont('helvetica', 'bold')
-        doc.text('LAPORAN REKAP MINGGUAN', pageWidth / 2, 12, { align: 'center' })
+        doc.text('LAPORAN REKAP HAFALAN MINGGUAN', pageWidth / 2, 12, { align: 'center' })
         doc.setFontSize(10)
         doc.setFont('helvetica', 'normal')
-        doc.text('PTQA Batuan - Si-Taqua', pageWidth / 2, 19, { align: 'center' })
+        doc.text('Si-Taqua - PTQA Batuan', pageWidth / 2, 19, { align: 'center' })
 
         // Info
         doc.setTextColor(0)
         doc.setFontSize(10)
         doc.text(`Halaqoh: ${selectedHalaqoh?.nama || '-'}`, 14, 35)
-        doc.text(`Periode: Minggu ${filters.minggu} - ${bulanNama} ${filters.tahun}`, 14, 42)
-        doc.text(`Tanggal: ${new Date(start).toLocaleDateString('id-ID')} s/d ${new Date(end).toLocaleDateString('id-ID')}`, 14, 49)
+        doc.text(`Periode: ${new Date(filters.tanggal_mulai).toLocaleDateString('id-ID')} s/d ${new Date(filters.tanggal_akhir).toLocaleDateString('id-ID')}`, 14, 42)
 
         // Table
         autoTable(doc, {
-            startY: 57,
-            head: [['No', 'NIS', 'Nama', 'Setoran', 'Murajaah', 'Total Ayat', 'Kehadiran', 'Status']],
-            body: data.map((s, i) => [
+            startY: 50,
+            head: [['No', 'NIS', 'Nama Santri', 'Setoran', 'Muroja\'ah', 'Ziyadah Ulang', 'Total Ayat', 'Kehadiran', 'Status']],
+            body: reportData.map((row, i) => [
                 i + 1,
-                s.nis,
-                s.nama,
-                `${s.setoran_count}x (${s.setoran_ayat})`,
-                `${s.murajaah_count}x (${s.murajaah_ayat})`,
-                s.total_ayat,
-                s.kehadiran,
-                s.status
+                row.nis,
+                row.nama,
+                `${row.setoran_count}x (${row.setoran_ayat} ayat)`,
+                `${row.murajaah_count}x (${row.murajaah_ayat} ayat)`,
+                `${row.ziyadah_count}x (${row.ziyadah_ayat} ayat)`,
+                row.total_ayat,
+                row.kehadiran,
+                row.status
             ]),
             theme: 'grid',
-            headStyles: { fillColor: [5, 150, 105] },
+            headStyles: { fillColor: [5, 150, 105], fontSize: 8 },
             styles: { fontSize: 8 },
             columnStyles: {
                 0: { cellWidth: 10 },
-                1: { cellWidth: 20 },
-                5: { halign: 'center' },
-                6: { halign: 'center' }
-            },
-            margin: { left: 14, right: 14 }
+                6: { halign: 'center' },
+                7: { halign: 'center' }
+            }
         })
 
-        // Footer
-        const finalY = doc.previousAutoTable.finalY + 15
-        doc.setFontSize(8)
-        doc.setFont('helvetica', 'italic')
-        doc.text(`Total: ${data.length} santri`, 14, finalY)
-        doc.text(`Dicetak: ${new Date().toLocaleDateString('id-ID')} - Si-Taqua PTQA Batuan`, pageWidth / 2, finalY + 8, { align: 'center' })
+        // Footer totals
+        const finalY = doc.previousAutoTable.finalY + 10
+        doc.setFontSize(9)
+        doc.text(`Total Santri: ${reportData.length}`, 14, finalY)
+        doc.text(`Dicetak: ${new Date().toLocaleDateString('id-ID')}`, pageWidth - 50, finalY)
 
-        doc.save(`Rekap_Mingguan_${filters.tahun}_${filters.bulan}_Minggu${filters.minggu}.pdf`)
+        doc.save(`Laporan_Mingguan_${filters.tanggal_mulai}_${filters.tanggal_akhir}.pdf`)
     }
 
+    // =============================================
+    // RENDER
+    // =============================================
     return (
         <div className="laporan-page">
+            {/* HEADER */}
             <div className="page-header">
                 <div>
                     <h1 className="page-title">
                         <Calendar className="title-icon blue" /> Laporan Rekap Mingguan
                     </h1>
-                    <p className="page-subtitle">Rekap hafalan per minggu</p>
+                    <p className="page-subtitle">Rekap hafalan per rentang tanggal</p>
                 </div>
                 <div className="header-actions">
-                    <button className="btn btn-primary" disabled={data.length === 0} onClick={generatePDF}>
+                    <button
+                        className="btn btn-primary"
+                        disabled={reportData.length === 0}
+                        onClick={generatePDF}
+                    >
                         <Download size={18} /> Download PDF
                     </button>
-                    <button className="btn btn-outline" disabled={data.length === 0} onClick={() => window.print()}>
+                    <button
+                        className="btn btn-outline"
+                        disabled={reportData.length === 0}
+                        onClick={() => window.print()}
+                    >
                         <Printer size={18} /> Print
                     </button>
                 </div>
             </div>
 
+            {/* FILTERS */}
             <div className="filter-section">
                 <div className="form-group">
                     <label className="form-label">Halaqoh *</label>
@@ -242,59 +289,85 @@ const LaporanRekapMingguanPage = () => {
                         onChange={e => setFilters({ ...filters, halaqoh_id: e.target.value })}
                     >
                         <option value="">Pilih Halaqoh</option>
-                        {halaqoh.map(h => (
+                        {halaqohList.map(h => (
                             <option key={h.id} value={h.id}>{h.nama}</option>
                         ))}
                     </select>
                 </div>
 
                 <div className="form-group">
-                    <label className="form-label">Minggu</label>
-                    <select
-                        className="form-control"
-                        value={filters.minggu}
-                        onChange={e => setFilters({ ...filters, minggu: parseInt(e.target.value) })}
-                    >
-                        <option value={1}>Minggu 1 (1-7)</option>
-                        <option value={2}>Minggu 2 (8-14)</option>
-                        <option value={3}>Minggu 3 (15-21)</option>
-                        <option value={4}>Minggu 4 (22-28)</option>
-                        <option value={5}>Minggu 5 (29+)</option>
-                    </select>
-                </div>
-                <div className="form-group">
-                    <label className="form-label">Bulan</label>
-                    <select
-                        className="form-control"
-                        value={filters.bulan}
-                        onChange={e => setFilters({ ...filters, bulan: parseInt(e.target.value) })}
-                    >
-                        {bulanOptions.map(b => (
-                            <option key={b.value} value={b.value}>{b.label}</option>
-                        ))}
-                    </select>
-                </div>
-                <div className="form-group">
-                    <label className="form-label">Tahun</label>
+                    <label className="form-label">Tanggal Mulai</label>
                     <input
-                        type="number"
+                        type="date"
                         className="form-control"
-                        value={filters.tahun}
-                        onChange={e => setFilters({ ...filters, tahun: parseInt(e.target.value) })}
+                        value={filters.tanggal_mulai}
+                        onChange={e => setFilters({ ...filters, tanggal_mulai: e.target.value })}
                     />
+                </div>
+
+                <div className="form-group">
+                    <label className="form-label">Tanggal Akhir</label>
+                    <input
+                        type="date"
+                        className="form-control"
+                        value={filters.tanggal_akhir}
+                        onChange={e => setFilters({ ...filters, tanggal_akhir: e.target.value })}
+                    />
+                </div>
+
+                <div className="form-group" style={{ alignSelf: 'flex-end' }}>
+                    <button
+                        className="btn btn-primary"
+                        onClick={fetchReportData}
+                        disabled={!filters.halaqoh_id || loading}
+                    >
+                        <Search size={18} /> Tampilkan
+                    </button>
                 </div>
             </div>
 
+            {/* PERIOD INFO */}
+            {filters.halaqoh_id && filters.tanggal_mulai && filters.tanggal_akhir && (
+                <div style={{
+                    backgroundColor: '#f0fdf4',
+                    border: '1px solid #bbf7d0',
+                    borderRadius: '8px',
+                    padding: '12px 16px',
+                    marginBottom: '16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                }}>
+                    <Calendar size={18} style={{ color: '#059669' }} />
+                    <strong>Periode:</strong>
+                    <span style={{ color: '#166534' }}>
+                        {new Date(filters.tanggal_mulai).toLocaleDateString('id-ID', {
+                            weekday: 'short', day: 'numeric', month: 'short', year: 'numeric'
+                        })}
+                        {' s/d '}
+                        {new Date(filters.tanggal_akhir).toLocaleDateString('id-ID', {
+                            weekday: 'short', day: 'numeric', month: 'short', year: 'numeric'
+                        })}
+                    </span>
+                </div>
+            )}
+
+            {/* DATA TABLE */}
             <div className="card">
                 {loading ? (
                     <div className="loading-state">
                         <RefreshCw className="spin" size={24} />
                         <span>Memuat data...</span>
                     </div>
-                ) : data.length === 0 ? (
+                ) : !filters.halaqoh_id ? (
                     <div className="empty-state">
                         <Users size={48} />
-                        <p>Pilih halaqoh untuk melihat laporan</p>
+                        <p>Pilih halaqoh dan rentang tanggal untuk melihat laporan</p>
+                    </div>
+                ) : reportData.length === 0 ? (
+                    <div className="empty-state">
+                        <Users size={48} />
+                        <p>Tidak ada data untuk periode yang dipilih</p>
                     </div>
                 ) : (
                     <div className="table-container">
@@ -305,28 +378,65 @@ const LaporanRekapMingguanPage = () => {
                                     <th>NIS</th>
                                     <th>Nama Santri</th>
                                     <th style={{ textAlign: 'center' }}>Setoran</th>
-                                    <th style={{ textAlign: 'center' }}>Murajaah</th>
+                                    <th style={{ textAlign: 'center' }}>Muroja'ah</th>
+                                    <th style={{ textAlign: 'center' }}>Ziyadah Ulang</th>
                                     <th style={{ textAlign: 'center' }}>Total Ayat</th>
                                     <th style={{ textAlign: 'center' }}>Kehadiran</th>
                                     <th style={{ textAlign: 'center' }}>Status</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {data.map((s, i) => (
-                                    <tr key={s.id}>
-                                        <td>{i + 1}</td>
-                                        <td>{s.nis}</td>
-                                        <td>{s.nama}</td>
-                                        <td style={{ textAlign: 'center' }}>{s.setoran_count}x ({s.setoran_ayat} ayat)</td>
-                                        <td style={{ textAlign: 'center' }}>{s.murajaah_count}x ({s.murajaah_ayat} ayat)</td>
-                                        <td style={{ textAlign: 'center', fontWeight: '600' }}>{s.total_ayat}</td>
-                                        <td style={{ textAlign: 'center' }}>{s.kehadiran}</td>
+                                {reportData.map((row, index) => (
+                                    <tr key={row.id}>
+                                        <td>{index + 1}</td>
+                                        <td>{row.nis}</td>
+                                        <td>{row.nama}</td>
                                         <td style={{ textAlign: 'center' }}>
-                                            <span className={`badge ${getStatusBadgeClass(s.status)}`}>{s.status}</span>
+                                            {row.setoran_count}x ({row.setoran_ayat} ayat)
+                                        </td>
+                                        <td style={{ textAlign: 'center' }}>
+                                            {row.murajaah_count}x ({row.murajaah_ayat} ayat)
+                                        </td>
+                                        <td style={{ textAlign: 'center' }}>
+                                            {row.ziyadah_count}x ({row.ziyadah_ayat} ayat)
+                                        </td>
+                                        <td style={{ textAlign: 'center', fontWeight: '600' }}>
+                                            {row.total_ayat}
+                                        </td>
+                                        <td style={{ textAlign: 'center' }}>
+                                            {row.kehadiran}
+                                        </td>
+                                        <td style={{ textAlign: 'center' }}>
+                                            <span className={`badge ${getStatusBadgeClass(row.status)}`}>
+                                                {row.status}
+                                            </span>
                                         </td>
                                     </tr>
                                 ))}
                             </tbody>
+                            <tfoot style={{ backgroundColor: '#f8f9fa', fontWeight: '600' }}>
+                                <tr>
+                                    <td colSpan={3} style={{ textAlign: 'right', paddingRight: '12px' }}>
+                                        <strong>TOTAL ({reportData.length} santri)</strong>
+                                    </td>
+                                    <td style={{ textAlign: 'center' }}>
+                                        {reportData.reduce((sum, r) => sum + r.setoran_count, 0)}x
+                                        ({reportData.reduce((sum, r) => sum + r.setoran_ayat, 0)} ayat)
+                                    </td>
+                                    <td style={{ textAlign: 'center' }}>
+                                        {reportData.reduce((sum, r) => sum + r.murajaah_count, 0)}x
+                                        ({reportData.reduce((sum, r) => sum + r.murajaah_ayat, 0)} ayat)
+                                    </td>
+                                    <td style={{ textAlign: 'center' }}>
+                                        {reportData.reduce((sum, r) => sum + r.ziyadah_count, 0)}x
+                                        ({reportData.reduce((sum, r) => sum + r.ziyadah_ayat, 0)} ayat)
+                                    </td>
+                                    <td style={{ textAlign: 'center', color: '#059669' }}>
+                                        {reportData.reduce((sum, r) => sum + r.total_ayat, 0)}
+                                    </td>
+                                    <td colSpan={2}></td>
+                                </tr>
+                            </tfoot>
                         </table>
                     </div>
                 )}

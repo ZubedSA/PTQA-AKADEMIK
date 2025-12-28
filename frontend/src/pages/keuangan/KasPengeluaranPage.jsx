@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 import { usePermissions } from '../../hooks/usePermissions'
 import { generateLaporanPDF } from '../../utils/pdfGenerator'
+import { logCreate, logUpdate, logDelete } from '../../lib/auditLog'
 import MobileActionMenu from '../../components/ui/MobileActionMenu'
 import './Keuangan.css'
 
@@ -96,9 +97,25 @@ const KasPengeluaranPage = () => {
             if (editItem) {
                 const { error } = await supabase.from('kas_pengeluaran').update(payload).eq('id', editItem.id)
                 if (error) throw error
+
+                // Audit Log - UPDATE
+                await logUpdate(
+                    'kas_pengeluaran',
+                    payload.keperluan,
+                    `Update pengeluaran: ${payload.keperluan} - Rp ${Number(payload.jumlah).toLocaleString('id-ID')}`,
+                    { keperluan: editItem.keperluan, jumlah: editItem.jumlah, kategori: editItem.kategori },
+                    { keperluan: payload.keperluan, jumlah: payload.jumlah, kategori: payload.kategori }
+                )
             } else {
                 const { error } = await supabase.from('kas_pengeluaran').insert([payload])
                 if (error) throw error
+
+                // Audit Log - CREATE
+                await logCreate(
+                    'kas_pengeluaran',
+                    payload.keperluan,
+                    `Tambah pengeluaran: ${payload.keperluan} - Rp ${Number(payload.jumlah).toLocaleString('id-ID')}`
+                )
             }
 
             setShowModal(false)
@@ -112,8 +129,20 @@ const KasPengeluaranPage = () => {
     const handleDelete = async (id) => {
         if (!confirm('Yakin hapus data ini?')) return
         try {
+            const itemToDelete = data.find(d => d.id === id)
+
             const { error } = await supabase.from('kas_pengeluaran').delete().eq('id', id)
             if (error) throw error
+
+            // Audit Log - DELETE
+            if (itemToDelete) {
+                await logDelete(
+                    'kas_pengeluaran',
+                    itemToDelete.keperluan,
+                    `Hapus pengeluaran: ${itemToDelete.keperluan} - Rp ${Number(itemToDelete.jumlah).toLocaleString('id-ID')}`
+                )
+            }
+
             fetchData()
         } catch (err) {
             alert('Error: ' + err.message)

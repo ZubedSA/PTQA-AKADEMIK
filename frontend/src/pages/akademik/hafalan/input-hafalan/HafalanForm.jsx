@@ -207,6 +207,7 @@ const HafalanForm = () => {
             } else {
                 const { error } = await supabase.from('hafalan').insert([payload])
                 if (error) throw error
+
                 const santriForLog = santriList.find(s => s.id === formData.santri_id)
                 await logCreate('hafalan', santriForLog?.nama || 'Santri', `Tambah hafalan: ${santriForLog?.nama || 'Santri'} - ${formData.surah_mulai}`)
 
