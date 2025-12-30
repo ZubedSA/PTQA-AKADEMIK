@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
     ChevronLeft, User, Phone, Mail, Save, Loader,
-    GraduationCap, BookOpen
+    GraduationCap, BookOpen, LogOut
 } from 'lucide-react'
 import { supabase } from '../../../lib/supabase'
 import { useAuth } from '../../../context/AuthContext'
@@ -15,8 +15,9 @@ import '../WaliPortal.css'
  * Wali bisa edit no HP dan email, tidak bisa edit data santri
  */
 const ProfilWaliPage = () => {
-    const { user, userProfile } = useAuth()
+    const { user, userProfile, signOut } = useAuth()
     const { showToast } = useToast()
+    const navigate = useNavigate()
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
     const [santriList, setSantriList] = useState([])
@@ -264,6 +265,26 @@ const ProfilWaliPage = () => {
                     <BookOpen size={18} />
                     <span>Data santri tidak dapat diubah melalui portal ini. Hubungi admin jika ada perubahan data.</span>
                 </div>
+            </div>
+
+            {/* Logout Section */}
+            <div className="wali-section" style={{ marginTop: '16px' }}>
+                <button
+                    onClick={async () => {
+                        try {
+                            await signOut()
+                            navigate('/login')
+                        } catch (error) {
+                            console.error('Logout error:', error)
+                            showToast('Gagal keluar: ' + error.message, 'error')
+                        }
+                    }}
+                    className="wali-btn wali-btn-logout"
+                    style={{ width: '100%' }}
+                >
+                    <LogOut size={18} />
+                    Keluar dari Akun
+                </button>
             </div>
 
             <style>{`

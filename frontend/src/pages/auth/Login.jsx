@@ -8,17 +8,12 @@ const Login = () => {
     const navigate = useNavigate()
     const { signIn, signUp } = useAuth()
 
-    // Force light mode on login page - useLayoutEffect runs synchronously
+    // Force light mode on login page - PERMANEN, tidak restore
     useLayoutEffect(() => {
-        const savedTheme = localStorage.getItem('ptqa-theme')
+        // Set light mode langsung
         document.documentElement.setAttribute('data-theme', 'light')
-
-        // Restore theme when leaving login page
-        return () => {
-            if (savedTheme) {
-                document.documentElement.setAttribute('data-theme', savedTheme)
-            }
-        }
+        // Hapus saved theme untuk mencegah flash dark mode
+        localStorage.setItem('ptqa-theme', 'light')
     }, [])
 
     const [emailOrPhone, setEmailOrPhone] = useState('')

@@ -657,6 +657,16 @@
     box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
 }
 
+.wali-btn-logout {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: #fff;
+}
+
+.wali-btn-logout:hover {
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+    transform: translateY(-1px);
+}
+
 /* ==================== FORM ==================== */
 .wali-form-group {
     margin-bottom: 20px;
