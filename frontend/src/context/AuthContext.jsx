@@ -190,7 +190,7 @@ export const AuthProvider = ({ children }) => {
             // If user is admin (either in roles array or single role), grant access to all dashboards
             if (roles.includes('admin') || data.role === 'admin') {
                 // Admin can switch to any dashboard
-                roles = ['admin', 'guru', 'bendahara', 'wali']
+                roles = ['admin', 'guru', 'bendahara', 'pengurus', 'wali']
             }
 
             setUserProfile({

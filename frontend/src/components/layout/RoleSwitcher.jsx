@@ -48,6 +48,14 @@ const roleConfig = {
         path: '/dashboard/keuangan',
         description: 'Kelola keuangan'
     },
+    pengurus: {
+        label: 'Pengurus',
+        icon: Shield,
+        color: '#ea4335',
+        bgColor: 'rgba(234, 67, 53, 0.1)',
+        path: '/dashboard/pengurus',
+        description: 'Pembinaan santri'
+    },
     wali: {
         label: 'Wali Santri',
         icon: Users,
