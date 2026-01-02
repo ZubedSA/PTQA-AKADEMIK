@@ -46,7 +46,8 @@ import {
     Newspaper,
     Archive,
     HeartHandshake, // For OTA
-    Send // For Penyaluran
+    Send, // For Penyaluran
+    ShieldAlert
 } from 'lucide-react'
 import './Sidebar.css'
 
@@ -62,6 +63,7 @@ const adminMenuItems = [
         label: 'Users & Roles',
         children: [
             { path: '/users', icon: Users, label: 'Manajemen User' },
+            { path: '/security', icon: ShieldAlert, label: 'Akun Mencurigakan' },
             { path: '/roles', icon: Shield, label: 'Roles & Akses' },
         ]
     },

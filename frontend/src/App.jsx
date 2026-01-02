@@ -43,6 +43,7 @@ import BackupPage from './pages/backup/BackupPage'
 import SystemStatusPage from './pages/system/SystemStatusPage'
 // Admin Pages
 import UsersPage from './pages/users/UsersPage'
+import SuspiciousAccountsPage from './pages/admin/SuspiciousAccountsPage'
 // Keuangan Pages
 import KasPemasukanPage from './pages/keuangan/KasPemasukanPage'
 import KasPengeluaranPage from './pages/keuangan/KasPengeluaranPage'
@@ -196,6 +197,13 @@ function App() {
                   <Route path="/users" element={
                     <ProtectedRoute roles={['admin']}>
                       <UsersPage />
+                    </ProtectedRoute>
+                  } />
+
+                  {/* Suspicious Accounts (Security) */}
+                  <Route path="/security" element={
+                    <ProtectedRoute roles={['admin']}>
+                      <SuspiciousAccountsPage />
                     </ProtectedRoute>
                   } />
 

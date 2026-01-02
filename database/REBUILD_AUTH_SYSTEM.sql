@@ -416,6 +416,13 @@ DROP POLICY IF EXISTS "service_role_bypass" ON user_profiles;
 ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
 
 -- SOLUSI: Gunakan pendekatan sederhana tanpa self-reference
+
+-- Explicitly drop policies to be created to ensure idempotency
+DROP POLICY IF EXISTS "authenticated_select_all" ON user_profiles;
+DROP POLICY IF EXISTS "user_update_own" ON user_profiles;
+DROP POLICY IF EXISTS "service_role_all" ON user_profiles;
+DROP POLICY IF EXISTS "authenticated_insert" ON user_profiles;
+
 -- Policy 1: Semua authenticated user bisa SELECT semua profiles
 -- (Admin perlu lihat semua user, dan user perlu lihat profile sendiri)
 CREATE POLICY "authenticated_select_all" ON user_profiles
