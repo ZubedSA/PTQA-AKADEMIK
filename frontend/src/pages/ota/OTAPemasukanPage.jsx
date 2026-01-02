@@ -8,6 +8,7 @@ import { useToast } from '../../context/ToastContext'
 import Spinner from '../../components/ui/Spinner'
 import EmptyState from '../../components/ui/EmptyState'
 import { exportToExcel, exportToCSV } from '../../utils/exportUtils'
+import { useOTAPemasukan, useOrangTuaAsuh } from '../../hooks/useOTA'
 import jsPDF from 'jspdf'
 import 'jspdf-autotable'
 import './OTA.css'
@@ -19,9 +20,6 @@ import './OTA.css'
 const OTAPemasukanPage = () => {
     const showToast = useToast()
     const [loading, setLoading] = useState(true)
-    const [data, setData] = useState([])
-    const [otaList, setOtaList] = useState([])
-
     const [search, setSearch] = useState('')
     const [filterMonth, setFilterMonth] = useState(new Date().getMonth() + 1)
     const [filterYear, setFilterYear] = useState(new Date().getFullYear())
@@ -39,36 +37,45 @@ const OTAPemasukanPage = () => {
 
     const [showDownloadMenu, setShowDownloadMenu] = useState(false)
 
+    const [data, setData] = useState([])
+    const [otaList, setOtaList] = useState([])
+
     useEffect(() => {
-        fetchAllData()
+        fetchData()
+        fetchOTA()
     }, [])
 
-    const fetchAllData = async () => {
-        setLoading(true)
+    const fetchData = async () => {
         try {
-            const [pemasukanRes, otaRes] = await Promise.all([
-                supabase
-                    .from('ota_pemasukan')
-                    .select('*, ota:ota_id(id, nama, no_hp)')
-                    .order('tanggal', { ascending: false }),
-                supabase
-                    .from('orang_tua_asuh')
-                    .select('id, nama, no_hp')
-                    .eq('status', true)
-                    .order('nama')
-            ])
-
-            if (pemasukanRes.error) throw pemasukanRes.error
-            if (otaRes.error) throw otaRes.error
-
-            setData(pemasukanRes.data || [])
-            setOtaList(otaRes.data || [])
+            const { data, error } = await supabase
+                .from('ota_pemasukan')
+                .select('*, ota:orang_tua_asuh!ota_id(id, nama, no_hp)')
+                .order('tanggal', { ascending: false })
+            if (error) throw error
+            setData(data || [])
         } catch (err) {
-            showToast.error('Gagal memuat data: ' + err.message)
+            console.error('Error fetching data:', err)
+            showToast.error('Gagal memuat data pemasukan')
         } finally {
             setLoading(false)
         }
     }
+
+    const fetchOTA = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('orang_tua_asuh')
+                .select('*')
+                .eq('status', true)
+                .order('nama')
+            if (error) throw error
+            setOtaList(data || [])
+        } catch (err) {
+            console.error('Error fetching OTA:', err)
+        }
+    }
+
+    // Removed fetchAllData manual call
 
     // Filter data
     const filteredData = useMemo(() => {
@@ -199,7 +206,7 @@ _PTQ Al-Usymuni Batuan_`
             }
 
             closeModal()
-            fetchAllData()
+            fetchData()
         } catch (err) {
             showToast.error('Gagal menyimpan: ' + err.message)
         } finally {
@@ -218,7 +225,7 @@ _PTQ Al-Usymuni Batuan_`
 
             if (error) throw error
             showToast.success('Pemasukan berhasil dihapus')
-            fetchAllData()
+            fetchData()
         } catch (err) {
             showToast.error('Gagal menghapus: ' + err.message)
         }
@@ -289,18 +296,46 @@ _PTQ Al-Usymuni Batuan_`
     return (
         <div className="ota-container">
             {/* Header */}
-            <div className="ota-header">
-                <div className="ota-header-top">
-                    <div>
-                        <h1>Pemasukan OTA</h1>
-                        <p>Kelola data pemasukan dana dari Orang Tua Asuh</p>
+            <div style={{
+                position: 'relative',
+                overflow: 'hidden',
+                borderRadius: '16px',
+                padding: '24px',
+                color: 'white',
+                background: 'linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%)',
+                boxShadow: '0 10px 40px -10px rgba(16, 185, 129, 0.5)',
+                marginBottom: '24px'
+            }}>
+                <div style={{ position: 'absolute', top: 0, right: 0, width: '180px', height: '180px', background: 'rgba(255,255,255,0.1)', borderRadius: '50%', transform: 'translate(30%, -50%)' }} />
+                <div style={{ position: 'absolute', bottom: 0, left: 0, width: '120px', height: '120px', background: 'rgba(255,255,255,0.08)', borderRadius: '50%', transform: 'translate(-30%, 50%)' }} />
+
+                <div style={{ position: 'relative', zIndex: 10, display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <div style={{ width: '56px', height: '56px', borderRadius: '14px', background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <ArrowUpCircle size={26} />
+                        </div>
+                        <div>
+                            <h1 style={{ fontSize: '1.5rem', fontWeight: 700, margin: 0 }}>Pemasukan OTA</h1>
+                            <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.85)', margin: '4px 0 0 0' }}>Kelola data pemasukan dana dari Orang Tua Asuh</p>
+                        </div>
                     </div>
-                    <button className="ota-btn ota-btn-primary" onClick={openAdd}>
-                        <Plus size={18} />
-                        Tambah Pemasukan
-                    </button>
+                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                        <button
+                            onClick={fetchData}
+                            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 16px', borderRadius: '10px', fontSize: '0.875rem', fontWeight: 500, border: '1px solid rgba(255,255,255,0.3)', background: 'rgba(255,255,255,0.15)', color: 'white', cursor: 'pointer' }}
+                        >
+                            <RefreshCw size={16} /> Refresh
+                        </button>
+                        <button
+                            onClick={openAdd}
+                            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 16px', borderRadius: '10px', fontSize: '0.875rem', fontWeight: 500, border: 'none', background: 'white', color: '#059669', cursor: 'pointer' }}
+                        >
+                            <Plus size={18} /> Tambah Pemasukan
+                        </button>
+                    </div>
                 </div>
             </div>
+
 
             {/* Summary */}
             <div className="ota-summary-grid">

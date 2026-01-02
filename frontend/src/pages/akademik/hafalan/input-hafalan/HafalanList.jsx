@@ -8,7 +8,7 @@ import DownloadButton from '../../../../components/ui/DownloadButton'
 import { exportToExcel, exportToCSV } from '../../../../utils/exportUtils'
 import { generateLaporanPDF } from '../../../../utils/pdfGenerator'
 
-import './Hafalan.css'
+import '../../../santri/Santri.css'
 
 
 const HafalanList = () => {
@@ -24,7 +24,6 @@ const HafalanList = () => {
     const [activeTab, setActiveTab] = useState(initialTab) // 'list' or 'rekap'
     const [activeFilter, setActiveFilter] = useState('Semua')
     const [stats, setStats] = useState({ total: 0, lancar: 0, sedang: 0, lemah: 0, bacaNazhor: 0 })
-    const [showDashboard, setShowDashboard] = useState(true) // Toggle untuk mini dashboard
 
     // Date filter for Input Hafalan tab
     const [dateFilter, setDateFilter] = useState({ dari: '', sampai: '' })
@@ -639,8 +638,7 @@ _PTQA Batuan_`
     }
 
     return (
-        <div className="hafalan-page">
-            {/* Header */}
+        <div className="santri-page">
             {/* Header */}
             <div className="page-header">
                 <div>
@@ -657,726 +655,617 @@ _PTQA Batuan_`
                 </div>
             </div>
 
-            {/* Toggle Dashboard Button */}
-            <div className="dashboard-toggle-wrapper" style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' }}>
-                <button
-                    className="btn btn-sm btn-outline"
-                    onClick={() => setShowDashboard(!showDashboard)}
-                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', fontSize: '13px' }}
-                >
-                    {showDashboard ? <EyeOff size={14} /> : <Eye size={14} />}
-                    {showDashboard ? 'Sembunyikan Dashboard' : 'Tampilkan Dashboard'}
-                </button>
-            </div>
-
             {/* ==================== INPUT HAFALAN TAB ==================== */}
             {activeTab === 'list' && (
-                <>
-                    {/* Mini Dashboard Stats - dengan toggle */}
-                    {showDashboard && (
-                        <div className="hafalan-stats">
-                            <div className="hafalan-stat-card">
-                                <div className="stat-header">
-                                    <span className="stat-label">Total</span>
-                                    <FileText size={18} className="stat-icon" />
-                                </div>
-                                <div className="stat-value">{stats.total}</div>
-                                <div className="stat-bar stat-bar-total"></div>
+                <div className="table-container">
+                    <div className="table-header" style={{ flexDirection: 'column', gap: '16px', alignItems: 'stretch' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+                            {/* Filter Tabs */}
+                            <div className="hafalan-filter-tabs" style={{ margin: 0 }}>
+                                <button className={`filter-tab ${activeFilter === 'Semua' ? 'active' : ''}`} onClick={() => setActiveFilter('Semua')}>Semua</button>
+                                <button className={`filter-tab ${activeFilter === 'Setoran' ? 'active' : ''}`} onClick={() => setActiveFilter('Setoran')}>Setoran</button>
+                                <button className={`filter-tab ${activeFilter === "Muroja'ah" ? 'active' : ''}`} onClick={() => setActiveFilter("Muroja'ah")}>Muroja'ah</button>
+                                <button className={`filter-tab ${activeFilter === 'Ziyadah Ulang' ? 'active' : ''}`} onClick={() => setActiveFilter('Ziyadah Ulang')}>Ziyadah Ulang</button>
                             </div>
-                            <div className="hafalan-stat-card">
-                                <div className="stat-header">
-                                    <span className="stat-label">Lancar</span>
-                                    <CheckCircle size={18} className="stat-icon text-success" />
-                                </div>
-                                <div className="stat-value text-success">{stats.lancar}</div>
-                                <div className="stat-bar stat-bar-lancar" style={{ width: stats.total ? `${(stats.lancar / stats.total) * 100}%` : '0%' }}></div>
-                            </div>
-                            <div className="hafalan-stat-card">
-                                <div className="stat-header">
-                                    <span className="stat-label">Sedang</span>
-                                    <Clock size={18} className="stat-icon text-info" />
-                                </div>
-                                <div className="stat-value text-info">{stats.sedang}</div>
-                                <div className="stat-bar stat-bar-sedang" style={{ width: stats.total ? `${(stats.sedang / stats.total) * 100}%` : '0%' }}></div>
-                            </div>
-                            <div className="hafalan-stat-card">
-                                <div className="stat-header">
-                                    <span className="stat-label">Lemah</span>
-                                    <AlertCircle size={18} className="stat-icon text-warning" />
-                                </div>
-                                <div className="stat-value text-warning">{stats.lemah}</div>
-                                <div className="stat-bar stat-bar-lemah" style={{ width: stats.total ? `${(stats.lemah / stats.total) * 100}%` : '0%' }}></div>
-                            </div>
-                            <div className="hafalan-stat-card">
-                                <div className="stat-header">
-                                    <span className="stat-label">Baca Nazhor</span>
-                                    <FileText size={18} className="stat-icon text-purple" />
-                                </div>
-                                <div className="stat-value text-purple">{stats.bacaNazhor}</div>
-                                <div className="stat-bar stat-bar-nazhor" style={{ width: stats.total ? `${(stats.bacaNazhor / stats.total) * 100}%` : '0%' }}></div>
-                            </div>
-                        </div>
-                    )}
 
-                    {/* Filter Tabs */}
-                    <div className="hafalan-filter-tabs">
-                        <button className={`filter-tab ${activeFilter === 'Semua' ? 'active' : ''}`} onClick={() => setActiveFilter('Semua')}>Semua</button>
-                        <button className={`filter-tab ${activeFilter === 'Setoran' ? 'active' : ''}`} onClick={() => setActiveFilter('Setoran')}>Setoran</button>
-                        <button className={`filter-tab ${activeFilter === "Muroja'ah" ? 'active' : ''}`} onClick={() => setActiveFilter("Muroja'ah")}>Muroja'ah</button>
-                        <button className={`filter-tab ${activeFilter === 'Ziyadah Ulang' ? 'active' : ''}`} onClick={() => setActiveFilter('Ziyadah Ulang')}>Ziyadah Ulang</button>
-                    </div>
-
-                    {/* Date Filter */}
-                    <div className="date-filter-row">
-                        <div className="date-filter-group">
-                            <label><Calendar size={14} /> Dari Tanggal</label>
-                            <input
-                                type="date"
-                                className="form-control"
-                                value={dateFilter.dari}
-                                onChange={(e) => setDateFilter({ ...dateFilter, dari: e.target.value })}
-                            />
-
-                        </div>
-                        <div className="date-filter-group">
-                            <label><Calendar size={14} /> Sampai Tanggal</label>
-                            <input
-                                type="date"
-                                className="form-control"
-                                value={dateFilter.sampai}
-                                onChange={(e) => setDateFilter({ ...dateFilter, sampai: e.target.value })}
-                            />
-
-                        </div>
-                        {(dateFilter.dari || dateFilter.sampai) && (
-                            <button className="btn btn-secondary btn-sm" onClick={() => setDateFilter({ dari: '', sampai: '' })}>
-                                <RefreshCw size={14} /> Reset
-                            </button>
-                        )}
-                    </div>
-
-                    {/* Halaqoh Filter */}
-                    <div className="halaqoh-filter-row">
-                        <div className="filter-group">
-                            <label><Filter size={14} /> Filter Halaqoh</label>
-                            <select
-                                className="form-control"
-                                value={filterHalaqoh}
-                                onChange={(e) => setFilterHalaqoh(e.target.value)}
-                            >
-                                <option value="">Semua Halaqoh</option>
-                                {halaqohList.map(h => <option key={h.id} value={h.id}>{h.nama}</option>)}
-                            </select>
-                        </div>
-                        {filterHalaqoh && (
-                            <button className="btn btn-secondary btn-sm" onClick={() => setFilterHalaqoh('')}>
-                                <RefreshCw size={14} /> Reset
-                            </button>
-                        )}
-                    </div>
-
-                    {/* Search and Add Buttons */}
-                    <div className="hafalan-toolbar">
-                        <div className="table-search">
-                            <Search size={18} className="search-icon" />
-                            <input type="text" placeholder="Cari nama santri..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="search-input" />
-                        </div>
-                        <div className="toolbar-buttons toolbar-single-btn">
-                            <Link to="/hafalan/create?jenis=Setoran" className="btn btn-primary btn-hafalan btn-setoran-full">
-                                <Plus size={16} /> <span>Input Setoran</span>
+                            {/* Add Button */}
+                            <Link to="/hafalan/create?jenis=Setoran" className="btn btn-primary">
+                                <Plus size={16} /> Data Hafalan
                             </Link>
                         </div>
-                    </div>
 
-                    {/* Table */}
-                    <div className="table-container">
-                        <div className="table-wrapper">
-                            <table className="table">
-                                <thead>
-                                    <tr>
-                                        <th>Tanggal</th>
-                                        <th>Nama Santri</th>
-                                        <th>Kelas</th>
-                                        <th>Hafalan</th>
-                                        <th>Jenis</th>
-                                        <th>Status</th>
-                                        <th>Penguji</th>
-                                        <th>Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {loading ? (
-                                        <tr><td colSpan="8" className="text-center"><RefreshCw size={20} className="spin" /> Loading...</td></tr>
-                                    ) : filteredHafalan.length === 0 ? (
-                                        <tr><td colSpan="8" className="text-center">Tidak ada data hafalan</td></tr>
-                                    ) : (
-                                        filteredHafalan.map((item) => (
-                                            <tr key={item.id}>
-                                                <td>{item.tanggal}</td>
-                                                <td className="name-cell">{item.santri_nama}</td>
-                                                <td>{item.kelas_nama}</td>
-                                                <td>
-                                                    <div className="hafalan-info">
-                                                        <strong>Juz {item.juz_mulai || item.juz || '-'}{(item.juz_selesai && item.juz_selesai !== item.juz_mulai) ? ` - ${item.juz_selesai}` : ''}</strong>
-                                                        <span>{item.surah_mulai || item.surah || '-'}{(item.surah_selesai && item.surah_selesai !== item.surah_mulai) ? ` s/d ${item.surah_selesai}` : ''}</span>
-                                                        <span className="text-muted">Ayat {item.ayat_mulai || 1}-{item.ayat_selesai || 1}</span>
-                                                    </div>
-                                                </td>
-                                                <td><span className={`badge ${getJenisBadge(item.jenis)}`}>{item.jenis || 'Setoran'}</span></td>
-                                                <td><span className={`badge ${getStatusBadge(item.status)}`}>{item.status}</span></td>
-                                                <td>{item.penguji_nama}</td>
-                                                <td>
-                                                    <MobileActionMenu
-                                                        actions={[
-                                                            { icon: <MessageCircle size={16} />, label: 'WhatsApp', onClick: () => sendWhatsApp(item) },
-                                                            { icon: <Edit size={16} />, label: 'Edit', path: `/hafalan/${item.id}/edit` },
-                                                            { icon: <Trash2 size={16} />, label: 'Hapus', onClick: () => { setSelectedHafalan(item); setShowDeleteModal(true) }, danger: true }
-                                                        ]}
-                                                    >
-                                                        <button className="btn-icon btn-icon-success" title="Kirim WhatsApp" onClick={() => sendWhatsApp(item)}><MessageCircle size={16} /></button>
-                                                        <Link to={`/hafalan/${item.id}/edit`} className="btn-icon" title="Edit"><Edit size={16} /></Link>
-                                                        <button className="btn-icon btn-icon-danger" title="Hapus" onClick={() => { setSelectedHafalan(item); setShowDeleteModal(true) }}><Trash2 size={16} /></button>
-                                                    </MobileActionMenu>
-                                                </td>
-                                            </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
+                        {/* Filters Row */}
+                        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center', borderTop: '1px solid var(--border-light)', paddingTop: '16px' }}>
+                            {/* Date Filter */}
+                            <div className="date-filter-group">
+                                <input
+                                    type="date"
+                                    className="form-control"
+                                    value={dateFilter.dari}
+                                    onChange={(e) => setDateFilter({ ...dateFilter, dari: e.target.value })}
+                                />
+                            </div>
+                            <span className="text-muted">-</span>
+                            <div className="date-filter-group">
+                                <input
+                                    type="date"
+                                    className="form-control"
+                                    value={dateFilter.sampai}
+                                    onChange={(e) => setDateFilter({ ...dateFilter, sampai: e.target.value })}
+                                />
+                            </div>
+
+                            {/* Halaqoh Filter */}
+                            <div className="filter-group">
+                                <select
+                                    className="form-control"
+                                    value={filterHalaqoh}
+                                    onChange={(e) => setFilterHalaqoh(e.target.value)}
+                                >
+                                    <option value="">Semua Halaqoh</option>
+                                    {halaqohList.map(h => <option key={h.id} value={h.id}>{h.nama}</option>)}
+                                </select>
+                            </div>
+
+                            {(dateFilter.dari || dateFilter.sampai || filterHalaqoh) && (
+                                <button className="btn btn-secondary btn-sm" onClick={() => { setDateFilter({ dari: '', sampai: '' }); setFilterHalaqoh('') }}>
+                                    <RefreshCw size={14} /> Reset
+                                </button>
+                            )}
+
+                            {/* Search */}
+                            <div className="table-search" style={{ marginLeft: 'auto' }}>
+                                <Search size={18} className="search-icon" />
+                                <input
+                                    type="text"
+                                    placeholder="Cari santri..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="search-input"
+                                />
+                            </div>
                         </div>
                     </div>
-                </>
+                    <div className="table-wrapper">
+                        <table className="table">
+                            <thead>
+                                <tr>
+                                    <th>Tanggal</th>
+                                    <th>Nama Santri</th>
+                                    <th>Kelas</th>
+                                    <th>Hafalan</th>
+                                    <th>Jenis</th>
+                                    <th>Status</th>
+                                    <th>Penguji</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {loading ? (
+                                    <tr><td colSpan="8" className="text-center"><RefreshCw size={20} className="spin" /> Loading...</td></tr>
+                                ) : filteredHafalan.length === 0 ? (
+                                    <tr><td colSpan="8" className="text-center">Tidak ada data hafalan</td></tr>
+                                ) : (
+                                    filteredHafalan.map((item) => (
+                                        <tr key={item.id}>
+                                            <td>{item.tanggal}</td>
+                                            <td className="name-cell">{item.santri_nama}</td>
+                                            <td>{item.kelas_nama}</td>
+                                            <td>
+                                                <div className="hafalan-info">
+                                                    <strong>Juz {item.juz_mulai || item.juz || '-'}{(item.juz_selesai && item.juz_selesai !== item.juz_mulai) ? ` - ${item.juz_selesai}` : ''}</strong>
+                                                    <span>{item.surah_mulai || item.surah || '-'}{(item.surah_selesai && item.surah_selesai !== item.surah_mulai) ? ` s/d ${item.surah_selesai}` : ''}</span>
+                                                    <span className="text-muted">Ayat {item.ayat_mulai || 1}-{item.ayat_selesai || 1}</span>
+                                                </div>
+                                            </td>
+                                            <td><span className={`badge ${getJenisBadge(item.jenis)}`}>{item.jenis || 'Setoran'}</span></td>
+                                            <td><span className={`badge ${getStatusBadge(item.status)}`}>{item.status}</span></td>
+                                            <td>{item.penguji_nama}</td>
+                                            <td>
+                                                <MobileActionMenu
+                                                    actions={[
+                                                        { icon: <MessageCircle size={16} />, label: 'WhatsApp', onClick: () => sendWhatsApp(item) },
+                                                        { icon: <Edit size={16} />, label: 'Edit', path: `/hafalan/${item.id}/edit` },
+                                                        { icon: <Trash2 size={16} />, label: 'Hapus', onClick: () => { setSelectedHafalan(item); setShowDeleteModal(true) }, danger: true }
+                                                    ]}
+                                                >
+                                                    <button className="btn-icon btn-icon-success" title="Kirim WhatsApp" onClick={() => sendWhatsApp(item)}><MessageCircle size={16} /></button>
+                                                    <Link to={`/hafalan/${item.id}/edit`} className="btn-icon" title="Edit"><Edit size={16} /></Link>
+                                                    <button className="btn-icon btn-icon-danger" title="Hapus" onClick={() => { setSelectedHafalan(item); setShowDeleteModal(true) }}><Trash2 size={16} /></button>
+                                                </MobileActionMenu>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             )}
-
-
 
             {/* ==================== REKAP HAFALAN TAB ==================== */}
-            {activeTab === 'rekap' && (
-                <>
-                    {/* Rekap Filters */}
-                    <div className="rekap-filters">
-                        <div className="filter-group">
-                            <label className="filter-label"><Calendar size={14} /> Dari Tanggal</label>
-                            <input
-                                type="date"
-                                className="form-control"
-                                value={rekapFilters.tanggalMulai}
-                                onChange={(e) => setRekapFilters({ ...rekapFilters, tanggalMulai: e.target.value })}
-                            />
-                        </div>
-                        <div className="filter-group">
-                            <label className="filter-label"><Calendar size={14} /> Sampai Tanggal</label>
-                            <input
-                                type="date"
-                                className="form-control"
-                                value={rekapFilters.tanggalSelesai}
-                                onChange={(e) => setRekapFilters({ ...rekapFilters, tanggalSelesai: e.target.value })}
-                            />
-                        </div>
-                        <div className="filter-group">
-                            <label className="filter-label"><Filter size={14} /> Halaqoh</label>
-                            <select
-                                className="form-control"
-                                value={rekapFilters.halaqoh_id}
-                                onChange={(e) => setRekapFilters({ ...rekapFilters, halaqoh_id: e.target.value })}
-                            >
-                                <option value="">Semua Halaqoh</option>
-                                {halaqohList.map(h => <option key={h.id} value={h.id}>{h.nama}</option>)}
-                            </select>
-                        </div>
-                        <div className="filter-group">
-                            <label className="filter-label"><Search size={14} /> Nama Santri</label>
-                            <input
-                                type="text"
-                                className="form-control"
-                                placeholder="Cari nama..."
-                                value={rekapFilters.santri_nama}
-                                onChange={(e) => setRekapFilters({ ...rekapFilters, santri_nama: e.target.value })}
-                            />
-                        </div>
-                        <div className="filter-group filter-actions">
-                            <button className="btn btn-secondary" onClick={() => setRekapFilters({ tanggalMulai: '', tanggalSelesai: '', halaqoh_id: '', santri_nama: '' })}>
-                                <RefreshCw size={14} /> Reset
-                            </button>
-                            <div className="filter-group self-end">
-                                <label className="form-label text-transparent">Action</label>
-                                <div className="flex gap-2">
-                                    <button className="btn btn-outline" onClick={handlePrint}>
-                                        <Printer size={18} /> Print
-                                    </button>
-                                    <DownloadButton
-                                        onDownloadPDF={handleDownloadPDF}
-                                        onDownloadExcel={handleDownloadExcel}
-                                        onDownloadCSV={handleDownloadCSV}
-                                    />
+            {
+                activeTab === 'rekap' && (
+                    <>
+                        <div className="table-container" id="rekap-print-area">
+                            <div className="table-header" style={{ flexDirection: 'column', gap: '16px', alignItems: 'stretch' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+                                    <h3 className="table-title">Data Rekap ({rekapData.length} record)</h3>
+                                    <div className="table-actions" style={{ display: 'flex', gap: '8px' }}>
+                                        <button className="btn btn-outline" onClick={handlePrint}>
+                                            <Printer size={18} /> Print
+                                        </button>
+                                        <DownloadButton
+                                            onDownloadPDF={handleDownloadPDF}
+                                            onDownloadExcel={handleDownloadExcel}
+                                            onDownloadCSV={handleDownloadCSV}
+                                        />
+                                        <button
+                                            className="btn btn-success"
+                                            onClick={sendAllWhatsApp}
+                                            disabled={rekapData.length === 0}
+                                            title="Kirim massal ke semua data rekap"
+                                        >
+                                            <Send size={14} /> Kirim Semua WA
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
-                            <button
-                                className="btn btn-success"
-                                onClick={sendAllWhatsApp}
-                                disabled={rekapData.length === 0}
-                                title="Kirim massal ke semua data rekap"
-                            >
-                                <Send size={14} /> Kirim Semua WA
-                            </button>
-                        </div>
-                    </div>
 
-                    {/* Rekap Mini Dashboard - dengan toggle */}
-                    {showDashboard && (
-                        <div className="hafalan-stats">
-                            <div className="hafalan-stat-card">
-                                <div className="stat-header">
-                                    <span className="stat-label">Total Data</span>
-                                    <FileText size={18} className="stat-icon text-primary" />
-                                </div>
-                                <div className="stat-value">{rekapStats.totalData || rekapData.length}</div>
-                                <div className="stat-bar stat-bar-total"></div>
-                            </div>
-                            <div className="hafalan-stat-card">
-                                <div className="stat-header">
-                                    <span className="stat-label">Lancar</span>
-                                    <CheckCircle size={18} className="stat-icon text-success" />
-                                </div>
-                                <div className="stat-value text-success">{rekapStats.lancar}</div>
-                                <div className="stat-bar stat-bar-lancar" style={{ width: rekapData.length ? `${(rekapStats.lancar / rekapData.length) * 100}%` : '0%' }}></div>
-                            </div>
-                            <div className="hafalan-stat-card">
-                                <div className="stat-header">
-                                    <span className="stat-label">Sedang</span>
-                                    <Clock size={18} className="stat-icon text-info" />
-                                </div>
-                                <div className="stat-value text-info">{rekapStats.sedang}</div>
-                                <div className="stat-bar stat-bar-sedang" style={{ width: rekapData.length ? `${(rekapStats.sedang / rekapData.length) * 100}%` : '0%' }}></div>
-                            </div>
-                            <div className="hafalan-stat-card">
-                                <div className="stat-header">
-                                    <span className="stat-label">Lemah</span>
-                                    <AlertCircle size={18} className="stat-icon text-warning" />
-                                </div>
-                                <div className="stat-value text-warning">{rekapStats.lemah}</div>
-                                <div className="stat-bar stat-bar-lemah" style={{ width: rekapData.length ? `${(rekapStats.lemah / rekapData.length) * 100}%` : '0%' }}></div>
-                            </div>
-                            <div className="hafalan-stat-card">
-                                <div className="stat-header">
-                                    <span className="stat-label">Baca Nazhor</span>
-                                    <FileText size={18} className="stat-icon text-purple" />
-                                </div>
-                                <div className="stat-value text-purple">{rekapStats.bacaNazhor}</div>
-                                <div className="stat-bar stat-bar-nazhor" style={{ width: rekapData.length ? `${(rekapStats.bacaNazhor / rekapData.length) * 100}%` : '0%' }}></div>
-                            </div>
-                        </div>
-                    )}
+                                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center', borderTop: '1px solid var(--border-light)', paddingTop: '16px' }}>
+                                    <div className="date-filter-group">
+                                        <label style={{ fontSize: '0.8rem', marginRight: '6px' }}>Dari</label>
+                                        <input
+                                            type="date"
+                                            className="form-control"
+                                            value={rekapFilters.tanggalMulai}
+                                            onChange={(e) => setRekapFilters({ ...rekapFilters, tanggalMulai: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="date-filter-group">
+                                        <label style={{ fontSize: '0.8rem', marginRight: '6px' }}>Sampai</label>
+                                        <input
+                                            type="date"
+                                            className="form-control"
+                                            value={rekapFilters.tanggalSelesai}
+                                            onChange={(e) => setRekapFilters({ ...rekapFilters, tanggalSelesai: e.target.value })}
+                                        />
+                                    </div>
 
-                    {/* Rekap Table */}
-                    <div className="table-container" id="rekap-print-area">
-                        <div className="table-header">
-                            <h3 className="table-title">Data Rekap ({rekapData.length} record)</h3>
-                        </div>
-                        <div className="table-wrapper">
-                            <table className="table">
-                                <thead>
-                                    <tr>
-                                        <th>No</th>
-                                        <th>Tanggal</th>
-                                        <th>Nama Santri</th>
-                                        <th>Halaqoh</th>
-                                        <th>Hafalan</th>
-                                        <th>Jenis</th>
-                                        <th>Status</th>
-                                        <th>Penguji</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {loading ? (
-                                        <tr><td colSpan="8" className="text-center"><RefreshCw size={20} className="spin" /> Loading...</td></tr>
-                                    ) : rekapData.length === 0 ? (
-                                        <tr><td colSpan="8" className="text-center">Tidak ada data. Sesuaikan filter.</td></tr>
-                                    ) : (
-                                        rekapData.map((item, idx) => (
-                                            <tr key={item.id}>
-                                                <td>{idx + 1}</td>
-                                                <td>{item.tanggal}</td>
-                                                <td className="name-cell">{item.santri_nama}</td>
-                                                <td>{item.halaqoh_nama}</td>
-                                                <td>
-                                                    <div className="hafalan-info">
-                                                        <strong>Juz {item.juz_mulai || item.juz || '-'}{(item.juz_selesai && item.juz_selesai !== item.juz_mulai) ? ` - ${item.juz_selesai}` : ''}</strong>
-                                                        <span>{item.surah_mulai || item.surah || '-'}{(item.surah_selesai && item.surah_selesai !== item.surah_mulai) ? ` s/d ${item.surah_selesai}` : ''}</span>
-                                                        <span className="text-muted">Ayat {item.ayat_mulai || 1}-{item.ayat_selesai || 1}</span>
-                                                    </div>
-                                                </td>
-                                                <td><span className={`badge ${getJenisBadge(item.jenis)}`}>{item.jenis || 'Setoran'}</span></td>
-                                                <td><span className={`badge ${getStatusBadge(item.status)}`}>{item.status}</span></td>
-                                                <td>{item.penguji_nama}</td>
-                                            </tr>
-                                        ))
+                                    <div className="filter-group">
+                                        <select
+                                            className="form-control"
+                                            value={rekapFilters.halaqoh_id}
+                                            onChange={(e) => setRekapFilters({ ...rekapFilters, halaqoh_id: e.target.value })}
+                                        >
+                                            <option value="">Semua Halaqoh</option>
+                                            {halaqohList.map(h => <option key={h.id} value={h.id}>{h.nama}</option>)}
+                                        </select>
+                                    </div>
+
+                                    {(rekapFilters.tanggalMulai || rekapFilters.tanggalSelesai || rekapFilters.halaqoh_id || rekapFilters.santri_nama) && (
+                                        <button className="btn btn-secondary btn-sm" onClick={() => setRekapFilters({ tanggalMulai: '', tanggalSelesai: '', halaqoh_id: '', santri_nama: '' })}>
+                                            <RefreshCw size={14} /> Reset
+                                        </button>
                                     )}
-                                </tbody>
-                            </table>
+
+                                    <div className="table-search" style={{ marginLeft: 'auto' }}>
+                                        <Search size={18} className="search-icon" />
+                                        <input
+                                            type="text"
+                                            className="search-input"
+                                            placeholder="Cari nama..."
+                                            value={rekapFilters.santri_nama}
+                                            onChange={(e) => setRekapFilters({ ...rekapFilters, santri_nama: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="table-wrapper">
+                                <table className="table">
+                                    <thead>
+                                        <tr>
+                                            <th>No</th>
+                                            <th>Tanggal</th>
+                                            <th>Nama Santri</th>
+                                            <th>Halaqoh</th>
+                                            <th>Hafalan</th>
+                                            <th>Jenis</th>
+                                            <th>Status</th>
+                                            <th>Penguji</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {loading ? (
+                                            <tr><td colSpan="8" className="text-center"><RefreshCw size={20} className="spin" /> Loading...</td></tr>
+                                        ) : rekapData.length === 0 ? (
+                                            <tr><td colSpan="8" className="text-center">Tidak ada data. Sesuaikan filter.</td></tr>
+                                        ) : (
+                                            rekapData.map((item, idx) => (
+                                                <tr key={item.id}>
+                                                    <td>{idx + 1}</td>
+                                                    <td>{item.tanggal}</td>
+                                                    <td className="name-cell">{item.santri_nama}</td>
+                                                    <td>{item.halaqoh_nama}</td>
+                                                    <td>
+                                                        <div className="hafalan-info">
+                                                            <strong>Juz {item.juz_mulai || item.juz || '-'}{(item.juz_selesai && item.juz_selesai !== item.juz_mulai) ? ` - ${item.juz_selesai}` : ''}</strong>
+                                                            <span>{item.surah_mulai || item.surah || '-'}{(item.surah_selesai && item.surah_selesai !== item.surah_mulai) ? ` s/d ${item.surah_selesai}` : ''}</span>
+                                                            <span className="text-muted">Ayat {item.ayat_mulai || 1}-{item.ayat_selesai || 1}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td><span className={`badge ${getJenisBadge(item.jenis)}`}>{item.jenis || 'Setoran'}</span></td>
+                                                    <td><span className={`badge ${getStatusBadge(item.status)}`}>{item.status}</span></td>
+                                                    <td>{item.penguji_nama}</td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
-                    </div>
-                </>
-            )}
+                    </>
+                )
+            }
 
             {/* ==================== PENCAPAIAN TAB ==================== */}
-            {activeTab === 'pencapaian' && (
-                <>
-                    {/* Sub-Tab Buttons */}
-                    <div className="pencapaian-subtabs mb-4" style={{ display: 'flex', gap: '10px' }}>
-                        <button
-                            className={`btn ${pencapaianSubTab === 'input' ? 'btn-primary' : 'btn-secondary'}`}
-                            onClick={() => setPencapaianSubTab('input')}
-                        >
-                            📝 Input Pencapaian
-                        </button>
-                        <button
-                            className={`btn ${pencapaianSubTab === 'laporan' ? 'btn-primary' : 'btn-secondary'}`}
-                            onClick={() => setPencapaianSubTab('laporan')}
-                        >
-                            📊 Laporan Pencapaian
-                        </button>
-                    </div>
+            {
+                activeTab === 'pencapaian' && (
+                    <>
+                        {/* Sub-Tab Buttons */}
+                        <div className="pencapaian-subtabs mb-4" style={{ display: 'flex', gap: '10px' }}>
+                            <button
+                                className={`btn ${pencapaianSubTab === 'input' ? 'btn-primary' : 'btn-secondary'}`}
+                                onClick={() => setPencapaianSubTab('input')}
+                            >
+                                📝 Input Pencapaian
+                            </button>
+                            <button
+                                className={`btn ${pencapaianSubTab === 'laporan' ? 'btn-primary' : 'btn-secondary'}`}
+                                onClick={() => setPencapaianSubTab('laporan')}
+                            >
+                                📊 Laporan Pencapaian
+                            </button>
+                        </div>
 
-                    {/* ==================== INPUT PENCAPAIAN SUB-TAB ==================== */}
-                    {pencapaianSubTab === 'input' && (
-                        <>
-                            {/* Filter Bar */}
-                            <div className="filter-bar mb-4">
-                                <div className="filter-group">
-                                    <label>Kategori</label>
-                                    <select
-                                        value={pencapaianKategori}
-                                        onChange={(e) => setPencapaianKategori(e.target.value)}
-                                        className="form-select"
-                                    >
-                                        <option value="semester">Semester</option>
-                                        <option value="mingguan">Mingguan</option>
-                                        <option value="bulanan">Bulanan</option>
-                                    </select>
-                                </div>
-
-                                {/* Conditional: Semester */}
-                                {pencapaianKategori === 'semester' && (
+                        {/* ==================== INPUT PENCAPAIAN SUB-TAB ==================== */}
+                        {pencapaianSubTab === 'input' && (
+                            <>
+                                {/* Filter Bar */}
+                                <div className="filter-bar mb-4">
                                     <div className="filter-group">
-                                        <label>Pilih Semester</label>
+                                        <label>Kategori</label>
                                         <select
-                                            value={pencapaianSemester}
-                                            onChange={(e) => setPencapaianSemester(e.target.value)}
+                                            value={pencapaianKategori}
+                                            onChange={(e) => setPencapaianKategori(e.target.value)}
                                             className="form-select"
                                         >
-                                            <option value="">-- Pilih Semester --</option>
-                                            {semesterList.map(s => (
-                                                <option key={s.id} value={s.id}>
-                                                    {s.nama} - {s.tahun_ajaran} {s.is_active ? '(Aktif)' : ''}
+                                            <option value="semester">Semester</option>
+                                            <option value="mingguan">Mingguan</option>
+                                            <option value="bulanan">Bulanan</option>
+                                        </select>
+                                    </div>
+
+                                    {/* Conditional: Semester */}
+                                    {pencapaianKategori === 'semester' && (
+                                        <div className="filter-group">
+                                            <label>Pilih Semester</label>
+                                            <select
+                                                value={pencapaianSemester}
+                                                onChange={(e) => setPencapaianSemester(e.target.value)}
+                                                className="form-select"
+                                            >
+                                                <option value="">-- Pilih Semester --</option>
+                                                {semesterList.map(s => (
+                                                    <option key={s.id} value={s.id}>
+                                                        {s.nama} - {s.tahun_ajaran} {s.is_active ? '(Aktif)' : ''}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    )}
+
+                                    {/* Conditional: Mingguan - Date Range */}
+                                    {pencapaianKategori === 'mingguan' && (
+                                        <>
+                                            <div className="filter-group">
+                                                <label>Dari Tanggal</label>
+                                                <input
+                                                    type="date"
+                                                    value={pencapaianTanggal.dari}
+                                                    onChange={(e) => setPencapaianTanggal(prev => ({ ...prev, dari: e.target.value }))}
+                                                    className="form-input"
+                                                />
+                                            </div>
+                                            <div className="filter-group">
+                                                <label>Sampai Tanggal</label>
+                                                <input
+                                                    type="date"
+                                                    value={pencapaianTanggal.sampai}
+                                                    onChange={(e) => setPencapaianTanggal(prev => ({ ...prev, sampai: e.target.value }))}
+                                                    className="form-input"
+                                                />
+                                            </div>
+                                        </>
+                                    )}
+
+                                    {/* Conditional: Bulanan - Month List */}
+                                    {pencapaianKategori === 'bulanan' && (
+                                        <div className="filter-group">
+                                            <label>Pilih Bulan</label>
+                                            <select
+                                                value={pencapaianBulan}
+                                                onChange={(e) => setPencapaianBulan(e.target.value)}
+                                                className="form-select"
+                                            >
+                                                <option value="">-- Pilih Bulan --</option>
+                                                <option value="01">Januari</option>
+                                                <option value="02">Februari</option>
+                                                <option value="03">Maret</option>
+                                                <option value="04">April</option>
+                                                <option value="05">Mei</option>
+                                                <option value="06">Juni</option>
+                                                <option value="07">Juli</option>
+                                                <option value="08">Agustus</option>
+                                                <option value="09">September</option>
+                                                <option value="10">Oktober</option>
+                                                <option value="11">November</option>
+                                                <option value="12">Desember</option>
+                                            </select>
+                                        </div>
+                                    )}
+
+                                    <div className="filter-group">
+                                        <label>Halaqoh</label>
+                                        <select
+                                            value={pencapaianHalaqoh}
+                                            onChange={(e) => setPencapaianHalaqoh(e.target.value)}
+                                            className="form-select"
+                                        >
+                                            <option value="">Semua Halaqoh</option>
+                                            {halaqohList.map(h => (
+                                                <option key={h.id} value={h.id}>
+                                                    {h.nama} {h.musyrif ? `(${h.musyrif.nama})` : ''}
                                                 </option>
                                             ))}
                                         </select>
                                     </div>
-                                )}
-
-                                {/* Conditional: Mingguan - Date Range */}
-                                {pencapaianKategori === 'mingguan' && (
-                                    <>
-                                        <div className="filter-group">
-                                            <label>Dari Tanggal</label>
-                                            <input
-                                                type="date"
-                                                value={pencapaianTanggal.dari}
-                                                onChange={(e) => setPencapaianTanggal(prev => ({ ...prev, dari: e.target.value }))}
-                                                className="form-input"
-                                            />
-                                        </div>
-                                        <div className="filter-group">
-                                            <label>Sampai Tanggal</label>
-                                            <input
-                                                type="date"
-                                                value={pencapaianTanggal.sampai}
-                                                onChange={(e) => setPencapaianTanggal(prev => ({ ...prev, sampai: e.target.value }))}
-                                                className="form-input"
-                                            />
-                                        </div>
-                                    </>
-                                )}
-
-                                {/* Conditional: Bulanan - Month List */}
-                                {pencapaianKategori === 'bulanan' && (
                                     <div className="filter-group">
-                                        <label>Pilih Bulan</label>
+                                        <label>Cari Santri</label>
+                                        <input
+                                            type="text"
+                                            placeholder="Ketik nama santri..."
+                                            value={pencapaianSearch}
+                                            onChange={(e) => setPencapaianSearch(e.target.value)}
+                                            className="form-input"
+                                        />
+                                    </div>
+                                    <div className="filter-group filter-action">
+                                        <button className="btn btn-primary btn-save" onClick={savePencapaian} disabled={savingPencapaian}>
+                                            {savingPencapaian ? <RefreshCw size={16} className="spin" /> : <Save size={16} />}
+                                            <span>{savingPencapaian ? 'Menyimpan...' : 'Simpan'}</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Pencapaian Table */}
+                                <div className="table-container">
+                                    <div className="table-header">
+                                        <h3 className="table-title"><Trophy size={20} /> Pencapaian Hafalan ({santriList.filter(s => s.nama.toLowerCase().includes(pencapaianSearch.toLowerCase()) && (pencapaianHalaqoh === '' || String(s.halaqoh_id) === String(pencapaianHalaqoh))).length} santri)</h3>
+                                    </div>
+
+                                    <div className="table-wrapper">
+                                        <table className="table pencapaian-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>No</th>
+                                                    <th>Nama Santri</th>
+                                                    <th>Kelas</th>
+                                                    <th>Jumlah Hafalan (Semester)</th>
+                                                    <th>Predikat</th>
+                                                    <th>Total Hafalan (Keseluruhan)</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {santriList.filter(s => s.nama.toLowerCase().includes(pencapaianSearch.toLowerCase()) && (pencapaianHalaqoh === '' || String(s.halaqoh_id) === String(pencapaianHalaqoh))).length === 0 ? (
+                                                    <tr><td colSpan="6" className="text-center">Tidak ada data santri</td></tr>
+                                                ) : (
+                                                    santriList
+                                                        .filter(s => s.nama.toLowerCase().includes(pencapaianSearch.toLowerCase()) && (pencapaianHalaqoh === '' || String(s.halaqoh_id) === String(pencapaianHalaqoh)))
+                                                        .map((santri, index) => (
+                                                            <tr key={santri.id}>
+                                                                <td>{index + 1}</td>
+                                                                <td className="name-cell">{santri.nama}</td>
+                                                                <td>{santri.kelas}</td>
+                                                                <td>
+                                                                    <input
+                                                                        type="text"
+                                                                        placeholder="Contoh: 3 Juz"
+                                                                        value={getCurrentPencapaianData()[santri.id]?.jumlah_hafalan || ''}
+                                                                        onChange={(e) => handlePencapaianChange(santri.id, 'jumlah_hafalan', e.target.value)}
+                                                                        className="form-input-sm"
+                                                                    />
+                                                                </td>
+                                                                <td>
+                                                                    <select
+                                                                        value={getCurrentPencapaianData()[santri.id]?.predikat || 'Baik'}
+                                                                        onChange={(e) => handlePencapaianChange(santri.id, 'predikat', e.target.value)}
+                                                                        className="form-select-sm"
+                                                                    >
+                                                                        <option value="Sangat Baik">Sangat Baik</option>
+                                                                        <option value="Baik">Baik</option>
+                                                                        <option value="Cukup">Cukup</option>
+                                                                        <option value="Kurang">Kurang</option>
+                                                                        <option value="Buruk">Buruk</option>
+                                                                    </select>
+                                                                </td>
+                                                                <td>
+                                                                    <input
+                                                                        type="text"
+                                                                        placeholder="Contoh: 10 Juz"
+                                                                        value={getCurrentPencapaianData()[santri.id]?.total_hafalan || ''}
+                                                                        onChange={(e) => handlePencapaianChange(santri.id, 'total_hafalan', e.target.value)}
+                                                                        className="form-input-sm"
+                                                                    />
+                                                                </td>
+                                                            </tr>
+                                                        ))
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </>
+                        )}
+
+                        {/* ==================== LAPORAN PENCAPAIAN SUB-TAB ==================== */}
+                        {pencapaianSubTab === 'laporan' && (
+                            <>
+                                {/* Filter Bar for Laporan */}
+                                <div className="filter-bar mb-4">
+                                    <div className="filter-group">
+                                        <label>Kategori</label>
                                         <select
-                                            value={pencapaianBulan}
-                                            onChange={(e) => setPencapaianBulan(e.target.value)}
+                                            value={pencapaianKategori}
+                                            onChange={(e) => setPencapaianKategori(e.target.value)}
                                             className="form-select"
                                         >
-                                            <option value="">-- Pilih Bulan --</option>
-                                            <option value="01">Januari</option>
-                                            <option value="02">Februari</option>
-                                            <option value="03">Maret</option>
-                                            <option value="04">April</option>
-                                            <option value="05">Mei</option>
-                                            <option value="06">Juni</option>
-                                            <option value="07">Juli</option>
-                                            <option value="08">Agustus</option>
-                                            <option value="09">September</option>
-                                            <option value="10">Oktober</option>
-                                            <option value="11">November</option>
-                                            <option value="12">Desember</option>
+                                            <option value="semester">Semester</option>
+                                            <option value="mingguan">Mingguan</option>
+                                            <option value="bulanan">Bulanan</option>
                                         </select>
                                     </div>
-                                )}
 
-                                <div className="filter-group">
-                                    <label>Halaqoh</label>
-                                    <select
-                                        value={pencapaianHalaqoh}
-                                        onChange={(e) => setPencapaianHalaqoh(e.target.value)}
-                                        className="form-select"
+                                    {pencapaianKategori === 'semester' && (
+                                        <div className="filter-group">
+                                            <label>Pilih Semester</label>
+                                            <select
+                                                value={pencapaianSemester}
+                                                onChange={(e) => setPencapaianSemester(e.target.value)}
+                                                className="form-select"
+                                            >
+                                                <option value="">-- Pilih Semester --</option>
+                                                {semesterList.map(s => (
+                                                    <option key={s.id} value={s.id}>
+                                                        {s.nama} - {s.tahun_ajaran} {s.is_active ? '(Aktif)' : ''}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    )}
+
+                                    {pencapaianKategori === 'mingguan' && (
+                                        <>
+                                            <div className="filter-group">
+                                                <label>Dari Tanggal</label>
+                                                <input
+                                                    type="date"
+                                                    value={pencapaianTanggal.dari}
+                                                    onChange={(e) => setPencapaianTanggal(prev => ({ ...prev, dari: e.target.value }))}
+                                                    className="form-input"
+                                                />
+                                            </div>
+                                            <div className="filter-group">
+                                                <label>Sampai Tanggal</label>
+                                                <input
+                                                    type="date"
+                                                    value={pencapaianTanggal.sampai}
+                                                    onChange={(e) => setPencapaianTanggal(prev => ({ ...prev, sampai: e.target.value }))}
+                                                    className="form-input"
+                                                />
+                                            </div>
+                                        </>
+                                    )}
+
+                                    {pencapaianKategori === 'bulanan' && (
+                                        <div className="filter-group">
+                                            <label>Pilih Bulan</label>
+                                            <select
+                                                value={pencapaianBulan}
+                                                onChange={(e) => setPencapaianBulan(e.target.value)}
+                                                className="form-select"
+                                            >
+                                                <option value="">-- Pilih Bulan --</option>
+                                                <option value="01">Januari</option>
+                                                <option value="02">Februari</option>
+                                                <option value="03">Maret</option>
+                                                <option value="04">April</option>
+                                                <option value="05">Mei</option>
+                                                <option value="06">Juni</option>
+                                                <option value="07">Juli</option>
+                                                <option value="08">Agustus</option>
+                                                <option value="09">September</option>
+                                                <option value="10">Oktober</option>
+                                                <option value="11">November</option>
+                                                <option value="12">Desember</option>
+                                            </select>
+                                        </div>
+                                    )}
+
+                                    <div className="filter-group">
+                                        <label>Halaqoh</label>
+                                        <select
+                                            value={pencapaianHalaqoh}
+                                            onChange={(e) => setPencapaianHalaqoh(e.target.value)}
+                                            className="form-select"
+                                        >
+                                            <option value="">Semua Halaqoh</option>
+                                            {halaqohList.map(h => (
+                                                <option key={h.id} value={h.id}>
+                                                    {h.nama} {h.musyrif ? `(${h.musyrif.nama})` : ''}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className="filter-group">
+                                        <label>Cari Santri</label>
+                                        <input
+                                            type="text"
+                                            placeholder="Ketik nama santri..."
+                                            value={pencapaianSearch}
+                                            onChange={(e) => setPencapaianSearch(e.target.value)}
+                                            className="form-input"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Action Buttons */}
+                                <div className="rekap-actions mb-3" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                                    <button
+                                        className="btn btn-secondary"
+                                        onClick={() => window.print()}
                                     >
-                                        <option value="">Semua Halaqoh</option>
-                                        {halaqohList.map(h => (
-                                            <option key={h.id} value={h.id}>
-                                                {h.nama} {h.musyrif ? `(${h.musyrif.nama})` : ''}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div className="filter-group">
-                                    <label>Cari Santri</label>
-                                    <input
-                                        type="text"
-                                        placeholder="Ketik nama santri..."
-                                        value={pencapaianSearch}
-                                        onChange={(e) => setPencapaianSearch(e.target.value)}
-                                        className="form-input"
-                                    />
-                                </div>
-                                <div className="filter-group filter-action">
-                                    <button className="btn btn-primary btn-save" onClick={savePencapaian} disabled={savingPencapaian}>
-                                        {savingPencapaian ? <RefreshCw size={16} className="spin" /> : <Save size={16} />}
-                                        <span>{savingPencapaian ? 'Menyimpan...' : 'Simpan'}</span>
+                                        <Printer size={16} /> Print
                                     </button>
-                                </div>
-                            </div>
+                                    <button
+                                        className="btn btn-success"
+                                        onClick={() => {
+                                            // Get selected halaqoh info
+                                            const selectedHalaqoh = halaqohList.find(h => String(h.id) === String(pencapaianHalaqoh))
+                                            const halaqohInfo = selectedHalaqoh
+                                                ? `<p><strong>Halaqoh:</strong> ${selectedHalaqoh.nama} ${selectedHalaqoh.musyrif ? `| <strong>Musyrif:</strong> ${selectedHalaqoh.musyrif.nama}` : ''}</p>`
+                                                : '<p><strong>Halaqoh:</strong> Semua Halaqoh</p>'
 
-                            {/* Pencapaian Table */}
-                            <div className="table-container">
-                                <div className="table-header">
-                                    <h3 className="table-title"><Trophy size={20} /> Pencapaian Hafalan ({santriList.filter(s => s.nama.toLowerCase().includes(pencapaianSearch.toLowerCase()) && (pencapaianHalaqoh === '' || String(s.halaqoh_id) === String(pencapaianHalaqoh))).length} santri)</h3>
-                                </div>
+                                            // Get period info
+                                            let periodInfo = ''
+                                            if (pencapaianKategori === 'semester') {
+                                                const sem = semesterList.find(s => String(s.id) === String(pencapaianSemester))
+                                                periodInfo = sem ? `<p><strong>Periode:</strong> ${sem.nama} - ${sem.tahun_ajaran}</p>` : ''
+                                            } else if (pencapaianKategori === 'bulanan') {
+                                                const bulanNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
+                                                periodInfo = pencapaianBulan ? `<p><strong>Periode:</strong> Bulan ${bulanNames[parseInt(pencapaianBulan) - 1]}</p>` : ''
+                                            } else if (pencapaianKategori === 'mingguan') {
+                                                periodInfo = `<p><strong>Periode:</strong> ${pencapaianTanggal.dari} s/d ${pencapaianTanggal.sampai}</p>`
+                                            }
 
-                                <div className="table-wrapper">
-                                    <table className="table pencapaian-table">
-                                        <thead>
-                                            <tr>
-                                                <th>No</th>
-                                                <th>Nama Santri</th>
-                                                <th>Kelas</th>
-                                                <th>Jumlah Hafalan (Semester)</th>
-                                                <th>Predikat</th>
-                                                <th>Total Hafalan (Keseluruhan)</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {santriList.filter(s => s.nama.toLowerCase().includes(pencapaianSearch.toLowerCase()) && (pencapaianHalaqoh === '' || String(s.halaqoh_id) === String(pencapaianHalaqoh))).length === 0 ? (
-                                                <tr><td colSpan="6" className="text-center">Tidak ada data santri</td></tr>
-                                            ) : (
-                                                santriList
-                                                    .filter(s => s.nama.toLowerCase().includes(pencapaianSearch.toLowerCase()) && (pencapaianHalaqoh === '' || String(s.halaqoh_id) === String(pencapaianHalaqoh)))
-                                                    .map((santri, index) => (
-                                                        <tr key={santri.id}>
-                                                            <td>{index + 1}</td>
-                                                            <td className="name-cell">{santri.nama}</td>
-                                                            <td>{santri.kelas}</td>
-                                                            <td>
-                                                                <input
-                                                                    type="text"
-                                                                    placeholder="Contoh: 3 Juz"
-                                                                    value={getCurrentPencapaianData()[santri.id]?.jumlah_hafalan || ''}
-                                                                    onChange={(e) => handlePencapaianChange(santri.id, 'jumlah_hafalan', e.target.value)}
-                                                                    className="form-input-sm"
-                                                                />
-                                                            </td>
-                                                            <td>
-                                                                <select
-                                                                    value={getCurrentPencapaianData()[santri.id]?.predikat || 'Baik'}
-                                                                    onChange={(e) => handlePencapaianChange(santri.id, 'predikat', e.target.value)}
-                                                                    className="form-select-sm"
-                                                                >
-                                                                    <option value="Sangat Baik">Sangat Baik</option>
-                                                                    <option value="Baik">Baik</option>
-                                                                    <option value="Cukup">Cukup</option>
-                                                                    <option value="Kurang">Kurang</option>
-                                                                    <option value="Buruk">Buruk</option>
-                                                                </select>
-                                                            </td>
-                                                            <td>
-                                                                <input
-                                                                    type="text"
-                                                                    placeholder="Contoh: 10 Juz"
-                                                                    value={getCurrentPencapaianData()[santri.id]?.total_hafalan || ''}
-                                                                    onChange={(e) => handlePencapaianChange(santri.id, 'total_hafalan', e.target.value)}
-                                                                    className="form-input-sm"
-                                                                />
-                                                            </td>
-                                                        </tr>
-                                                    ))
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </>
-                    )}
+                                            // Generate table rows
+                                            const filteredSantri = santriList.filter(s =>
+                                                s.nama.toLowerCase().includes(pencapaianSearch.toLowerCase()) &&
+                                                (pencapaianHalaqoh === '' || String(s.halaqoh_id) === String(pencapaianHalaqoh))
+                                            )
 
-                    {/* ==================== LAPORAN PENCAPAIAN SUB-TAB ==================== */}
-                    {pencapaianSubTab === 'laporan' && (
-                        <>
-                            {/* Filter Bar for Laporan */}
-                            <div className="filter-bar mb-4">
-                                <div className="filter-group">
-                                    <label>Kategori</label>
-                                    <select
-                                        value={pencapaianKategori}
-                                        onChange={(e) => setPencapaianKategori(e.target.value)}
-                                        className="form-select"
-                                    >
-                                        <option value="semester">Semester</option>
-                                        <option value="mingguan">Mingguan</option>
-                                        <option value="bulanan">Bulanan</option>
-                                    </select>
-                                </div>
-
-                                {pencapaianKategori === 'semester' && (
-                                    <div className="filter-group">
-                                        <label>Pilih Semester</label>
-                                        <select
-                                            value={pencapaianSemester}
-                                            onChange={(e) => setPencapaianSemester(e.target.value)}
-                                            className="form-select"
-                                        >
-                                            <option value="">-- Pilih Semester --</option>
-                                            {semesterList.map(s => (
-                                                <option key={s.id} value={s.id}>
-                                                    {s.nama} - {s.tahun_ajaran} {s.is_active ? '(Aktif)' : ''}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                )}
-
-                                {pencapaianKategori === 'mingguan' && (
-                                    <>
-                                        <div className="filter-group">
-                                            <label>Dari Tanggal</label>
-                                            <input
-                                                type="date"
-                                                value={pencapaianTanggal.dari}
-                                                onChange={(e) => setPencapaianTanggal(prev => ({ ...prev, dari: e.target.value }))}
-                                                className="form-input"
-                                            />
-                                        </div>
-                                        <div className="filter-group">
-                                            <label>Sampai Tanggal</label>
-                                            <input
-                                                type="date"
-                                                value={pencapaianTanggal.sampai}
-                                                onChange={(e) => setPencapaianTanggal(prev => ({ ...prev, sampai: e.target.value }))}
-                                                className="form-input"
-                                            />
-                                        </div>
-                                    </>
-                                )}
-
-                                {pencapaianKategori === 'bulanan' && (
-                                    <div className="filter-group">
-                                        <label>Pilih Bulan</label>
-                                        <select
-                                            value={pencapaianBulan}
-                                            onChange={(e) => setPencapaianBulan(e.target.value)}
-                                            className="form-select"
-                                        >
-                                            <option value="">-- Pilih Bulan --</option>
-                                            <option value="01">Januari</option>
-                                            <option value="02">Februari</option>
-                                            <option value="03">Maret</option>
-                                            <option value="04">April</option>
-                                            <option value="05">Mei</option>
-                                            <option value="06">Juni</option>
-                                            <option value="07">Juli</option>
-                                            <option value="08">Agustus</option>
-                                            <option value="09">September</option>
-                                            <option value="10">Oktober</option>
-                                            <option value="11">November</option>
-                                            <option value="12">Desember</option>
-                                        </select>
-                                    </div>
-                                )}
-
-                                <div className="filter-group">
-                                    <label>Halaqoh</label>
-                                    <select
-                                        value={pencapaianHalaqoh}
-                                        onChange={(e) => setPencapaianHalaqoh(e.target.value)}
-                                        className="form-select"
-                                    >
-                                        <option value="">Semua Halaqoh</option>
-                                        {halaqohList.map(h => (
-                                            <option key={h.id} value={h.id}>
-                                                {h.nama} {h.musyrif ? `(${h.musyrif.nama})` : ''}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div className="filter-group">
-                                    <label>Cari Santri</label>
-                                    <input
-                                        type="text"
-                                        placeholder="Ketik nama santri..."
-                                        value={pencapaianSearch}
-                                        onChange={(e) => setPencapaianSearch(e.target.value)}
-                                        className="form-input"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Action Buttons */}
-                            <div className="rekap-actions mb-3" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                                <button
-                                    className="btn btn-secondary"
-                                    onClick={() => window.print()}
-                                >
-                                    <Printer size={16} /> Print
-                                </button>
-                                <button
-                                    className="btn btn-success"
-                                    onClick={() => {
-                                        // Get selected halaqoh info
-                                        const selectedHalaqoh = halaqohList.find(h => String(h.id) === String(pencapaianHalaqoh))
-                                        const halaqohInfo = selectedHalaqoh
-                                            ? `<p><strong>Halaqoh:</strong> ${selectedHalaqoh.nama} ${selectedHalaqoh.musyrif ? `| <strong>Musyrif:</strong> ${selectedHalaqoh.musyrif.nama}` : ''}</p>`
-                                            : '<p><strong>Halaqoh:</strong> Semua Halaqoh</p>'
-
-                                        // Get period info
-                                        let periodInfo = ''
-                                        if (pencapaianKategori === 'semester') {
-                                            const sem = semesterList.find(s => String(s.id) === String(pencapaianSemester))
-                                            periodInfo = sem ? `<p><strong>Periode:</strong> ${sem.nama} - ${sem.tahun_ajaran}</p>` : ''
-                                        } else if (pencapaianKategori === 'bulanan') {
-                                            const bulanNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
-                                            periodInfo = pencapaianBulan ? `<p><strong>Periode:</strong> Bulan ${bulanNames[parseInt(pencapaianBulan) - 1]}</p>` : ''
-                                        } else if (pencapaianKategori === 'mingguan') {
-                                            periodInfo = `<p><strong>Periode:</strong> ${pencapaianTanggal.dari} s/d ${pencapaianTanggal.sampai}</p>`
-                                        }
-
-                                        // Generate table rows
-                                        const filteredSantri = santriList.filter(s =>
-                                            s.nama.toLowerCase().includes(pencapaianSearch.toLowerCase()) &&
-                                            (pencapaianHalaqoh === '' || String(s.halaqoh_id) === String(pencapaianHalaqoh))
-                                        )
-
-                                        const tableRows = filteredSantri.map((santri, index) => {
-                                            const data = getCurrentPencapaianData()[santri.id] || {}
-                                            return `
+                                            const tableRows = filteredSantri.map((santri, index) => {
+                                                const data = getCurrentPencapaianData()[santri.id] || {}
+                                                return `
                                                 <tr>
                                                     <td>${index + 1}</td>
                                                     <td>${santri.nama}</td>
@@ -1388,9 +1277,9 @@ _PTQA Batuan_`
                                                     <td>${data.total_hafalan || '-'}</td>
                                                 </tr>
                                             `
-                                        }).join('')
+                                            }).join('')
 
-                                        const htmlContent = `
+                                            const htmlContent = `
                                             <!DOCTYPE html>
                                             <html>
                                             <head>
@@ -1439,95 +1328,98 @@ _PTQA Batuan_`
                                             </html>
                                         `
 
-                                        // Create Blob and download
-                                        const blob = new Blob([htmlContent], { type: 'text/html' })
-                                        const url = URL.createObjectURL(blob)
-                                        const a = document.createElement('a')
-                                        a.href = url
-                                        a.download = `Laporan_Pencapaian_Hafalan_${new Date().toISOString().split('T')[0]}.html`
-                                        document.body.appendChild(a)
-                                        a.click()
-                                        document.body.removeChild(a)
-                                        URL.revokeObjectURL(url)
+                                            // Create Blob and download
+                                            const blob = new Blob([htmlContent], { type: 'text/html' })
+                                            const url = URL.createObjectURL(blob)
+                                            const a = document.createElement('a')
+                                            a.href = url
+                                            a.download = `Laporan_Pencapaian_Hafalan_${new Date().toISOString().split('T')[0]}.html`
+                                            document.body.appendChild(a)
+                                            a.click()
+                                            document.body.removeChild(a)
+                                            URL.revokeObjectURL(url)
 
-                                        alert('File HTML berhasil didownload! Buka file dan gunakan Print > Save as PDF untuk konversi ke PDF.')
-                                    }}
-                                >
-                                    <Download size={16} /> Download PDF
-                                </button>
-                            </div>
-
-                            {/* Laporan Table */}
-                            <div className="table-container">
-                                <div className="table-header">
-                                    <h3 className="table-title"><Trophy size={20} /> Laporan Pencapaian Hafalan ({santriList.filter(s => s.nama.toLowerCase().includes(pencapaianSearch.toLowerCase()) && (pencapaianHalaqoh === '' || String(s.halaqoh_id) === String(pencapaianHalaqoh))).length} santri)</h3>
+                                            alert('File HTML berhasil didownload! Buka file dan gunakan Print > Save as PDF untuk konversi ke PDF.')
+                                        }}
+                                    >
+                                        <Download size={16} /> Download PDF
+                                    </button>
                                 </div>
 
-                                <div className="table-wrapper">
-                                    <table className="table laporan-pencapaian-table">
-                                        <thead>
-                                            <tr>
-                                                <th>No</th>
-                                                <th>Nama Santri</th>
-                                                <th>Kelas</th>
-                                                <th>Halaqoh</th>
-                                                <th>Musyrif</th>
-                                                <th>Jumlah Hafalan</th>
-                                                <th>Predikat</th>
-                                                <th>Total Hafalan</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {santriList.filter(s => s.nama.toLowerCase().includes(pencapaianSearch.toLowerCase()) && (pencapaianHalaqoh === '' || String(s.halaqoh_id) === String(pencapaianHalaqoh))).length === 0 ? (
-                                                <tr><td colSpan="8" className="text-center">Tidak ada data</td></tr>
-                                            ) : (
-                                                santriList
-                                                    .filter(s => s.nama.toLowerCase().includes(pencapaianSearch.toLowerCase()) && (pencapaianHalaqoh === '' || String(s.halaqoh_id) === String(pencapaianHalaqoh)))
-                                                    .map((santri, index) => (
-                                                        <tr key={santri.id}>
-                                                            <td>{index + 1}</td>
-                                                            <td className="name-cell">{santri.nama}</td>
-                                                            <td>{santri.kelas}</td>
-                                                            <td>{santri.halaqoh_nama}</td>
-                                                            <td>{santri.musyrif_nama}</td>
-                                                            <td>{getCurrentPencapaianData()[santri.id]?.jumlah_hafalan || '-'}</td>
-                                                            <td>
-                                                                <span className={`badge badge-${getCurrentPencapaianData()[santri.id]?.predikat === 'Sangat Baik' ? 'success' : getCurrentPencapaianData()[santri.id]?.predikat === 'Baik' ? 'info' : 'warning'}`}>
-                                                                    {getCurrentPencapaianData()[santri.id]?.predikat || 'Belum dinilai'}
-                                                                </span>
-                                                            </td>
-                                                            <td>{getCurrentPencapaianData()[santri.id]?.total_hafalan || '-'}</td>
-                                                        </tr>
-                                                    ))
-                                            )}
-                                        </tbody>
-                                    </table>
+                                {/* Laporan Table */}
+                                <div className="table-container">
+                                    <div className="table-header">
+                                        <h3 className="table-title"><Trophy size={20} /> Laporan Pencapaian Hafalan ({santriList.filter(s => s.nama.toLowerCase().includes(pencapaianSearch.toLowerCase()) && (pencapaianHalaqoh === '' || String(s.halaqoh_id) === String(pencapaianHalaqoh))).length} santri)</h3>
+                                    </div>
+
+                                    <div className="table-wrapper">
+                                        <table className="table laporan-pencapaian-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>No</th>
+                                                    <th>Nama Santri</th>
+                                                    <th>Kelas</th>
+                                                    <th>Halaqoh</th>
+                                                    <th>Musyrif</th>
+                                                    <th>Jumlah Hafalan</th>
+                                                    <th>Predikat</th>
+                                                    <th>Total Hafalan</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {santriList.filter(s => s.nama.toLowerCase().includes(pencapaianSearch.toLowerCase()) && (pencapaianHalaqoh === '' || String(s.halaqoh_id) === String(pencapaianHalaqoh))).length === 0 ? (
+                                                    <tr><td colSpan="8" className="text-center">Tidak ada data</td></tr>
+                                                ) : (
+                                                    santriList
+                                                        .filter(s => s.nama.toLowerCase().includes(pencapaianSearch.toLowerCase()) && (pencapaianHalaqoh === '' || String(s.halaqoh_id) === String(pencapaianHalaqoh)))
+                                                        .map((santri, index) => (
+                                                            <tr key={santri.id}>
+                                                                <td>{index + 1}</td>
+                                                                <td className="name-cell">{santri.nama}</td>
+                                                                <td>{santri.kelas}</td>
+                                                                <td>{santri.halaqoh_nama}</td>
+                                                                <td>{santri.musyrif_nama}</td>
+                                                                <td>{getCurrentPencapaianData()[santri.id]?.jumlah_hafalan || '-'}</td>
+                                                                <td>
+                                                                    <span className={`badge badge-${getCurrentPencapaianData()[santri.id]?.predikat === 'Sangat Baik' ? 'success' : getCurrentPencapaianData()[santri.id]?.predikat === 'Baik' ? 'info' : 'warning'}`}>
+                                                                        {getCurrentPencapaianData()[santri.id]?.predikat || 'Belum dinilai'}
+                                                                    </span>
+                                                                </td>
+                                                                <td>{getCurrentPencapaianData()[santri.id]?.total_hafalan || '-'}</td>
+                                                            </tr>
+                                                        ))
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
-                            </div>
-                        </>
-                    )}
-                </>
-            )}
+                            </>
+                        )}
+                    </>
+                )
+            }
 
             {/* Delete Modal - Outside all tabs so it works everywhere */}
-            {showDeleteModal && (
-                <div className="modal-overlay active">
-                    <div className="modal">
-                        <div className="modal-header">
-                            <h3 className="modal-title">Konfirmasi Hapus</h3>
-                            <button className="modal-close" onClick={() => setShowDeleteModal(false)}>×</button>
-                        </div>
-                        <div className="modal-body">
-                            <p>Apakah Anda yakin ingin menghapus data hafalan ini?</p>
-                        </div>
-                        <div className="modal-footer">
-                            <button className="btn btn-secondary" onClick={() => setShowDeleteModal(false)}>Batal</button>
-                            <button className="btn btn-danger" onClick={handleDelete}>Hapus</button>
+            {
+                showDeleteModal && (
+                    <div className="modal-overlay active">
+                        <div className="modal">
+                            <div className="modal-header">
+                                <h3 className="modal-title">Konfirmasi Hapus</h3>
+                                <button className="modal-close" onClick={() => setShowDeleteModal(false)}>×</button>
+                            </div>
+                            <div className="modal-body">
+                                <p>Apakah Anda yakin ingin menghapus data hafalan ini?</p>
+                            </div>
+                            <div className="modal-footer">
+                                <button className="btn btn-secondary" onClick={() => setShowDeleteModal(false)}>Batal</button>
+                                <button className="btn btn-danger" onClick={handleDelete}>Hapus</button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     )
 }
 

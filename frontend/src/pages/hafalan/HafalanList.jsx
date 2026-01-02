@@ -288,8 +288,8 @@ const HafalanList = () => {
                 .from('hafalan')
                 .select(`
                     *,
-                    santri:santri_id(nama, nama_wali, no_telp_wali, kelas:kelas_id(nama), halaqoh:halaqoh_id(id, nama)),
-                    penguji:penguji_id(nama)
+                    santri:santri!santri_id(nama, nama_wali, no_telp_wali, kelas:kelas!kelas_id(nama), halaqoh:halaqoh!halaqoh_id(id, nama)),
+                    penguji:guru!penguji_id(nama)
                 `)
                 .order('tanggal', { ascending: false })
 

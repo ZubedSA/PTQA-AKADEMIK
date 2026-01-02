@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Plus, Search, Edit2, Trash2, ArrowDownCircle, Download, RefreshCw, FileText } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
@@ -11,6 +11,8 @@ import Spinner from '../../components/ui/Spinner'
 import EmptyState from '../../components/ui/EmptyState'
 import DownloadButton from '../../components/ui/DownloadButton'
 import { exportToExcel, exportToCSV } from '../../utils/exportUtils'
+import { useKas, useKategoriPembayaran } from '../../hooks/useKeuangan'
+import { useKasPengeluaran } from '../../hooks/features/useKasPengeluaran'
 import './Keuangan.css'
 
 const KasPengeluaranPage = () => {
@@ -22,12 +24,8 @@ const KasPengeluaranPage = () => {
     const adminCheck = isAdmin() || userProfile?.role === 'admin' || hasRole('admin')
     const bendaharaCheck = isBendahara() || userProfile?.role === 'bendahara' || hasRole('bendahara')
     const canEditKas = adminCheck || bendaharaCheck
-    const [data, setData] = useState([])
-    const [kategoriList, setKategoriList] = useState([])
-    const [loading, setLoading] = useState(true)
-    const [showModal, setShowModal] = useState(false)
-    const [editItem, setEditItem] = useState(null)
-    const [saving, setSaving] = useState(false)
+
+    // Filters State
     const [filters, setFilters] = useState({
         search: '',
         bulan: '',
@@ -35,6 +33,43 @@ const KasPengeluaranPage = () => {
         dateFrom: '',
         dateTo: ''
     })
+
+    const [loading, setLoading] = useState(true)
+    const [kategoriList, setKategoriList] = useState([])
+
+    // Performance Update: Use Cached Hook
+    const { data: rawData = [], isLoading: loadingMain, error, refetch } = useKasPengeluaran(filters)
+
+    useEffect(() => {
+        setLoading(loadingMain)
+    }, [loadingMain])
+
+    useEffect(() => {
+        fetchKategori()
+    }, [])
+
+    // Error Handling
+    useEffect(() => {
+        if (error) {
+            console.error('Error loading kas:', error)
+            showToast.error('Gagal memuat data kas')
+        }
+    }, [error])
+
+    const fetchKategori = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('kategori_pembayaran')
+                .select('*')
+                .eq('tipe', 'pengeluaran')
+                .eq('is_active', true)
+                .order('nama')
+            if (error) throw error
+            setKategoriList(data || [])
+        } catch (error) {
+            console.error('Error loading kategori:', error)
+        }
+    }
     const [form, setForm] = useState({
         tanggal: new Date().toISOString().split('T')[0],
         keperluan: '',
@@ -43,60 +78,27 @@ const KasPengeluaranPage = () => {
         keterangan: ''
     })
 
-    useEffect(() => {
-        fetchData()
-        fetchKategori()
-    }, [filters.bulan, filters.tahun, filters.dateFrom, filters.dateTo])
+    const [showModal, setShowModal] = useState(false)
+    const [editItem, setEditItem] = useState(null)
+    const [saving, setSaving] = useState(false)
 
-    const fetchKategori = async () => {
-        const { data } = await supabase
-            .from('kategori_pembayaran')
-            .select('*')
-            .eq('is_active', true)
-            .eq('tipe', 'pengeluaran')
-            .order('nama')
-        setKategoriList(data || [])
-    }
 
-    const fetchData = async () => {
-        setLoading(true)
-        try {
-            let query = supabase
-                .from('kas_pengeluaran')
-                .select('*')
-                .order('tanggal', { ascending: false })
 
-            // Date range filter takes priority
-            if (filters.dateFrom && filters.dateTo) {
-                query = query.gte('tanggal', filters.dateFrom)
-                    .lte('tanggal', filters.dateTo)
-            } else if (filters.dateFrom) {
-                query = query.gte('tanggal', filters.dateFrom)
-            } else if (filters.dateTo) {
-                query = query.lte('tanggal', filters.dateTo)
-            } else {
-                // Fallback to bulan/tahun filter
-                if (filters.tahun) {
-                    query = query.gte('tanggal', `${filters.tahun}-01-01`)
-                        .lte('tanggal', `${filters.tahun}-12-31`)
-                }
-                if (filters.bulan) {
-                    const month = String(filters.bulan).padStart(2, '0')
-                    query = query.gte('tanggal', `${filters.tahun}-${month}-01`)
-                        .lte('tanggal', `${filters.tahun}-${month}-31`)
-                }
+    // Client-side filtering for search & specific dates
+    const filteredDataRaw = useMemo(() => {
+        return rawData.filter(item => {
+            let pass = true
+            if (filters.search) {
+                const term = filters.search.toLowerCase()
+                pass = pass && (
+                    item.keperluan?.toLowerCase().includes(term) ||
+                    item.keterangan?.toLowerCase().includes(term)
+                )
             }
-
-            const { data: result, error } = await query
-            if (error) throw error
-            setData(result || [])
-        } catch (err) {
-            console.error('Error:', err.message)
-            showToast.error('Gagal memuat data: ' + err.message)
-        } finally {
-            setLoading(false)
-        }
-    }
+            // Optimization: Date filtering (month/year) is handled by server via hook
+            return pass
+        })
+    }, [rawData, filters.search])
 
     const handleSubmit = async (e) => {
         e.preventDefault()
@@ -136,7 +138,7 @@ const KasPengeluaranPage = () => {
 
             setShowModal(false)
             resetForm()
-            await fetchData() // Added await for proper data refresh
+            await refetch()
         } catch (err) {
             console.error('Submit error:', err)
             showToast.error('Gagal menyimpan: ' + err.message)
@@ -148,7 +150,7 @@ const KasPengeluaranPage = () => {
     const handleDelete = async (id) => {
         if (!confirm('Yakin hapus data ini?')) return
         try {
-            const itemToDelete = data.find(d => d.id === id)
+            const itemToDelete = filteredData.find(d => d.id === id)
 
             const { error } = await supabase.from('kas_pengeluaran').delete().eq('id', id)
             if (error) throw error
@@ -162,7 +164,8 @@ const KasPengeluaranPage = () => {
                 )
             }
 
-            await fetchData()
+
+            await refetch()
             showToast.success('Data berhasil dihapus')
         } catch (err) {
             console.error('Delete error:', err)
@@ -195,7 +198,7 @@ const KasPengeluaranPage = () => {
 
     const handleDownloadExcel = () => {
         const columns = ['Tanggal', 'Keperluan', 'Kategori', 'Jumlah', 'Keterangan']
-        const exportData = data.map(d => ({
+        const exportData = filteredData.map(d => ({
             Tanggal: new Date(d.tanggal).toLocaleDateString('id-ID'),
             Keperluan: d.keperluan,
             Kategori: d.kategori || '-',
@@ -208,7 +211,7 @@ const KasPengeluaranPage = () => {
 
     const handleDownloadCSV = () => {
         const columns = ['Tanggal', 'Keperluan', 'Kategori', 'Jumlah', 'Keterangan']
-        const exportData = data.map(d => ({
+        const exportData = filteredData.map(d => ({
             Tanggal: new Date(d.tanggal).toLocaleDateString('id-ID'),
             Keperluan: d.keperluan,
             Kategori: d.kategori || '-',
@@ -224,7 +227,7 @@ const KasPengeluaranPage = () => {
             title: 'Laporan Pengeluaran Kas',
             subtitle: filters.bulan ? `Bulan ${filters.bulan}/${filters.tahun}` : `Tahun ${filters.tahun}`,
             columns: ['Tanggal', 'Keperluan', 'Kategori', 'Jumlah', 'Keterangan'],
-            data: data.map(d => [
+            data: filteredData.map(d => [
                 new Date(d.tanggal).toLocaleDateString('id-ID'),
                 d.keperluan,
                 d.kategori || '-',
@@ -234,16 +237,15 @@ const KasPengeluaranPage = () => {
             filename: 'laporan_pengeluaran_kas',
             showTotal: true,
             totalLabel: 'Total Pengeluaran',
-            totalValue: data.reduce((sum, d) => sum + Number(d.jumlah), 0)
+            totalValue: filteredData.reduce((sum, d) => sum + Number(d.jumlah), 0)
         })
         showToast.success('Laporan berhasil didownload')
     }
 
-    const totalPengeluaran = data.reduce((sum, d) => sum + Number(d.jumlah), 0)
-    const filteredData = data.filter(d =>
-        d.keperluan.toLowerCase().includes(filters.search.toLowerCase()) ||
-        (d.keterangan && d.keterangan.toLowerCase().includes(filters.search.toLowerCase()))
-    )
+    const totalPengeluaran = filteredDataRaw.reduce((sum, d) => sum + Number(d.jumlah), 0)
+    // filteredDataRaw already filtered above if needed or use data
+    // based on original code logic
+    const filteredData = filteredDataRaw
 
     return (
         <div className="keuangan-page">
@@ -318,7 +320,7 @@ const KasPengeluaranPage = () => {
                 >
                     {[2024, 2025, 2026].map(y => <option key={y} value={y}>{y}</option>)}
                 </select>
-                <button className="btn btn-icon" onClick={fetchData}><RefreshCw size={18} /></button>
+                <button className="btn btn-icon" onClick={refetch}><RefreshCw size={18} /></button>
             </div>
 
             <div className="data-card">

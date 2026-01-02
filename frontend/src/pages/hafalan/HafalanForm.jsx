@@ -63,8 +63,8 @@ const HafalanForm = () => {
                 .select(`
                     id, tanggal, juz_mulai, surah_mulai, ayat_mulai, 
                     juz_selesai, surah_selesai, ayat_selesai, jenis, status, catatan,
-                    santri:santri_id (id, nama, nis, no_telp_wali, nama_wali),
-                    penguji:penguji_id (id, nama)
+                    santri:santri!santri_id(id, nama, nis, no_telp_wali, nama_wali),
+                    penguji:guru!penguji_id(id, nama)
                 `)
                 .eq('tanggal', today)
                 .order('created_at', { ascending: false })
@@ -80,7 +80,7 @@ const HafalanForm = () => {
         try {
             const { data } = await supabase
                 .from('halaqoh')
-                .select('id, nama, musyrif_id, musyrif:musyrif_id(id, nama)')
+                .select('id, nama, musyrif_id, musyrif:guru!musyrif_id(id, nama)')
                 .order('nama')
             setHalaqohList(data || [])
         } catch (err) {

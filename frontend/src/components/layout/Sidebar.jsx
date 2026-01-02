@@ -401,6 +401,7 @@ const operatorMenuItems = [
     { path: '/pengaturan', icon: Settings, label: 'Pengaturan', roles: ['admin'] },
 ]
 
+
 const Sidebar = ({ mobileOpen, onClose }) => {
     const { signOut, activeRole, roles } = useAuth()
     const navigate = useNavigate()

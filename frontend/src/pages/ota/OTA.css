@@ -1062,3 +1062,93 @@
     border-color: #10b981;
     box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
 }
+
+[data-theme="dark"] .ota-card {
+    background: #1e293b;
+    border-color: #334155;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .ota-card-header {
+    border-color: #334155;
+}
+
+[data-theme="dark"] .ota-card-header h2 {
+    color: #f1f5f9;
+}
+
+[data-theme="dark"] .ota-summary-card {
+    background: #1e293b;
+    border-color: #334155;
+}
+
+[data-theme="dark"] .ota-summary-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .ota-summary-content h3 {
+    color: #94a3b8;
+}
+
+[data-theme="dark"] .ota-summary-content p {
+    color: #f1f5f9;
+}
+
+[data-theme="dark"] .ota-table th {
+    background: #0f172a;
+    border-color: #334155;
+    color: #94a3b8;
+}
+
+[data-theme="dark"] .ota-table td {
+    color: #e2e8f0;
+    border-color: #334155;
+}
+
+[data-theme="dark"] .ota-table tbody tr:hover {
+    background: #334155;
+}
+
+[data-theme="dark"] .ota-btn-secondary {
+    background: #334155;
+    color: #f1f5f9;
+    border-color: #475569;
+}
+
+[data-theme="dark"] .ota-btn-secondary:hover {
+    background: #475569;
+    border-color: #64748b;
+}
+
+[data-theme="dark"] .ota-filters label {
+    color: #94a3b8;
+}
+
+[data-theme="dark"] .ota-filter-group select,
+[data-theme="dark"] .ota-filter-group input {
+    background: #0f172a;
+    border-color: #334155;
+    color: #f1f5f9;
+}
+
+[data-theme="dark"] .ota-search input {
+    background: #0f172a;
+    border-color: #334155;
+    color: #f1f5f9;
+}
+
+[data-theme="dark"] .ota-header h1 {
+    color: #f1f5f9;
+}
+
+[data-theme="dark"] .ota-header p {
+    color: #94a3b8;
+}
+
+[data-theme="dark"] .ota-empty h3 {
+    color: #f1f5f9;
+}
+
+[data-theme="dark"] .ota-empty p {
+    color: #94a3b8;
+}

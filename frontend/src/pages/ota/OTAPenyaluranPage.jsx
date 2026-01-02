@@ -40,10 +40,10 @@ const OTAPenyaluranPage = () => {
     const [showDownloadMenu, setShowDownloadMenu] = useState(false)
 
     useEffect(() => {
-        fetchAllData()
+        fetchData()
     }, [])
 
-    const fetchAllData = async () => {
+    const fetchData = async () => {
         setLoading(true)
         try {
             // Fetch penyaluran data
@@ -51,7 +51,7 @@ const OTAPenyaluranPage = () => {
                 .from('ota_penyaluran')
                 .select(`
                     *,
-                    santri:santri_id(id, nama, nis)
+                    santri:santri!santri_id(id, nama, nis)
                 `)
                 .order('tanggal', { ascending: false })
 
@@ -63,9 +63,9 @@ const OTAPenyaluranPage = () => {
                 .from('santri_penerima_ota')
                 .select(`
                     santri_id,
-                    santri:santri_id(id, nama, nis)
+                    santri:santri!santri_id(id, nama, nis)
                 `)
-                .eq('status', 'aktif')
+                .eq('status', 'Aktif')
 
             if (santriError) throw santriError
             setSantriList(santriData?.map(s => s.santri).filter(Boolean) || [])
@@ -212,7 +212,7 @@ const OTAPenyaluranPage = () => {
             }
 
             closeModal()
-            fetchAllData()
+            fetchData()
         } catch (err) {
             showToast.error('Gagal menyimpan: ' + err.message)
         } finally {
@@ -232,7 +232,7 @@ const OTAPenyaluranPage = () => {
 
             if (error) throw error
             showToast.success('Penyaluran berhasil dihapus')
-            fetchAllData()
+            fetchData()
         } catch (err) {
             showToast.error('Gagal menghapus: ' + err.message)
         }
@@ -299,18 +299,46 @@ const OTAPenyaluranPage = () => {
     return (
         <div className="ota-container">
             {/* Header */}
-            <div className="ota-header">
-                <div className="ota-header-top">
-                    <div>
-                        <h1>Penyaluran Dana OTA</h1>
-                        <p>Distribusi dana langsung ke santri penerima</p>
+            <div style={{
+                position: 'relative',
+                overflow: 'hidden',
+                borderRadius: '16px',
+                padding: '24px',
+                color: 'white',
+                background: 'linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%)',
+                boxShadow: '0 10px 40px -10px rgba(16, 185, 129, 0.5)',
+                marginBottom: '24px'
+            }}>
+                <div style={{ position: 'absolute', top: 0, right: 0, width: '180px', height: '180px', background: 'rgba(255,255,255,0.1)', borderRadius: '50%', transform: 'translate(30%, -50%)' }} />
+                <div style={{ position: 'absolute', bottom: 0, left: 0, width: '120px', height: '120px', background: 'rgba(255,255,255,0.08)', borderRadius: '50%', transform: 'translate(-30%, 50%)' }} />
+
+                <div style={{ position: 'relative', zIndex: 10, display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <div style={{ width: '56px', height: '56px', borderRadius: '14px', background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Send size={26} />
+                        </div>
+                        <div>
+                            <h1 style={{ fontSize: '1.5rem', fontWeight: 700, margin: 0 }}>Penyaluran Dana OTA</h1>
+                            <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.85)', margin: '4px 0 0 0' }}>Distribusi dana langsung ke santri penerima</p>
+                        </div>
                     </div>
-                    <button className="ota-btn ota-btn-primary" onClick={openAdd}>
-                        <Send size={18} />
-                        Salurkan Dana
-                    </button>
+                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                        <button
+                            onClick={fetchData}
+                            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 16px', borderRadius: '10px', fontSize: '0.875rem', fontWeight: 500, border: '1px solid rgba(255,255,255,0.3)', background: 'rgba(255,255,255,0.15)', color: 'white', cursor: 'pointer' }}
+                        >
+                            <RefreshCw size={16} /> Refresh
+                        </button>
+                        <button
+                            onClick={openAdd}
+                            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 16px', borderRadius: '10px', fontSize: '0.875rem', fontWeight: 500, border: 'none', background: 'white', color: '#059669', cursor: 'pointer' }}
+                        >
+                            <Send size={18} /> Salurkan Dana
+                        </button>
+                    </div>
                 </div>
             </div>
+
 
             {/* Summary */}
             <div className="ota-summary-grid">
@@ -421,7 +449,7 @@ const OTAPenyaluranPage = () => {
                             </select>
                         </div>
 
-                        <button className="ota-btn ota-btn-ghost" onClick={fetchAllData}>
+                        <button className="ota-btn ota-btn-ghost" onClick={fetchData}>
                             <RefreshCw size={16} />
                         </button>
                     </div>

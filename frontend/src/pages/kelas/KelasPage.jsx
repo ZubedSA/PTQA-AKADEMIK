@@ -47,7 +47,7 @@ const KelasPage = () => {
         try {
             const { data, error } = await supabase
                 .from('kelas')
-                .select('*, wali_kelas:wali_kelas_id(nama)')
+                .select('*, wali_kelas:guru!wali_kelas_id(nama)')
                 .order('nama')
 
             if (error) throw error

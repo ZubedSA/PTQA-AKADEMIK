@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { Plus, Search, Edit, Trash2, Eye, RefreshCw, Upload, FileSpreadsheet, X, MoreVertical, UserX } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
@@ -12,75 +12,57 @@ import * as XLSX from 'xlsx'
 import DownloadButton from '../../components/ui/DownloadButton'
 import { exportToExcel, exportToCSV } from '../../utils/exportUtils'
 import { generateLaporanPDF } from '../../utils/pdfGenerator'
+import { useSantri } from '../../hooks/useAkademik'
+import { useSantriList } from '../../hooks/features/useSantriList'
 import './Santri.css'
 
 const SantriList = () => {
     const { activeRole, userProfile, isAdmin, isGuru, isBendahara, hasRole } = useAuth()
     const showToast = useToast()
-
-    // Multiple checks to ensure role is correctly detected
-    const adminCheck = isAdmin() || userProfile?.role === 'admin' || userProfile?.activeRole === 'admin' || hasRole('admin')
-
-    // Admin dan Bendahara bisa CRUD santri, Guru hanya read-only
-    const canEditSantri = adminCheck
     const navigate = useNavigate()
+    const fileInputRef = useRef(null)
 
-    const [santri, setSantri] = useState([])
+    // State definitions
     const [searchTerm, setSearchTerm] = useState('')
     const [sortBy, setSortBy] = useState('nama-asc')
-    const [loading, setLoading] = useState(true)
-    const [showDeleteModal, setShowDeleteModal] = useState(false)
+
+    // Import state
     const [showImportModal, setShowImportModal] = useState(false)
-    const [selectedSantri, setSelectedSantri] = useState(null)
     const [importData, setImportData] = useState([])
     const [importing, setImporting] = useState(false)
     const [importSuccess, setImportSuccess] = useState('')
-    const [detectedHeaders, setDetectedHeaders] = useState([]) // New: Store headers
+    const [detectedHeaders, setDetectedHeaders] = useState([])
 
-    const fileInputRef = useRef(null)
+    // Delete state
+    const [showDeleteModal, setShowDeleteModal] = useState(false)
+    const [selectedSantri, setSelectedSantri] = useState(null)
 
+    // Performance: Use Cached Hook
+    const { data: rawSantri = [], isLoading: loading, error, refetch } = useSantriList()
+
+    // Client-side Sorting (Efficient for < 1000 rows)
+    const santri = useMemo(() => {
+        let sorted = [...rawSantri]
+        if (sortBy === 'nama-asc') sorted.sort((a, b) => a.nama.localeCompare(b.nama))
+        else if (sortBy === 'nama-desc') sorted.sort((a, b) => b.nama.localeCompare(a.nama))
+        else if (sortBy === 'nis-asc') sorted.sort((a, b) => a.nis.localeCompare(b.nis))
+        return sorted
+    }, [rawSantri, sortBy])
+
+    const adminCheck = isAdmin() || userProfile?.role === 'admin' || userProfile?.activeRole === 'admin' || hasRole('admin')
+    const canEditSantri = adminCheck
+
+    // Error Handling
     useEffect(() => {
-        fetchSantri()
-    }, [])
-
-    const fetchSantri = async () => {
-        setLoading(true)
-        try {
-            // Fetch santri without angkatan JOIN (to avoid schema cache issue)
-            const { data, error } = await supabase
-                .from('santri')
-                .select(`
-                    *,
-                    kelas:kelas_id(nama),
-                    halaqoh:halaqoh_id(nama)
-                `)
-                .order('nama')
-
-            if (error) throw error
-
-            // Fetch angkatan data separately
-            const { data: angkatanList } = await supabase
-                .from('angkatan')
-                .select('id, nama')
-
-            const angkatanMap = {}
-            if (angkatanList) {
-                angkatanList.forEach(a => { angkatanMap[a.id] = a.nama })
-            }
-
-            setSantri(data.map(s => ({
-                ...s,
-                kelas: s.kelas?.nama || '-',
-                halaqoh: s.halaqoh?.nama || '-',
-                angkatan: angkatanMap[s.angkatan_id] || '-'
-            })))
-        } catch (err) {
-            console.error('Error fetching santri:', err.message)
-            showToast.error('Gagal memuat data santri: ' + err.message)
-        } finally {
-            setLoading(false)
+        if (error) {
+            console.error('Error loading santri:', error)
+            showToast.error('Gagal memuat data santri: ' + error.message)
         }
-    }
+    }, [error])
+
+    const fetchSantri = () => refetch()
+
+    // Manual fetch removed in favor of useSantri hook
 
     const handleFileUpload = (e) => {
         const file = e.target.files[0]
@@ -262,7 +244,7 @@ const SantriList = () => {
 
             await logDelete('santri', selectedSantri.nama, `Hapus data santri: ${selectedSantri.nama} (${selectedSantri.nis})`)
 
-            setSantri(santri.filter(s => s.id !== selectedSantri.id))
+            await refetch()
             setShowDeleteModal(false)
             setSelectedSantri(null)
             showToast.success('Data santri berhasil dihapus')

@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Plus, Search, Edit2, Trash2, Receipt, Download, RefreshCw, MessageCircle, AlertCircle, Calendar } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
+import { useToast } from '../../context/ToastContext'
 import { usePermissions } from '../../hooks/usePermissions'
 import { generateLaporanPDF } from '../../utils/pdfGenerator'
 import { sendWhatsApp, templateTagihanSantri, templatePengingatTagihan } from '../../utils/whatsapp'
@@ -9,44 +10,87 @@ import { logCreate, logUpdate, logDelete } from '../../lib/auditLog'
 import MobileActionMenu from '../../components/ui/MobileActionMenu'
 import DownloadButton from '../../components/ui/DownloadButton'
 import { exportToExcel, exportToCSV } from '../../utils/exportUtils'
+import { useKategoriPembayaran } from '../../hooks/useKeuangan'
+import { useTagihanSantri } from '../../hooks/features/useTagihanSantri'
 import './Keuangan.css'
 
 const TagihanSantriPage = () => {
     const { user } = useAuth()
     const { canCreate, canUpdate, canDelete } = usePermissions()
-    const [data, setData] = useState([])
+    const showToast = useToast()
     const [santriList, setSantriList] = useState([])
-    const [kategoriList, setKategoriList] = useState([])
     const [angkatanList, setAngkatanList] = useState([])
-    const [loading, setLoading] = useState(true)
     const [showModal, setShowModal] = useState(false)
     const [editItem, setEditItem] = useState(null)
     const [filters, setFilters] = useState({ search: '', status: '', kategori: '' })
-    const [form, setForm] = useState({
-        angkatan_id: '', // Single select dropdown
-        santri_id: '', // For single edit
-        kategori_id: '',
-        jumlah: '',
-        jatuh_tempo_bulan: new Date().toISOString().slice(0, 7), // YYYY-MM
-        keterangan: ''
-    })
-    const [isBulkMode, setIsBulkMode] = useState(true)
+
+    const [loading, setLoading] = useState(true)
+    const [kategoriList, setKategoriList] = useState([])
+
+    // Performance Update: Use Cached Hook
+    const { data: rawData = [], isLoading: loadingMain, error, refetch } = useTagihanSantri(filters)
 
     useEffect(() => {
-        fetchData()
-        fetchOptions()
+        setLoading(loadingMain)
+    }, [loadingMain])
+
+    useEffect(() => {
+        fetchKategori()
+        fetchSantriOptions()
     }, [])
 
-    const fetchOptions = async () => {
-        const [santriRes, kategoriRes] = await Promise.all([
-            supabase.from('santri').select('id, nama, nis, no_telp_wali, angkatan_id').eq('status', 'Aktif').order('nama'),
-            supabase.from('kategori_pembayaran').select('*').eq('is_active', true).eq('tipe', 'pembayaran').order('nama')
+    // Error Handling
+    useEffect(() => {
+        if (error) {
+            console.error('Error loading tagihan:', error)
+            showToast.error('Gagal memuat data tagihan') // Generic error for safety
+        }
+    }, [error])
+
+    // Client-side filtering for Search (efficient for <2000 items)
+    const data = useMemo(() => {
+        // Fix for 400 Error: Join client-side instead of server-side
+        const enrichedData = rawData.map(item => ({
+            ...item,
+            santri: santriList.find(s => s.id === item.santri_id) || {},
+            kategori: kategoriList.find(k => k.id === item.kategori_id) || {}
+        }))
+
+        let result = enrichedData
+        if (filters.search) {
+            const term = filters.search.toLowerCase()
+            result = result.filter(item =>
+                item.santri?.nama?.toLowerCase().includes(term) ||
+                item.santri?.nis?.toLowerCase().includes(term)
+            )
+        }
+        return result
+    }, [rawData, filters.search, santriList, kategoriList])
+
+    const fetchKategori = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('kategori_pembayaran')
+                .select('*')
+                .eq('tipe', 'pembayaran')
+                .eq('is_active', true)
+                .order('nama')
+            if (error) throw error
+            setKategoriList(data || [])
+        } catch (error) {
+            console.error('Error loading kategori:', error)
+        }
+    }
+
+    const fetchSantriOptions = async () => {
+        // Keep manual fetch for Santri list used in Modal (could be hook too but separate)
+        const [santriRes] = await Promise.all([
+            supabase.from('santri').select('id, nama, nis, no_telp_wali, angkatan_id').eq('status', 'Aktif').order('nama')
         ])
         const santris = santriRes.data || []
         setSantriList(santris)
-        setKategoriList(kategoriRes.data || [])
 
-        // Fetch angkatan data for santri that have angkatan_id
+        // Fetch angkatan data
         const angkatanIds = [...new Set(santris.map(s => s.angkatan_id).filter(Boolean))]
         if (angkatanIds.length > 0) {
             const { data: angkatanData } = await supabase
@@ -60,21 +104,7 @@ const TagihanSantriPage = () => {
         }
     }
 
-    const fetchData = async () => {
-        setLoading(true)
-        try {
-            const { data: result, error } = await supabase
-                .from('tagihan_santri')
-                .select('*, santri:santri_id(nama, nis, no_telp_wali, kelas:kelas_id(nama)), kategori:kategori_id(nama)')
-                .order('jatuh_tempo', { ascending: true })
-            if (error) throw error
-            setData(result || [])
-        } catch (err) {
-            console.error('Error:', err.message)
-        } finally {
-            setLoading(false)
-        }
-    }
+    // Manual fetchData removed for tagihan and kategori in favor of hooks
 
     const handleSubmit = async (e) => {
         e.preventDefault()
@@ -140,7 +170,7 @@ const TagihanSantriPage = () => {
 
             setShowModal(false)
             resetForm()
-            fetchData()
+            await refetch()
         } catch (err) {
             alert('Error: ' + err.message)
         }
@@ -163,7 +193,7 @@ const TagihanSantriPage = () => {
                 )
             }
 
-            fetchData()
+            await refetch()
         } catch (err) {
             alert('Error: ' + err.message)
         }
@@ -352,7 +382,7 @@ const TagihanSantriPage = () => {
                     <option value="">Semua Kategori</option>
                     {kategoriList.map(k => <option key={k.id} value={k.id}>{k.nama}</option>)}
                 </select>
-                <button className="btn btn-icon" onClick={fetchData}><RefreshCw size={18} /></button>
+                <button className="btn btn-icon" onClick={refetch}><RefreshCw size={18} /></button>
             </div>
 
             <div className="data-card">

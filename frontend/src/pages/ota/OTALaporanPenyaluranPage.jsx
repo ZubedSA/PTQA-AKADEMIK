@@ -6,6 +6,7 @@ import Spinner from '../../components/ui/Spinner'
 import { exportToExcel, exportToCSV } from '../../utils/exportUtils'
 import jsPDF from 'jspdf'
 import 'jspdf-autotable'
+import './OTA.css'
 
 const styles = {
     container: {
@@ -365,25 +366,34 @@ const OTALaporanPenyaluranPage = () => {
     }
 
     return (
-        <div style={styles.container}>
+        <div className="ota-container">
             {/* Header */}
-            <div style={styles.header}>
+            <div style={{
+                position: 'relative',
+                overflow: 'hidden',
+                borderRadius: '16px',
+                padding: '24px',
+                color: 'white',
+                background: 'linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%)',
+                boxShadow: '0 10px 40px -10px rgba(16, 185, 129, 0.5)',
+                marginBottom: '24px'
+            }}>
                 <div style={{ position: 'absolute', top: 0, right: 0, width: '180px', height: '180px', background: 'rgba(255,255,255,0.1)', borderRadius: '50%', transform: 'translate(30%, -50%)' }} />
                 <div style={{ position: 'absolute', bottom: 0, left: 0, width: '120px', height: '120px', background: 'rgba(255,255,255,0.08)', borderRadius: '50%', transform: 'translate(-30%, 50%)' }} />
 
-                <div style={styles.headerContent}>
-                    <div style={styles.headerInfo}>
-                        <div style={styles.headerIcon}>
+                <div style={{ position: 'relative', zIndex: 10, display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <div style={{ width: '56px', height: '56px', borderRadius: '14px', background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <FileBarChart size={26} />
                         </div>
                         <div>
-                            <h1 style={styles.headerTitle}>Laporan Penyaluran OTA</h1>
-                            <p style={styles.headerSubtitle}>Rekap penyaluran dana OTA ke santri penerima</p>
+                            <h1 style={{ fontSize: '1.5rem', fontWeight: 700, margin: 0 }}>Laporan Penyaluran OTA</h1>
+                            <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.85)', margin: '4px 0 0 0' }}>Rekap penyaluran dana OTA ke santri penerima</p>
                         </div>
                     </div>
                     <button
-                        style={{ ...styles.exportBtn, background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white' }}
                         onClick={fetchData}
+                        style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 16px', borderRadius: '10px', fontSize: '0.875rem', fontWeight: 500, border: '1px solid rgba(255,255,255,0.3)', background: 'rgba(255,255,255,0.15)', color: 'white', cursor: 'pointer' }}
                     >
                         <RefreshCw size={16} /> Refresh
                     </button>
@@ -391,215 +401,156 @@ const OTALaporanPenyaluranPage = () => {
             </div>
 
             {/* Summary Cards */}
-            <div style={styles.summaryGrid}>
-                <div style={styles.summaryCard}>
-                    <div style={{ ...styles.summaryIcon, background: 'linear-gradient(135deg, #10b981, #059669)' }}>
-                        <TrendingUp size={22} />
+            <div className="ota-summary-grid">
+                <div className="ota-summary-card">
+                    <div className="ota-summary-icon green">
+                        <TrendingUp size={24} />
                     </div>
-                    <div style={styles.summaryLabel}>Total Pemasukan {filterTahun}</div>
-                    <div style={styles.summaryValue}>{formatCurrency(summary.totalPemasukan)}</div>
-                </div>
-                <div style={styles.summaryCard}>
-                    <div style={{ ...styles.summaryIcon, background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)' }}>
-                        <Send size={22} />
-                    </div>
-                    <div style={styles.summaryLabel}>Total Disalurkan</div>
-                    <div style={styles.summaryValue}>{formatCurrency(summary.totalPenyaluran)}</div>
-                </div>
-                <div style={styles.summaryCard}>
-                    <div style={{ ...styles.summaryIcon, background: 'linear-gradient(135deg, #3b82f6, #2563eb)' }}>
-                        <Wallet size={22} />
-                    </div>
-                    <div style={styles.summaryLabel}>Sisa Saldo</div>
-                    <div style={{ ...styles.summaryValue, color: summary.sisaSaldo > 0 ? '#059669' : '#dc2626' }}>
-                        {formatCurrency(summary.sisaSaldo)}
-                    </div>
-                    <div style={styles.progressBar}>
-                        <div style={{
-                            ...styles.progressFill,
-                            width: `${usagePercent}%`,
-                            background: usagePercent > 80 ? '#ef4444' : usagePercent > 50 ? '#f59e0b' : '#10b981'
-                        }} />
-                    </div>
-                    <div style={{ fontSize: '0.7rem', color: '#6b7280', marginTop: '4px' }}>
-                        {usagePercent}% disalurkan
+                    <div className="ota-summary-content">
+                        <h3>Total Pemasukan {filterTahun}</h3>
+                        <p>{formatCurrency(summary.totalPemasukan)}</p>
                     </div>
                 </div>
-                <div style={styles.summaryCard}>
-                    <div style={{ ...styles.summaryIcon, background: 'linear-gradient(135deg, #f59e0b, #d97706)' }}>
-                        <Users size={22} />
+                <div className="ota-summary-card">
+                    <div className="ota-summary-icon purple">
+                        <Send size={24} />
                     </div>
-                    <div style={styles.summaryLabel}>Penerima Aktif</div>
-                    <div style={styles.summaryValue}>{summary.totalPenerima}</div>
+                    <div className="ota-summary-content">
+                        <h3>Total Disalurkan</h3>
+                        <p>{formatCurrency(summary.totalPenyaluran)}</p>
+                    </div>
+                </div>
+                <div className="ota-summary-card">
+                    <div className="ota-summary-icon blue">
+                        <Wallet size={24} />
+                    </div>
+                    <div className="ota-summary-content">
+                        <h3>Sisa Saldo</h3>
+                        <p style={{ color: summary.sisaSaldo > 0 ? '#059669' : '#dc2626' }}>{formatCurrency(summary.sisaSaldo)}</p>
+                        <div style={{ width: '100%', height: '6px', background: '#e5e7eb', borderRadius: '3px', marginTop: '8px', overflow: 'hidden' }}>
+                            <div style={{ height: '100%', width: `${usagePercent}%`, background: usagePercent > 80 ? '#ef4444' : usagePercent > 50 ? '#f59e0b' : '#10b981', borderRadius: '3px' }} />
+                        </div>
+                        <span style={{ fontSize: '0.7rem', color: '#6b7280' }}>{usagePercent}% disalurkan</span>
+                    </div>
+                </div>
+                <div className="ota-summary-card">
+                    <div className="ota-summary-icon orange">
+                        <Users size={24} />
+                    </div>
+                    <div className="ota-summary-content">
+                        <h3>Penerima Aktif</h3>
+                        <p>{summary.totalPenerima}</p>
+                    </div>
                 </div>
             </div>
 
-            {/* Table Card */}
-            <div style={styles.card}>
-                {/* Filter Bar */}
-                <div style={styles.filterBar}>
-                    <div style={styles.filterGroup}>
-                        <Calendar size={18} color="#6b7280" />
-                        <select
-                            style={styles.select}
-                            value={filterBulan}
-                            onChange={(e) => setFilterBulan(e.target.value)}
-                        >
-                            <option value="all">Semua Bulan</option>
-                            {MONTHS.map(m => (
-                                <option key={m.value} value={m.value}>{m.label}</option>
-                            ))}
-                        </select>
-                    </div>
-                    <div style={styles.filterGroup}>
-                        <select
-                            style={styles.select}
-                            value={filterTahun}
-                            onChange={(e) => setFilterTahun(Number(e.target.value))}
-                        >
-                            {years.map(y => (
-                                <option key={y} value={y}>Tahun {y}</option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
-                        <div style={{ position: 'relative' }}>
+            {/* Card */}
+            <div className="ota-card">
+                <div className="ota-card-header">
+                    <h2>Riwayat Penyaluran</h2>
+                    <div className="ota-actions">
+                        <div className="ota-download-dropdown">
                             <button
-                                style={styles.exportBtn}
+                                className="ota-btn ota-btn-secondary"
                                 onClick={() => setShowDownloadMenu(!showDownloadMenu)}
                             >
-                                <Download size={16} /> Download
+                                <Download size={16} />
+                                Download
                             </button>
                             {showDownloadMenu && (
-                                <>
-                                    <div
-                                        style={{ position: 'fixed', inset: 0, zIndex: 40 }}
-                                        onClick={() => setShowDownloadMenu(false)}
-                                    />
-                                    <div style={{
-                                        position: 'absolute',
-                                        top: '100%',
-                                        right: 0,
-                                        marginTop: '4px',
-                                        background: 'white',
-                                        borderRadius: '10px',
-                                        boxShadow: '0 10px 40px rgba(0,0,0,0.15)',
-                                        border: '1px solid #e5e7eb',
-                                        overflow: 'hidden',
-                                        zIndex: 50,
-                                        minWidth: '140px'
-                                    }}>
-                                        <button
-                                            style={{
-                                                width: '100%',
-                                                padding: '10px 16px',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: '8px',
-                                                border: 'none',
-                                                background: 'white',
-                                                cursor: 'pointer',
-                                                fontSize: '0.875rem',
-                                                transition: 'background 0.2s'
-                                            }}
-                                            onMouseOver={(e) => e.target.style.background = '#f3f4f6'}
-                                            onMouseOut={(e) => e.target.style.background = 'white'}
-                                            onClick={() => { handleExportExcel(); setShowDownloadMenu(false); }}
-                                        >
-                                            <FileSpreadsheet size={14} /> Excel
-                                        </button>
-                                        <button
-                                            style={{
-                                                width: '100%',
-                                                padding: '10px 16px',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: '8px',
-                                                border: 'none',
-                                                background: 'white',
-                                                cursor: 'pointer',
-                                                fontSize: '0.875rem',
-                                                transition: 'background 0.2s'
-                                            }}
-                                            onMouseOver={(e) => e.target.style.background = '#f3f4f6'}
-                                            onMouseOut={(e) => e.target.style.background = 'white'}
-                                            onClick={() => { handleExportPDF(); setShowDownloadMenu(false); }}
-                                        >
-                                            <Download size={14} /> PDF
-                                        </button>
-                                    </div>
-                                </>
+                                <div className="ota-download-menu">
+                                    <button className="ota-download-item" onClick={() => { handleExportExcel(); setShowDownloadMenu(false); }}>
+                                        <FileSpreadsheet size={14} /> Excel
+                                    </button>
+                                    <button className="ota-download-item" onClick={() => { handleExportPDF(); setShowDownloadMenu(false); }}>
+                                        <Download size={14} /> PDF
+                                    </button>
+                                </div>
                             )}
                         </div>
-                        <button style={styles.exportBtn} onClick={() => window.print()}>
-                            <Printer size={16} /> Print
+                        <button className="ota-btn ota-btn-secondary" onClick={() => window.print()}>
+                            <Printer size={16} />
+                            Print
                         </button>
                     </div>
                 </div>
 
-                {/* Table */}
-                {loading ? (
-                    <div style={{ padding: '60px', textAlign: 'center' }}>
-                        <Spinner label="Memuat data..." />
+                <div className="ota-card-body">
+                    {/* Filters */}
+                    <div className="ota-filters">
+                        <div className="ota-filter-group">
+                            <Calendar size={16} />
+                            <select value={filterBulan} onChange={(e) => setFilterBulan(e.target.value)}>
+                                <option value="all">Semua Bulan</option>
+                                {MONTHS.map(m => (
+                                    <option key={m.value} value={m.value}>{m.label}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="ota-filter-group">
+                            <select value={filterTahun} onChange={(e) => setFilterTahun(Number(e.target.value))}>
+                                {years.map(y => (
+                                    <option key={y} value={y}>Tahun {y}</option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
-                ) : data.length > 0 ? (
-                    <div style={{ overflowX: 'auto' }}>
-                        <table style={styles.table}>
+                </div>
+
+                {/* Table */}
+                <div className="ota-table-container">
+                    {loading ? (
+                        <div style={{ padding: '60px', textAlign: 'center' }}>
+                            <Spinner label="Memuat data..." />
+                        </div>
+                    ) : data.length > 0 ? (
+                        <table className="ota-table">
                             <thead>
                                 <tr>
-                                    <th style={styles.th}>No</th>
-                                    <th style={styles.th}>Tanggal</th>
-                                    <th style={styles.th}>Nama Santri</th>
-                                    <th style={styles.th}>NIS</th>
-                                    <th style={{ ...styles.th, textAlign: 'right' }}>Nominal</th>
-                                    <th style={styles.th}>Keterangan</th>
+                                    <th>No</th>
+                                    <th>Tanggal</th>
+                                    <th>Nama Santri</th>
+                                    <th>NIS</th>
+                                    <th className="text-right">Nominal</th>
+                                    <th>Keterangan</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {data.map((item, idx) => (
                                     <tr key={item.id}>
-                                        <td style={styles.td}>{idx + 1}</td>
-                                        <td style={styles.td}>{formatDate(item.tanggal)}</td>
-                                        <td style={{ ...styles.td, fontWeight: 500 }}>{item.santri?.nama || '-'}</td>
-                                        <td style={styles.td}>{item.santri?.nis || '-'}</td>
-                                        <td style={{ ...styles.td, textAlign: 'right', fontWeight: 600, color: '#10b981' }}>
+                                        <td>{idx + 1}</td>
+                                        <td>{formatDate(item.tanggal)}</td>
+                                        <td style={{ fontWeight: 500 }}>{item.santri?.nama || '-'}</td>
+                                        <td>{item.santri?.nis || '-'}</td>
+                                        <td className="text-right" style={{ fontWeight: 600, color: '#10b981' }}>
                                             {formatCurrency(item.nominal)}
                                         </td>
-                                        <td style={{ ...styles.td, color: '#6b7280' }}>{item.keterangan || '-'}</td>
+                                        <td style={{ color: '#6b7280' }}>{item.keterangan || '-'}</td>
                                     </tr>
                                 ))}
                             </tbody>
                             <tfoot>
                                 <tr style={{ background: '#f8fafc', fontWeight: 600 }}>
-                                    <td style={styles.td} colSpan={4}>Total</td>
-                                    <td style={{ ...styles.td, textAlign: 'right', color: '#10b981' }}>
+                                    <td colSpan={4}>Total</td>
+                                    <td className="text-right" style={{ color: '#10b981' }}>
                                         {formatCurrency(filteredTotal)}
                                     </td>
-                                    <td style={styles.td}></td>
+                                    <td></td>
                                 </tr>
                             </tfoot>
                         </table>
-                    </div>
-                ) : (
-                    <div style={styles.emptyState}>
-                        <div style={styles.emptyIcon}>
-                            <FileBarChart size={36} color="#9ca3af" />
+                    ) : (
+                        <div className="ota-empty-state">
+                            <FileBarChart size={48} />
+                            <h3>Belum ada data penyaluran</h3>
+                            <p>Data penyaluran OTA untuk periode ini belum tersedia.</p>
                         </div>
-                        <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#1f2937', margin: '0 0 8px' }}>
-                            Belum ada data penyaluran
-                        </h3>
-                        <p style={{ fontSize: '0.875rem', color: '#6b7280', margin: 0 }}>
-                            Data penyaluran OTA untuk periode ini belum tersedia.
-                        </p>
-                        <p style={{ fontSize: '0.8rem', color: '#9ca3af', marginTop: '8px' }}>
-                            Salurkan dana melalui menu Keuangan → Penyaluran Dana.
-                        </p>
-                    </div>
-                )}
+                    )}
+                </div>
             </div>
         </div>
     )
 }
 
 export default OTALaporanPenyaluranPage
+

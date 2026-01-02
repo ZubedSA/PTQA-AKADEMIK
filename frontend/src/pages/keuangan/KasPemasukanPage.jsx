@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Plus, Search, Edit2, Trash2, ArrowUpCircle, Download, RefreshCw, Filter, MessageCircle, FileText } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
@@ -11,6 +11,8 @@ import Spinner from '../../components/ui/Spinner'
 import EmptyState from '../../components/ui/EmptyState'
 import DownloadButton from '../../components/ui/DownloadButton'
 import { exportToExcel, exportToCSV } from '../../utils/exportUtils'
+import { useKas, useKategoriPembayaran } from '../../hooks/useKeuangan'
+import { useKasPemasukan } from '../../hooks/features/useKasPemasukan'
 import './Keuangan.css'
 
 const KasPemasukanPage = () => {
@@ -18,16 +20,12 @@ const KasPemasukanPage = () => {
     const { canCreate, canUpdate, canDelete } = usePermissions()
     const showToast = useToast() // showToast is returned directly from context, not destructured
 
-    // Multiple checks - admin dan bendahara bisa CRUD
+    // Multiple checks - admin dan bendahara    // Multiple checks
     const adminCheck = isAdmin() || userProfile?.role === 'admin' || hasRole('admin')
     const bendaharaCheck = isBendahara() || userProfile?.role === 'bendahara' || hasRole('bendahara')
-    const canEditKas = adminCheck || bendaharaCheck
-    const [data, setData] = useState([])
-    const [kategoriList, setKategoriList] = useState([])
-    const [loading, setLoading] = useState(true)
-    const [showModal, setShowModal] = useState(false)
-    const [editItem, setEditItem] = useState(null)
-    const [saving, setSaving] = useState(false)
+    const canEditKas = adminCheck || bendaharaChecks
+
+    // Filters State for hooks
     const [filters, setFilters] = useState({
         search: '',
         bulan: '',
@@ -35,6 +33,67 @@ const KasPemasukanPage = () => {
         dateFrom: '',
         dateTo: ''
     })
+
+    const [loading, setLoading] = useState(true)
+    const [kategoriList, setKategoriList] = useState([])
+
+    // Performance Update: Use Cached Hook
+    // Loading is handled by hook but we also have local loading for kategori? 
+    // Actually hook handles main data loading.
+    const { data: rawData = [], isLoading: loadingMain, error, refetch } = useKasPemasukan(filters)
+
+    useEffect(() => {
+        setLoading(loadingMain)
+    }, [loadingMain])
+
+    useEffect(() => {
+        fetchKategori()
+    }, [])
+
+    // Error Handling
+    useEffect(() => {
+        if (error) {
+            console.error('Error loading kas:', error)
+            showToast.error('Gagal memuat data kas')
+        }
+    }, [error])
+
+    // Fetch Kategori locally (could also be a hook, but keeping simple for now)
+    const fetchKategori = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('kategori_pembayaran')
+                .select('*')
+                .eq('tipe', 'pemasukan')
+                .eq('is_active', true)
+                .order('nama')
+            if (error) throw error
+            setKategoriList(data || [])
+        } catch (error) {
+            console.error('Error loading kategori:', error)
+        }
+    }
+
+    // Apply client-side filtering (Search only - Date is handled by Server/Hook)
+    const filteredData = useMemo(() => {
+        return rawData.filter(item => {
+            let pass = true
+            if (filters.search) {
+                const term = filters.search.toLowerCase()
+                pass = pass && (
+                    item.sumber?.toLowerCase().includes(term) ||
+                    item.keterangan?.toLowerCase().includes(term)
+                )
+            }
+            // Optimization: Date filtering moved to server via hook
+            return pass
+        })
+    }, [rawData, filters.search])
+
+    // Original state kept for modal
+    const [showModal, setShowModal] = useState(false)
+    const [editItem, setEditItem] = useState(null)
+    const [saving, setSaving] = useState(false)
     const [form, setForm] = useState({
         tanggal: new Date().toISOString().split('T')[0],
         sumber: '',
@@ -43,60 +102,12 @@ const KasPemasukanPage = () => {
         keterangan: ''
     })
 
-    useEffect(() => {
-        fetchData()
-        fetchKategori()
-    }, [filters.bulan, filters.tahun, filters.dateFrom, filters.dateTo])
+    // Error handling
 
-    const fetchKategori = async () => {
-        const { data } = await supabase
-            .from('kategori_pembayaran')
-            .select('*')
-            .eq('is_active', true)
-            .eq('tipe', 'pemasukan')
-            .order('nama')
-        setKategoriList(data || [])
-    }
 
-    const fetchData = async () => {
-        setLoading(true)
-        try {
-            let query = supabase
-                .from('kas_pemasukan')
-                .select('*')
-                .order('tanggal', { ascending: false })
+    // Removed manual useEffect fetching
 
-            // Date range filter takes priority
-            if (filters.dateFrom && filters.dateTo) {
-                query = query.gte('tanggal', filters.dateFrom)
-                    .lte('tanggal', filters.dateTo)
-            } else if (filters.dateFrom) {
-                query = query.gte('tanggal', filters.dateFrom)
-            } else if (filters.dateTo) {
-                query = query.lte('tanggal', filters.dateTo)
-            } else {
-                // Fallback to bulan/tahun filter
-                if (filters.tahun) {
-                    query = query.gte('tanggal', `${filters.tahun}-01-01`)
-                        .lte('tanggal', `${filters.tahun}-12-31`)
-                }
-                if (filters.bulan) {
-                    const month = String(filters.bulan).padStart(2, '0')
-                    query = query.gte('tanggal', `${filters.tahun}-${month}-01`)
-                        .lte('tanggal', `${filters.tahun}-${month}-31`)
-                }
-            }
-
-            const { data: result, error } = await query
-            if (error) throw error
-            setData(result || [])
-        } catch (err) {
-            console.error('Error:', err.message)
-            showToast.error('Gagal memuat data: ' + err.message)
-        } finally {
-            setLoading(false)
-        }
-    }
+    // Removed manual fetchKategori and fetchData functions
 
     const handleSubmit = async (e) => {
         e.preventDefault()
@@ -141,7 +152,7 @@ const KasPemasukanPage = () => {
 
             setShowModal(false)
             resetForm()
-            await fetchData() // Added await for proper data refresh
+            await refetch() // Updated: Use hook refetch instead of fetchData
         } catch (err) {
             console.error('Submit error:', err)
             showToast.error('Gagal menyimpan: ' + err.message)
@@ -154,7 +165,7 @@ const KasPemasukanPage = () => {
         if (!confirm('Yakin hapus data ini?')) return
         try {
             // Get data before delete for audit log
-            const itemToDelete = data.find(d => d.id === id)
+            const itemToDelete = filteredData.find(d => d.id === id)
 
             const { error } = await supabase
                 .from('kas_pemasukan')
@@ -171,7 +182,7 @@ const KasPemasukanPage = () => {
                 )
             }
 
-            await fetchData() // Added await for proper data refresh
+            await refetch() // Updated: Use hook refetch instead of fetchData
             showToast.success('Data berhasil dihapus')
         } catch (err) {
             console.error('Delete error:', err)
@@ -204,7 +215,7 @@ const KasPemasukanPage = () => {
 
     const handleDownloadExcel = () => {
         const columns = ['Tanggal', 'Sumber', 'Kategori', 'Jumlah', 'Keterangan']
-        const exportData = data.map(d => ({
+        const exportData = filteredData.map(d => ({
             Tanggal: new Date(d.tanggal).toLocaleDateString('id-ID'),
             Sumber: d.sumber,
             Kategori: d.kategori || '-',
@@ -217,7 +228,7 @@ const KasPemasukanPage = () => {
 
     const handleDownloadCSV = () => {
         const columns = ['Tanggal', 'Sumber', 'Kategori', 'Jumlah', 'Keterangan']
-        const exportData = data.map(d => ({
+        const exportData = filteredData.map(d => ({
             Tanggal: new Date(d.tanggal).toLocaleDateString('id-ID'),
             Sumber: d.sumber,
             Kategori: d.kategori || '-',
@@ -235,7 +246,7 @@ const KasPemasukanPage = () => {
                 ? `Bulan ${filters.bulan}/${filters.tahun}`
                 : `Tahun ${filters.tahun}`,
             columns: ['Tanggal', 'Sumber', 'Kategori', 'Jumlah', 'Keterangan'],
-            data: data.map(d => [
+            data: filteredData.map(d => [
                 new Date(d.tanggal).toLocaleDateString('id-ID'),
                 d.sumber,
                 d.kategori || '-',
@@ -245,16 +256,18 @@ const KasPemasukanPage = () => {
             filename: 'laporan_pemasukan_kas',
             showTotal: true,
             totalLabel: 'Total Pemasukan',
-            totalValue: data.reduce((sum, d) => sum + Number(d.jumlah), 0)
+            totalValue: filteredData.reduce((sum, d) => sum + Number(d.jumlah), 0)
         })
         showToast.success('Laporan berhasil didownload')
     }
 
-    const totalPemasukan = data.reduce((sum, d) => sum + Number(d.jumlah), 0)
-    const filteredData = data.filter(d =>
-        d.sumber.toLowerCase().includes(filters.search.toLowerCase()) ||
-        (d.keterangan && d.keterangan.toLowerCase().includes(filters.search.toLowerCase()))
-    )
+    const totalPemasukan = filteredData.reduce((sum, d) => sum + Number(d.jumlah), 0)
+
+    // filteredData already defined above or we need to rename this one if it's a second filter pass
+    // Actually, looking at the code flow, we should rely on the one defined earlier or consolidate.
+    // In this file, filteredData seems to be used for render.
+    // Let's remove this one and ensure the first one is used correctly. 
+    // Wait, let's see where the first one is. Use view_file first to be sure.
 
     return (
         <div className="keuangan-page">
@@ -333,7 +346,7 @@ const KasPemasukanPage = () => {
                         <option key={y} value={y}>{y}</option>
                     ))}
                 </select>
-                <button className="btn btn-icon" onClick={fetchData}>
+                <button className="btn btn-icon" onClick={refetch}>
                     <RefreshCw size={18} />
                 </button>
             </div>

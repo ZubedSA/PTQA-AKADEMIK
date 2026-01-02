@@ -1,339 +1,43 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Search, Edit, Trash2, Eye, User, Phone, Mail, Tag, HeartHandshake, Users } from 'lucide-react'
+import { Plus, Search, Edit, Trash2, Eye, User, Phone, Mail, Tag, HeartHandshake, Users, ArrowUpRight } from 'lucide-react'
 import { supabase } from '../../../lib/supabase'
 import { useToast } from '../../../context/ToastContext'
 import Spinner from '../../../components/ui/Spinner'
-
-// Inline styles for consistent display
-const styles = {
-    container: {
-        padding: '24px',
-        minHeight: '100vh',
-        background: 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)'
-    },
-    header: {
-        position: 'relative',
-        overflow: 'hidden',
-        borderRadius: '16px',
-        padding: '24px',
-        color: 'white',
-        background: 'linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%)',
-        boxShadow: '0 10px 40px -10px rgba(16, 185, 129, 0.5)',
-        marginBottom: '24px'
-    },
-    headerContent: {
-        position: 'relative',
-        zIndex: 10,
-        display: 'flex',
-        flexWrap: 'wrap',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        gap: '16px'
-    },
-    headerInfo: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: '16px'
-    },
-    headerIcon: {
-        padding: '12px',
-        borderRadius: '12px',
-        background: 'rgba(255,255,255,0.2)',
-        backdropFilter: 'blur(8px)'
-    },
-    headerTitle: {
-        fontSize: '1.75rem',
-        fontWeight: 700,
-        margin: 0
-    },
-    headerSubtitle: {
-        fontSize: '0.95rem',
-        color: 'rgba(255,255,255,0.85)',
-        margin: '4px 0 0 0'
-    },
-    headerActions: {
-        display: 'flex',
-        gap: '12px',
-        flexWrap: 'wrap'
-    },
-    badge: {
-        padding: '8px 16px',
-        borderRadius: '12px',
-        fontSize: '0.875rem',
-        fontWeight: 500,
-        background: 'rgba(255,255,255,0.15)',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px'
-    },
-    addButton: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        padding: '10px 20px',
-        borderRadius: '12px',
-        fontWeight: 600,
-        background: 'white',
-        color: '#059669',
-        border: 'none',
-        cursor: 'pointer',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-        transition: 'all 0.2s'
-    },
-    statsGrid: {
-        display: 'grid',
-        gridTemplateColumns: 'repeat(4, 1fr)',
-        gap: '16px',
-        marginBottom: '24px'
-    },
-    statCard: {
-        background: 'white',
-        borderRadius: '16px',
-        padding: '20px',
-        border: '1px solid #e5e7eb',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '16px'
-    },
-    statIcon: {
-        width: '48px',
-        height: '48px',
-        borderRadius: '12px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        color: 'white'
-    },
-    statLabel: {
-        fontSize: '0.75rem',
-        color: '#6b7280',
-        textTransform: 'uppercase',
-        letterSpacing: '0.05em',
-        marginBottom: '4px'
-    },
-    statValue: {
-        fontSize: '1.5rem',
-        fontWeight: 700,
-        color: '#1f2937'
-    },
-    tableCard: {
-        background: 'white',
-        borderRadius: '16px',
-        border: '1px solid #e5e7eb',
-        overflow: 'hidden',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
-    },
-    tableHeader: {
-        padding: '20px 24px',
-        borderBottom: '1px solid #f3f4f6',
-        background: 'linear-gradient(180deg, #f8fafc 0%, white 100%)',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        flexWrap: 'wrap',
-        gap: '16px'
-    },
-    tableTitle: {
-        fontSize: '1.125rem',
-        fontWeight: 600,
-        color: '#1f2937',
-        margin: 0
-    },
-    tableSubtitle: {
-        fontSize: '0.875rem',
-        color: '#6b7280',
-        margin: '4px 0 0 0'
-    },
-    searchBox: {
-        position: 'relative',
-        width: '320px'
-    },
-    searchIcon: {
-        position: 'absolute',
-        left: '14px',
-        top: '50%',
-        transform: 'translateY(-50%)',
-        color: '#9ca3af'
-    },
-    searchInput: {
-        width: '100%',
-        padding: '10px 16px 10px 44px',
-        border: '1px solid #e5e7eb',
-        borderRadius: '12px',
-        fontSize: '0.875rem',
-        outline: 'none',
-        transition: 'all 0.2s'
-    },
-    table: {
-        width: '100%',
-        borderCollapse: 'collapse'
-    },
-    th: {
-        padding: '16px 24px',
-        textAlign: 'left',
-        fontSize: '0.75rem',
-        fontWeight: 600,
-        color: '#6b7280',
-        textTransform: 'uppercase',
-        letterSpacing: '0.05em',
-        background: '#f9fafb',
-        borderBottom: '1px solid #e5e7eb'
-    },
-    td: {
-        padding: '16px 24px',
-        borderBottom: '1px solid #f3f4f6',
-        verticalAlign: 'middle'
-    },
-    avatar: {
-        width: '44px',
-        height: '44px',
-        borderRadius: '12px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        color: 'white',
-        fontWeight: 700,
-        fontSize: '0.875rem',
-        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-        boxShadow: '0 4px 8px rgba(16,185,129,0.25)'
-    },
-    nameLink: {
-        fontWeight: 600,
-        color: '#1f2937',
-        cursor: 'pointer',
-        transition: 'color 0.2s'
-    },
-    idText: {
-        fontSize: '0.75rem',
-        color: '#9ca3af',
-        marginTop: '2px'
-    },
-    contactRow: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        fontSize: '0.875rem',
-        color: '#4b5563',
-        marginBottom: '6px'
-    },
-    contactIcon: {
-        width: '24px',
-        height: '24px',
-        borderRadius: '6px',
-        background: '#f3f4f6',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
-    },
-    categoryBadge: {
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '6px',
-        padding: '6px 12px',
-        borderRadius: '8px',
-        fontSize: '0.75rem',
-        fontWeight: 500,
-        background: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)',
-        color: '#047857',
-        border: '1px solid #a7f3d0'
-    },
-    santriCount: {
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '6px',
-        padding: '6px 12px',
-        borderRadius: '8px',
-        fontSize: '0.75rem',
-        fontWeight: 600
-    },
-    statusBadge: {
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '6px',
-        padding: '6px 14px',
-        borderRadius: '20px',
-        fontSize: '0.75rem',
-        fontWeight: 500
-    },
-    statusDot: {
-        width: '8px',
-        height: '8px',
-        borderRadius: '50%'
-    },
-    actionsCell: {
-        display: 'flex',
-        justifyContent: 'flex-end',
-        gap: '8px'
-    },
-    actionBtn: {
-        width: '36px',
-        height: '36px',
-        borderRadius: '10px',
-        border: 'none',
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        transition: 'all 0.2s'
-    },
-    footer: {
-        padding: '16px 24px',
-        borderTop: '1px solid #f3f4f6',
-        background: '#fafafa',
-        fontSize: '0.875rem',
-        color: '#6b7280'
-    },
-    emptyState: {
-        padding: '64px 24px',
-        textAlign: 'center'
-    },
-    emptyIcon: {
-        width: '80px',
-        height: '80px',
-        borderRadius: '20px',
-        background: 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        margin: '0 auto 16px'
-    }
-}
+import { useOrangTuaAsuh } from '../../../hooks/useOTA'
 
 const OTAList = () => {
     const navigate = useNavigate()
     const showToast = useToast()
-    const [loading, setLoading] = useState(true)
-    const [otas, setOtas] = useState([])
     const [searchTerm, setSearchTerm] = useState('')
-    const [hoveredRow, setHoveredRow] = useState(null)
+
+    const [otas, setOtas] = useState([])
+    const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        fetchOtas()
+        fetchData()
     }, [])
 
-    const fetchOtas = async () => {
+    const fetchData = async () => {
+        setLoading(true)
         try {
             const { data, error } = await supabase
                 .from('orang_tua_asuh')
-                .select(`
-                    *,
-                    kategori:kategori_id(id, nama),
-                    ota_santri (
-                        count
-                    )
-                `)
-                .order('nama', { ascending: true })
+                .select('*')
+                .eq('status', true)
+                .order('nama')
 
             if (error) throw error
             setOtas(data || [])
-        } catch (err) {
-            showToast.error('Gagal memuat data OTA: ' + err.message)
+        } catch (error) {
+            console.error('Error fetching OTAs:', error)
+            showToast.error('Gagal memuat data OTA')
         } finally {
             setLoading(false)
         }
     }
+
+    // Manual fetch removed
 
     const handleDelete = async (id, nama) => {
         if (!window.confirm(`Yakin ingin menghapus OTA "${nama}"? Data akan dihapus permanen.`)) return
@@ -346,7 +50,10 @@ const OTAList = () => {
 
             if (error) throw error
             showToast.success('OTA berhasil dihapus')
-            fetchOtas()
+            if (error) throw error
+            showToast.success('OTA berhasil dihapus')
+            // Data refreshes automatically or we can manually invalidate query
+            window.location.reload() // Quick fix until full mutation logic
         } catch (err) {
             showToast.error('Gagal menghapus: ' + err.message)
         }
@@ -362,234 +69,212 @@ const OTAList = () => {
 
     if (loading) {
         return (
-            <div style={{ ...styles.container, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+            <div className="flex items-center justify-center min-h-[60vh]">
                 <Spinner label="Memuat Data Orang Tua Asuh..." />
             </div>
         )
     }
 
     return (
-        <div style={styles.container}>
+        <div className="min-h-screen bg-slate-50 p-2 md:p-6 lg:p-8 font-sans text-slate-800">
             {/* HEADER */}
-            <div style={styles.header}>
-                <div style={{ position: 'absolute', top: 0, right: 0, width: '200px', height: '200px', background: 'rgba(255,255,255,0.1)', borderRadius: '50%', transform: 'translate(30%, -50%)' }} />
-                <div style={{ position: 'absolute', bottom: 0, left: 0, width: '150px', height: '150px', background: 'rgba(255,255,255,0.08)', borderRadius: '50%', transform: 'translate(-30%, 50%)' }} />
+            <div className="relative overflow-hidden rounded-2xl md:rounded-3xl bg-gradient-to-br from-emerald-500 via-teal-600 to-emerald-700 p-5 md:p-8 text-white shadow-xl mb-4 md:mb-8">
+                {/* Decorative Circles */}
+                <div className="absolute top-0 right-0 -mt-10 -mr-10 w-64 h-64 rounded-full bg-white/10 blur-3xl pointer-events-none"></div>
+                <div className="absolute bottom-0 left-0 -mb-10 -ml-10 w-48 h-48 rounded-full bg-white/10 blur-2xl pointer-events-none"></div>
 
-                <div style={styles.headerContent}>
-                    <div style={styles.headerInfo}>
-                        <div style={styles.headerIcon}>
-                            <HeartHandshake size={28} />
+                <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                    <div className="flex items-center gap-4 md:gap-6">
+                        <div className="p-3 md:p-4 bg-white/20 backdrop-blur-md rounded-2xl shadow-inner border border-white/10">
+                            <HeartHandshake size={28} className="text-white md:w-8 md:h-8" />
                         </div>
                         <div>
-                            <h1 style={styles.headerTitle}>Data Orang Tua Asuh</h1>
-                            <p style={styles.headerSubtitle}>Kelola profil donatur dan relasi santri binaan</p>
+                            <h1 className="text-xl md:text-3xl font-bold tracking-tight text-white mb-1">
+                                Data Orang Tua Asuh
+                            </h1>
+                            <p className="text-emerald-100/90 text-sm md:text-base font-medium">
+                                Kelola profil donatur
+                            </p>
                         </div>
                     </div>
-                    <div style={styles.headerActions}>
-                        <div style={styles.badge}>
+
+                    <div className="flex gap-2 w-full md:w-auto">
+                        <div className="flex-1 md:flex-none flex items-center justify-center gap-2 px-3 py-2.5 bg-white/15 backdrop-blur-sm rounded-xl border border-white/10 text-xs md:text-sm font-medium">
                             <Users size={16} />
-                            {activeCount} OTA Aktif
+                            <span>{activeCount} Aktif</span>
                         </div>
                         <button
-                            style={styles.addButton}
                             onClick={() => navigate('/admin/ota/create')}
-                            onMouseEnter={e => e.target.style.transform = 'translateY(-2px)'}
-                            onMouseLeave={e => e.target.style.transform = 'translateY(0)'}
+                            className="flex-1 md:flex-none group flex items-center justify-center gap-2 px-4 py-2.5 bg-white text-emerald-700 rounded-xl font-bold text-xs md:text-sm shadow-lg hover:shadow-xl hover:translate-y-[-2px] hover:bg-emerald-50 transition-all duration-300"
                         >
-                            <Plus size={18} /> Tambah OTA Baru
+                            <Plus size={16} />
+                            <span>Tambah</span>
                         </button>
                     </div>
                 </div>
             </div>
 
-            {/* STATS GRID */}
-            <div style={styles.statsGrid}>
-                <div style={styles.statCard}>
-                    <div style={{ ...styles.statIcon, background: 'linear-gradient(135deg, #10b981, #059669)' }}>
-                        <Users size={22} />
+            {/* STATS GRID - 4 CARDS */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-4 md:mb-8">
+                <div className="bg-white rounded-xl p-4 shadow-[0_2px_10px_-2px_rgba(0,0,0,0.05)] border border-slate-100 flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white shadow-lg shadow-emerald-200">
+                        <Users size={20} />
                     </div>
                     <div>
-                        <div style={styles.statLabel}>Total OTA</div>
-                        <div style={styles.statValue}>{otas.length}</div>
+                        <div className="text-[10px] uppercase tracking-wider font-semibold text-slate-400 mb-0.5">Total OTA</div>
+                        <div className="text-xl font-bold text-slate-800">{otas.length}</div>
                     </div>
                 </div>
-                <div style={styles.statCard}>
-                    <div style={{ ...styles.statIcon, background: 'linear-gradient(135deg, #3b82f6, #2563eb)' }}>
-                        <User size={22} />
+
+                <div className="bg-white rounded-xl p-4 shadow-[0_2px_10px_-2px_rgba(0,0,0,0.05)] border border-slate-100 flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-200">
+                        <User size={20} />
                     </div>
                     <div>
-                        <div style={styles.statLabel}>OTA Aktif</div>
-                        <div style={styles.statValue}>{activeCount}</div>
+                        <div className="text-[10px] uppercase tracking-wider font-semibold text-slate-400 mb-0.5">OTA Aktif</div>
+                        <div className="text-xl font-bold text-slate-800">{activeCount}</div>
                     </div>
                 </div>
-                <div style={styles.statCard}>
-                    <div style={{ ...styles.statIcon, background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)' }}>
-                        <HeartHandshake size={22} />
+
+                <div className="bg-white rounded-xl p-4 shadow-[0_2px_10px_-2px_rgba(0,0,0,0.05)] border border-slate-100 flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-400 to-violet-600 flex items-center justify-center text-white shadow-lg shadow-violet-200">
+                        <HeartHandshake size={20} />
                     </div>
                     <div>
-                        <div style={styles.statLabel}>Santri Binaan</div>
-                        <div style={styles.statValue}>{totalSantri}</div>
+                        <div className="text-[10px] uppercase tracking-wider font-semibold text-slate-400 mb-0.5">Santri Binaan</div>
+                        <div className="text-xl font-bold text-slate-800">{totalSantri}</div>
                     </div>
                 </div>
-                <div style={styles.statCard}>
-                    <div style={{ ...styles.statIcon, background: 'linear-gradient(135deg, #f59e0b, #d97706)' }}>
-                        <Tag size={22} />
+
+                <div className="bg-white rounded-xl p-4 shadow-[0_2px_10px_-2px_rgba(0,0,0,0.05)] border border-slate-100 flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white shadow-lg shadow-amber-200">
+                        <Tag size={20} />
                     </div>
                     <div>
-                        <div style={styles.statLabel}>Non-Aktif</div>
-                        <div style={styles.statValue}>{otas.length - activeCount}</div>
+                        <div className="text-[10px] uppercase tracking-wider font-semibold text-slate-400 mb-0.5">Non-Aktif</div>
+                        <div className="text-xl font-bold text-slate-800">{otas.length - activeCount}</div>
                     </div>
                 </div>
             </div>
 
-            {/* TABLE CARD */}
-            <div style={styles.tableCard}>
-                {/* Table Header */}
-                <div style={styles.tableHeader}>
-                    <div>
-                        <h2 style={styles.tableTitle}>Daftar Orang Tua Asuh</h2>
-                        <p style={styles.tableSubtitle}>{filteredOtas.length} data ditemukan</p>
+            {/* MAIN CONTENT CARD */}
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                {/* TOOLBAR */}
+                <div className="p-4 md:p-5 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div className="flex items-center gap-3 w-full md:w-auto">
+                        <div className="w-10 h-10 rounded-xl bg-emerald-100/50 flex items-center justify-center text-emerald-600 shrink-0">
+                            <Users size={20} />
+                        </div>
+                        <div>
+                            <h2 className="text-lg font-bold text-slate-800">Daftar OTA</h2>
+                            <p className="text-xs text-slate-500 font-medium">{filteredOtas.length} data ditemukan</p>
+                        </div>
                     </div>
-                    <div style={styles.searchBox}>
-                        <Search size={18} style={styles.searchIcon} />
+
+                    <div className="relative w-full md:w-80 group">
+                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 transition-colors">
+                            <Search size={18} />
+                        </div>
                         <input
                             type="text"
-                            placeholder="Cari nama, email, atau no hp..."
-                            style={styles.searchInput}
+                            placeholder="Cari nama..."
+                            className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all shadow-sm group-hover:border-slate-300"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            onFocus={(e) => e.target.style.borderColor = '#10b981'}
-                            onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
                         />
                     </div>
                 </div>
 
-                {/* Table */}
-                <div style={{ overflowX: 'auto' }}>
-                    <table style={styles.table}>
-                        <thead>
+                {/* DESKTOP TABLE */}
+                <div className="hidden md:block overflow-x-auto">
+                    <table className="w-full">
+                        <thead className="bg-slate-50 border-b border-slate-200">
                             <tr>
-                                <th style={styles.th}>Profil OTA</th>
-                                <th style={styles.th}>Kontak</th>
-                                <th style={styles.th}>Kategori</th>
-                                <th style={styles.th}>Binaan</th>
-                                <th style={styles.th}>Status</th>
-                                <th style={{ ...styles.th, textAlign: 'right' }}>Aksi</th>
+                                <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Profil OTA</th>
+                                <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Kontak</th>
+                                <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Kategori</th>
+                                <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Binaan</th>
+                                <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
+                                <th className="px-6 py-4 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Aksi</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody className="divide-y divide-slate-100">
                             {filteredOtas.length > 0 ? (
-                                filteredOtas.map((ota, idx) => (
+                                filteredOtas.map((ota) => (
                                     <tr
                                         key={ota.id}
-                                        style={{
-                                            background: hoveredRow === ota.id
-                                                ? 'linear-gradient(90deg, rgba(16,185,129,0.04) 0%, rgba(16,185,129,0.08) 50%, rgba(16,185,129,0.04) 100%)'
-                                                : idx % 2 === 0 ? '#ffffff' : '#fafafa'
-                                        }}
-                                        onMouseEnter={() => setHoveredRow(ota.id)}
-                                        onMouseLeave={() => setHoveredRow(null)}
+                                        className="hover:bg-slate-50/80 transition-colors group"
                                     >
-                                        <td style={styles.td}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                                <div style={styles.avatar}>
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold text-sm shadow-md shadow-emerald-100">
                                                     {ota.nama?.substring(0, 2).toUpperCase()}
                                                 </div>
                                                 <div>
                                                     <div
-                                                        style={styles.nameLink}
                                                         onClick={() => navigate(`/admin/ota/${ota.id}`)}
-                                                        onMouseEnter={e => e.target.style.color = '#10b981'}
-                                                        onMouseLeave={e => e.target.style.color = '#1f2937'}
+                                                        className="font-bold text-slate-700 hover:text-emerald-600 cursor-pointer transition-colors"
                                                     >
                                                         {ota.nama}
                                                     </div>
-                                                    <div style={styles.idText}>ID: {ota.id.slice(0, 8)}...</div>
+                                                    <div className="text-xs text-slate-400 font-mono mt-0.5">ID: {ota.id.slice(0, 8)}</div>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td style={styles.td}>
-                                            <div style={styles.contactRow}>
-                                                <div style={styles.contactIcon}>
-                                                    <Mail size={12} color="#6b7280" />
+                                        <td className="px-6 py-4">
+                                            <div className="space-y-1.5">
+                                                <div className="flex items-center gap-2 text-sm text-slate-600">
+                                                    <Mail size={14} className="text-slate-400" />
+                                                    {ota.email || '-'}
                                                 </div>
-                                                {ota.email || '-'}
-                                            </div>
-                                            <div style={{ ...styles.contactRow, marginBottom: 0 }}>
-                                                <div style={styles.contactIcon}>
-                                                    <Phone size={12} color="#6b7280" />
+                                                <div className="flex items-center gap-2 text-sm text-slate-600">
+                                                    <Phone size={14} className="text-slate-400" />
+                                                    {ota.no_hp || '-'}
                                                 </div>
-                                                {ota.no_hp || '-'}
                                             </div>
                                         </td>
-                                        <td style={styles.td}>
+                                        <td className="px-6 py-4">
                                             {ota.kategori ? (
-                                                <span style={styles.categoryBadge}>
+                                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-semibold border border-emerald-100">
                                                     <Tag size={12} />
                                                     {ota.kategori.nama}
                                                 </span>
                                             ) : (
-                                                <span style={{ color: '#9ca3af', fontSize: '0.875rem', fontStyle: 'italic' }}>
-                                                    Belum dikategorikan
-                                                </span>
+                                                <span className="text-slate-400 text-xs italic">Uncategorized</span>
                                             )}
                                         </td>
-                                        <td style={styles.td}>
-                                            <span style={{
-                                                ...styles.santriCount,
-                                                background: ota.ota_santri?.[0]?.count > 0
-                                                    ? 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)'
-                                                    : '#f3f4f6',
-                                                color: ota.ota_santri?.[0]?.count > 0 ? '#1d4ed8' : '#6b7280',
-                                                border: ota.ota_santri?.[0]?.count > 0 ? '1px solid #bfdbfe' : '1px solid #e5e7eb'
-                                            }}>
+                                        <td className="px-6 py-4">
+                                            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold border ${ota.ota_santri?.[0]?.count > 0 ? 'bg-blue-50 text-blue-700 border-blue-100' : 'bg-slate-50 text-slate-500 border-slate-100'}`}>
                                                 <User size={12} />
                                                 {ota.ota_santri?.[0]?.count || 0} Santri
                                             </span>
                                         </td>
-                                        <td style={styles.td}>
-                                            <span style={{
-                                                ...styles.statusBadge,
-                                                background: ota.status
-                                                    ? 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)'
-                                                    : 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)',
-                                                color: ota.status ? '#047857' : '#dc2626',
-                                                border: ota.status ? '1px solid #a7f3d0' : '1px solid #fecaca'
-                                            }}>
-                                                <span style={{
-                                                    ...styles.statusDot,
-                                                    background: ota.status ? '#10b981' : '#ef4444',
-                                                    animation: ota.status ? 'pulse 2s infinite' : 'none'
-                                                }} />
+                                        <td className="px-6 py-4">
+                                            <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold border ${ota.status ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'}`}>
+                                                <span className={`w-2 h-2 rounded-full ${ota.status ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></span>
                                                 {ota.status ? 'Aktif' : 'Non-Aktif'}
-                                            </span>
+                                            </div>
                                         </td>
-                                        <td style={{ ...styles.td, textAlign: 'right' }}>
-                                            <div style={styles.actionsCell}>
+                                        <td className="px-6 py-4 text-right">
+                                            <div className="flex justify-end gap-2 opacity-80 group-hover:opacity-100 transition-opacity">
                                                 <button
-                                                    title="Lihat Detail"
-                                                    style={{ ...styles.actionBtn, background: 'linear-gradient(135deg, #e0f2fe, #bae6fd)', color: '#0284c7' }}
                                                     onClick={() => navigate(`/admin/ota/${ota.id}`)}
-                                                    onMouseEnter={e => e.target.style.transform = 'scale(1.1)'}
-                                                    onMouseLeave={e => e.target.style.transform = 'scale(1)'}
+                                                    className="w-9 h-9 flex items-center justify-center rounded-lg bg-sky-50 text-sky-600 hover:bg-sky-100 hover:scale-105 transition-all"
+                                                    title="Lihat Detail"
                                                 >
                                                     <Eye size={16} />
                                                 </button>
                                                 <button
-                                                    title="Edit Profil"
-                                                    style={{ ...styles.actionBtn, background: 'linear-gradient(135deg, #fef3c7, #fde68a)', color: '#d97706' }}
                                                     onClick={() => navigate(`/admin/ota/${ota.id}/edit`)}
-                                                    onMouseEnter={e => e.target.style.transform = 'scale(1.1)'}
-                                                    onMouseLeave={e => e.target.style.transform = 'scale(1)'}
+                                                    className="w-9 h-9 flex items-center justify-center rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 hover:scale-105 transition-all"
+                                                    title="Edit"
                                                 >
                                                     <Edit size={16} />
                                                 </button>
                                                 <button
-                                                    title={ota.status ? "Nonaktifkan" : "Aktifkan"}
-                                                    style={{ ...styles.actionBtn, background: 'linear-gradient(135deg, #fee2e2, #fecaca)', color: '#dc2626' }}
                                                     onClick={() => handleDelete(ota.id, ota.nama)}
-                                                    onMouseEnter={e => e.target.style.transform = 'scale(1.1)'}
-                                                    onMouseLeave={e => e.target.style.transform = 'scale(1)'}
+                                                    className="w-9 h-9 flex items-center justify-center rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 hover:scale-105 transition-all"
+                                                    title="Hapus"
                                                 >
                                                     <Trash2 size={16} />
                                                 </button>
@@ -599,21 +284,17 @@ const OTAList = () => {
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan="6" style={styles.emptyState}>
-                                        <div style={styles.emptyIcon}>
-                                            <User size={36} color="#9ca3af" />
+                                    <td colSpan="6" className="py-20 text-center">
+                                        <div className="w-20 h-20 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-slate-100">
+                                            <Users size={32} className="text-slate-300" />
                                         </div>
-                                        <p style={{ fontSize: '1.125rem', fontWeight: 600, color: '#1f2937', margin: '0 0 8px' }}>
-                                            Tidak ada data ditemukan
-                                        </p>
-                                        <p style={{ fontSize: '0.875rem', color: '#6b7280', margin: '0 0 16px' }}>
-                                            Coba kata kunci lain atau tambah OTA baru.
-                                        </p>
+                                        <h3 className="text-lg font-semibold text-slate-800">Tidak ada data ditemukan</h3>
+                                        <p className="text-slate-500 text-sm mt-1 mb-6">Coba kata kunci lain atau tambahkan data baru</p>
                                         <button
-                                            style={{ ...styles.addButton, background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white' }}
                                             onClick={() => navigate('/admin/ota/create')}
+                                            className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 transition-colors shadow-lg shadow-emerald-200"
                                         >
-                                            <Plus size={16} /> Tambah OTA
+                                            <Plus size={16} /> Tambah OTA Baru
                                         </button>
                                     </td>
                                 </tr>
@@ -622,21 +303,92 @@ const OTAList = () => {
                     </table>
                 </div>
 
-                {/* Footer */}
+                {/* MOBILE CARD VIEW */}
+                <div className="md:hidden p-3 space-y-3 bg-slate-50/50">
+                    {filteredOtas.length > 0 ? (
+                        filteredOtas.map((ota) => (
+                            <div key={ota.id} className="bg-white rounded-xl p-4 shadow-sm border border-slate-100 flex flex-col gap-4">
+                                <div className="flex justify-between items-start">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold text-sm shadow-md shadow-emerald-100">
+                                            {ota.nama?.substring(0, 2).toUpperCase()}
+                                        </div>
+                                        <div>
+                                            <div
+                                                onClick={() => navigate(`/admin/ota/${ota.id}`)}
+                                                className="font-bold text-slate-800 text-sm hover:text-emerald-600 transition-colors"
+                                            >
+                                                {ota.nama}
+                                            </div>
+                                            <div className="text-xs text-slate-400 font-mono">ID: {ota.id.slice(0, 8)}</div>
+                                        </div>
+                                    </div>
+                                    <div className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide border ${ota.status ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-rose-50 text-rose-700 border-rose-100'}`}>
+                                        {ota.status ? 'Aktif' : 'Non-Aktif'}
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 gap-2 text-sm">
+                                    <div className="flex items-center gap-2 text-slate-600 p-2 bg-slate-50 rounded-lg">
+                                        <Mail size={14} className="text-slate-400" />
+                                        <span className="truncate">{ota.email || '-'}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-slate-600 p-2 bg-slate-50 rounded-lg">
+                                        <Phone size={14} className="text-slate-400" />
+                                        <span>{ota.no_hp || '-'}</span>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+                                    <div className="flex gap-2">
+                                        {ota.kategori && (
+                                            <span className="flex items-center gap-1 px-2 py-1 bg-emerald-50 text-emerald-700 rounded text-xs font-medium border border-emerald-100">
+                                                <Tag size={10} /> {ota.kategori.nama}
+                                            </span>
+                                        )}
+                                        <span className="flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium border border-blue-100">
+                                            <User size={10} /> {ota.ota_santri?.[0]?.count || 0}
+                                        </span>
+                                    </div>
+
+                                    <div className="flex gap-1.5">
+                                        <button
+                                            onClick={() => navigate(`/admin/ota/${ota.id}`)}
+                                            className="w-8 h-8 flex items-center justify-center rounded-lg bg-sky-50 text-sky-600 border border-sky-100"
+                                        >
+                                            <Eye size={14} />
+                                        </button>
+                                        <button
+                                            onClick={() => navigate(`/admin/ota/${ota.id}/edit`)}
+                                            className="w-8 h-8 flex items-center justify-center rounded-lg bg-amber-50 text-amber-600 border border-amber-100"
+                                        >
+                                            <Edit size={14} />
+                                        </button>
+                                        <button
+                                            onClick={() => handleDelete(ota.id, ota.nama)}
+                                            className="w-8 h-8 flex items-center justify-center rounded-lg bg-rose-50 text-rose-600 border border-rose-100"
+                                        >
+                                            <Trash2 size={14} />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))
+                    ) : (
+                        <div className="py-12 text-center bg-white rounded-xl border border-slate-100 border-dashed">
+                            <Users size={32} className="text-slate-300 mx-auto mb-3" />
+                            <p className="text-sm text-slate-500">Tidak ada data</p>
+                        </div>
+                    )}
+                </div>
+
+                {/* FOOTER */}
                 {filteredOtas.length > 0 && (
-                    <div style={styles.footer}>
-                        Menampilkan <strong>{filteredOtas.length}</strong> dari <strong>{otas.length}</strong> data
+                    <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/50 text-xs text-slate-500 font-medium">
+                        Menampilkan <span className="text-slate-700 font-bold">{filteredOtas.length}</span> dari <span className="text-slate-700 font-bold">{otas.length}</span> data
                     </div>
                 )}
             </div>
-
-            {/* Pulse Animation CSS */}
-            <style>{`
-                @keyframes pulse {
-                    0%, 100% { opacity: 1; }
-                    50% { opacity: 0.5; }
-                }
-            `}</style>
         </div>
     )
 }

@@ -201,23 +201,32 @@
     z-index: 1;
 }
 
-.ota-stat-label {
-    font-size: 0.8rem;
-    font-weight: 500;
-    color: rgba(255, 255, 255, 0.9);
-    text-transform: uppercase;
-    letter-spacing: 0.025em;
+/* Scoped to colored cards to prevent leaking to white cards on other pages */
+.ota-stat-card.blue .ota-stat-label,
+.ota-stat-card.green .ota-stat-label,
+.ota-stat-card.orange .ota-stat-label,
+.ota-stat-card.purple .ota-stat-label,
+.ota-stat-card.emerald .ota-stat-label,
+.ota-stat-card.red .ota-stat-label {
+    color: rgba(255, 255, 255, 0.95) !important;
 }
 
-.ota-stat-value {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: white;
+.ota-stat-card.blue .ota-stat-value,
+.ota-stat-card.green .ota-stat-value,
+.ota-stat-card.orange .ota-stat-value,
+.ota-stat-card.purple .ota-stat-value,
+.ota-stat-card.emerald .ota-stat-value,
+.ota-stat-card.red .ota-stat-value {
+    color: white !important;
 }
 
-.ota-stat-subvalue {
-    font-size: 0.75rem;
-    color: rgba(255, 255, 255, 0.8);
+.ota-stat-card.blue .ota-stat-subvalue,
+.ota-stat-card.green .ota-stat-subvalue,
+.ota-stat-card.orange .ota-stat-subvalue,
+.ota-stat-card.purple .ota-stat-subvalue,
+.ota-stat-card.emerald .ota-stat-subvalue,
+.ota-stat-card.red .ota-stat-subvalue {
+    color: rgba(255, 255, 255, 0.85) !important;
 }
 
 .ota-stat-icon-box {

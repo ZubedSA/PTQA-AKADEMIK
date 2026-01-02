@@ -2,44 +2,37 @@ import { useState, useEffect } from 'react'
 import { FileText, Plus, Edit, Archive, Search, CheckCircle } from 'lucide-react'
 import { supabase } from '../../../lib/supabase'
 import { useAuth } from '../../../context/AuthContext'
+import { useInformasiPondok } from '../../../hooks/usePengurus'
 
 const InformasiPondokPage = () => {
     const { userProfile } = useAuth()
+
     const [informasi, setInformasi] = useState([])
     const [loading, setLoading] = useState(true)
-    const [showModal, setShowModal] = useState(false)
-    const [editData, setEditData] = useState(null)
-    const [formData, setFormData] = useState({
-        judul: '',
-        isi: '',
-        kategori: 'INFO',
-        urutan: 0
-    })
-    const [saving, setSaving] = useState(false)
 
     useEffect(() => {
-        fetchInformasi()
+        fetchData()
     }, [])
 
-    const fetchInformasi = async () => {
+    const fetchData = async () => {
         setLoading(true)
         try {
             const { data, error } = await supabase
                 .from('informasi_pondok')
                 .select('*')
                 .eq('is_active', true)
-                .order('urutan', { ascending: true })
                 .order('created_at', { ascending: false })
 
             if (error) throw error
             setInformasi(data || [])
         } catch (error) {
-            console.log('Error:', error.message)
-            setInformasi([])
+            console.error('Error loading informasi:', error)
         } finally {
             setLoading(false)
         }
     }
+
+    const [showModal, setShowModal] = useState(false)
 
     const handleOpenModal = (item = null) => {
         if (item) {
@@ -75,7 +68,9 @@ const InformasiPondokPage = () => {
             }
 
             setShowModal(false)
-            fetchInformasi()
+            setShowModal(false)
+            // Ideally invalidate query, using reload for quick consistency until mutation hooks
+            window.location.reload()
         } catch (error) {
             alert('Gagal menyimpan: ' + error.message)
         } finally {
@@ -87,7 +82,8 @@ const InformasiPondokPage = () => {
         if (!confirm('Nonaktifkan informasi ini?')) return
         try {
             await supabase.from('informasi_pondok').update({ is_active: false }).eq('id', id)
-            fetchInformasi()
+            await supabase.from('informasi_pondok').update({ is_active: false }).eq('id', id)
+            window.location.reload()
         } catch (error) {
             alert('Gagal: ' + error.message)
         }

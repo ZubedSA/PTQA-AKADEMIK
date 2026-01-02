@@ -28,7 +28,7 @@ const LaporanAkademikSantriPage = () => {
     const fetchOptions = async () => {
         const [semRes, santriRes] = await Promise.all([
             supabase.from('semester').select('*').order('tahun_ajaran', { ascending: false }),
-            supabase.from('santri').select('id, nama, nis, kelas:kelas_id(nama), halaqoh:halaqoh_id(nama)').eq('status', 'Aktif').order('nama')
+            supabase.from('santri').select('id, nama, nis, kelas:kelas!kelas_id(nama), halaqoh:halaqoh!halaqoh_id(nama)').eq('status', 'Aktif').order('nama')
         ])
         if (semRes.data) {
             setSemester(semRes.data)
@@ -84,7 +84,7 @@ const LaporanAkademikSantriPage = () => {
                 .from('nilai')
                 .select(`
                     id, jenis_ujian, nilai_akhir,
-                    mapel:mapel_id(id, nama)
+                    mapel:mapel!mapel_id(id, nama)
                 `)
                 .eq('santri_id', santriId)
                 .eq('semester_id', filters.semester_id)

@@ -33,7 +33,7 @@ const WaliSantriPage = () => {
         try {
             const { data } = await supabase
                 .from('santri')
-                .select('id, nis, nama, kelas:kelas_id(nama)')
+                .select('id, nis, nama, kelas:kelas!kelas_id(nama)')
                 .eq('status', 'Aktif')
                 .order('nama')
             setSantriList(data || [])
@@ -88,7 +88,7 @@ const WaliSantriPage = () => {
         try {
             const { data, error } = await supabase
                 .from('nilai')
-                .select('mapel:mapel_id(nama, kategori), nilai_tugas, nilai_uts, nilai_uas, nilai_akhir')
+                .select('mapel:mapel!mapel_id(nama, kategori), nilai_tugas, nilai_uts, nilai_uas, nilai_akhir')
                 .eq('santri_id', selectedSantri)
                 .eq('semester_id', selectedSemester)
             if (error) throw error
@@ -133,7 +133,7 @@ const WaliSantriPage = () => {
             // Fetch santri
             const { data: santriData } = await supabase
                 .from('santri')
-                .select('*, kelas:kelas_id(nama, wali_kelas:wali_kelas_id(nama)), halaqoh:halaqoh_id(nama, musyrif:musyrif_id(nama))')
+                .select('*, kelas:kelas!kelas_id(nama, wali_kelas:guru!wali_kelas_id(nama)), halaqoh:halaqoh!halaqoh_id(nama, musyrif:guru!musyrif_id(nama))')
                 .eq('id', selectedSantri)
                 .single()
 
@@ -147,7 +147,7 @@ const WaliSantriPage = () => {
             // Fetch nilai
             const { data: nilaiList } = await supabase
                 .from('nilai')
-                .select('mapel:mapel_id(nama, kategori), nilai_akhir')
+                .select('mapel:mapel!mapel_id(nama, kategori), nilai_akhir')
                 .eq('santri_id', selectedSantri)
                 .eq('semester_id', selectedSemester)
 

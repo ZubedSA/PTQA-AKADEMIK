@@ -40,10 +40,10 @@ const OTAPengeluaranPage = () => {
     const [showDownloadMenu, setShowDownloadMenu] = useState(false)
 
     useEffect(() => {
-        fetchAllData()
+        fetchData()
     }, [])
 
-    const fetchAllData = async () => {
+    const fetchData = async () => {
         setLoading(true)
         try {
             const [pengeluaranRes, pemasukanRes] = await Promise.all([
@@ -179,7 +179,7 @@ const OTAPengeluaranPage = () => {
             }
 
             closeModal()
-            fetchAllData()
+            fetchData()
         } catch (err) {
             showToast.error('Gagal menyimpan: ' + err.message)
         } finally {
@@ -198,7 +198,7 @@ const OTAPengeluaranPage = () => {
 
             if (error) throw error
             showToast.success('Pengeluaran berhasil dihapus')
-            fetchAllData()
+            fetchData()
         } catch (err) {
             showToast.error('Gagal menghapus: ' + err.message)
         }
@@ -268,18 +268,46 @@ const OTAPengeluaranPage = () => {
     return (
         <div className="ota-container">
             {/* Header */}
-            <div className="ota-header">
-                <div className="ota-header-top">
-                    <div>
-                        <h1>Pengeluaran OTA</h1>
-                        <p>Kelola data pengeluaran dana Orang Tua Asuh</p>
+            <div style={{
+                position: 'relative',
+                overflow: 'hidden',
+                borderRadius: '16px',
+                padding: '24px',
+                color: 'white',
+                background: 'linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%)',
+                boxShadow: '0 10px 40px -10px rgba(16, 185, 129, 0.5)',
+                marginBottom: '24px'
+            }}>
+                <div style={{ position: 'absolute', top: 0, right: 0, width: '180px', height: '180px', background: 'rgba(255,255,255,0.1)', borderRadius: '50%', transform: 'translate(30%, -50%)' }} />
+                <div style={{ position: 'absolute', bottom: 0, left: 0, width: '120px', height: '120px', background: 'rgba(255,255,255,0.08)', borderRadius: '50%', transform: 'translate(-30%, 50%)' }} />
+
+                <div style={{ position: 'relative', zIndex: 10, display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <div style={{ width: '56px', height: '56px', borderRadius: '14px', background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <ArrowDownCircle size={26} />
+                        </div>
+                        <div>
+                            <h1 style={{ fontSize: '1.5rem', fontWeight: 700, margin: 0 }}>Pengeluaran OTA</h1>
+                            <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.85)', margin: '4px 0 0 0' }}>Kelola data pengeluaran dana Orang Tua Asuh</p>
+                        </div>
                     </div>
-                    <button className="ota-btn ota-btn-primary" onClick={openAdd}>
-                        <Plus size={18} />
-                        Tambah Pengeluaran
-                    </button>
+                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                        <button
+                            onClick={fetchData}
+                            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 16px', borderRadius: '10px', fontSize: '0.875rem', fontWeight: 500, border: '1px solid rgba(255,255,255,0.3)', background: 'rgba(255,255,255,0.15)', color: 'white', cursor: 'pointer' }}
+                        >
+                            <RefreshCw size={16} /> Refresh
+                        </button>
+                        <button
+                            onClick={openAdd}
+                            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 16px', borderRadius: '10px', fontSize: '0.875rem', fontWeight: 500, border: 'none', background: 'white', color: '#059669', cursor: 'pointer' }}
+                        >
+                            <Plus size={18} /> Tambah Pengeluaran
+                        </button>
+                    </div>
                 </div>
             </div>
+
 
             {/* Summary */}
             <div className="ota-summary-grid">

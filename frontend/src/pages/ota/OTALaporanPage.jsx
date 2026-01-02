@@ -31,16 +31,16 @@ const OTALaporanPage = () => {
     const [showDownloadMenu, setShowDownloadMenu] = useState(false)
 
     useEffect(() => {
-        fetchAllData()
+        fetchData()
     }, [])
 
-    const fetchAllData = async () => {
+    const fetchData = async () => {
         setLoading(true)
         try {
             const [pemasukanRes, pengeluaranRes, otaRes] = await Promise.all([
                 supabase
                     .from('ota_pemasukan')
-                    .select('*, ota:ota_id(id, nama)')
+                    .select('*, ota:orang_tua_asuh!ota_id(id, nama)')
                     .order('tanggal', { ascending: false }),
                 supabase
                     .from('ota_pengeluaran')

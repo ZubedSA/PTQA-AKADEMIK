@@ -174,7 +174,8 @@
 
 .ota-stat-label {
     font-size: 0.8rem;
-    color: #64748b;
+    color: #475569 !important;
+    /* Explicitly dark for light mode */
     text-transform: uppercase;
     font-weight: 600;
     letter-spacing: 0.05em;
@@ -184,7 +185,8 @@
 .ota-stat-value {
     font-size: 1.75rem;
     font-weight: 800;
-    color: #1e293b;
+    color: #0f172a !important;
+    /* Explicitly dark for light mode */
     line-height: 1;
 }
 
@@ -480,12 +482,12 @@
         width: 100%;
     }
 
-    /* Hide Table, Show Mobile Cards */
-    .ota-table-container {
+    /* Hide Table, Show Mobile Cards - OTA Santri Page Only */
+    .ota-santri-page .ota-table-container {
         display: none;
     }
 
-    .ota-mobile-list {
+    .ota-santri-page .ota-mobile-list {
         display: flex;
         flex-direction: column;
     }
